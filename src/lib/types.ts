@@ -198,6 +198,8 @@ export type Stats = {
   longestStreak: number;
   today: { day: string; xp: number; goalXp: number; wordsReviewed: number; versesReviewed: number; versesRead: number };
   lastDays: { day: string; xp: number }[];
+  /** Un jour manqué par semaine ne casse pas la série. */
+  streakFreeze: { available: boolean; pending: boolean; frozenDays: string[] };
   vocabulary: { learned: number; mastered: number; due: number };
   memorization: { verses: number; solid: number; due: number };
 };

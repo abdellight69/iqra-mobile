@@ -79,6 +79,21 @@ export default function Home() {
               {s?.currentStreak ?? 0} jour{(s?.currentStreak ?? 0) > 1 ? "s" : ""} de suite
             </AppText>
           </View>
+          {s?.streakFreeze.pending ? (
+            <View style={styles.streak}>
+              <Ionicons name="snow" size={14} color={colors.primary} />
+              <AppText variant="caption" color={colors.primary} style={styles.shrink}>
+                Hier manqué : pratiquez aujourd’hui, votre jour de répit garde la série
+              </AppText>
+            </View>
+          ) : s?.streakFreeze.available ? (
+            <View style={styles.streak}>
+              <Ionicons name="snow-outline" size={14} color={colors.textMuted} />
+              <AppText variant="caption" muted>
+                1 jour de répit cette semaine
+              </AppText>
+            </View>
+          ) : null}
         </View>
       </Card>
 
@@ -172,6 +187,7 @@ const styles = StyleSheet.create({
   goalCard: { flexDirection: "row", alignItems: "center", gap: spacing.xl },
   goalText: { flex: 1, gap: 4 },
   streak: { flexDirection: "row", alignItems: "center", gap: 6 },
+  shrink: { flexShrink: 1 },
   stats: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xs },
   statDivider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch" },
   resume: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingVertical: spacing.xl },

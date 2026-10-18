@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Switch, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -10,6 +10,7 @@ import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { isFrench, languageLabel } from "@/lib/language";
+import { formatTime, REMINDER_TIMES, requestReminderPermission, useReminders } from "@/lib/reminders";
 import { useMe, useRecitations, useResourceDefaults, useTranslations, useUpdateMe } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 
@@ -23,6 +24,7 @@ export default function Settings() {
   const recitations = useRecitations();
   const defaults = useResourceDefaults();
   const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const reminders = useReminders();
   const signOut = useAuth((s) => s.signOut);
   const [name, setName] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -97,6 +99,43 @@ export default function Settings() {
           <Choice key={goal} label={`${goal} XP`} selected={user.dailyGoalXp === goal} onPress={() => update.mutate({ dailyGoalXp: goal })} />
         ))}
       </View>
+
+      <SectionHeader title="Rappel quotidien" />
+      <Card style={styles.reminder}>
+        <View style={styles.reminderRow}>
+          <View style={styles.flex}>
+            <AppText variant="bodyStrong">Me rappeler de pratiquer</AppText>
+            <AppText variant="caption" muted>
+              Seulement les jours où vous n’avez pas encore pratiqué.
+            </AppText>
+          </View>
+          <Switch
+            accessibilityLabel="Rappel quotidien"
+            disabled={Platform.OS === "web"}
+            value={reminders.enabled}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            onValueChange={async (enabled) => {
+              if (enabled && !(await requestReminderPermission())) {
+                Alert.alert("Notifications désactivées", "Autorisez les notifications d’Iqra dans les réglages de votre téléphone.");
+                return;
+              }
+              await reminders.update({ enabled });
+            }}
+          />
+        </View>
+        {reminders.enabled ? (
+          <View style={styles.chips}>
+            {REMINDER_TIMES.map((time) => (
+              <Choice
+                key={formatTime(time.hour, time.minute)}
+                label={formatTime(time.hour, time.minute)}
+                selected={reminders.hour === time.hour && reminders.minute === time.minute}
+                onPress={() => void reminders.update(time)}
+              />
+            ))}
+          </View>
+        ) : null}
+      </Card>
 
       <SectionHeader title="Traduction du sens" />
       <Card padded={false}>
@@ -221,6 +260,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   group: { gap: spacing.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  reminder: { gap: spacing.md },
+  reminderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   chip: { borderWidth: 1.5, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   languageHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xs },
   option: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth },

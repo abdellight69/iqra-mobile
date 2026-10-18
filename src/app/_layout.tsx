@@ -1,19 +1,24 @@
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from "@expo-google-fonts/inter";
 import { Fraunces_400Regular_Italic, Fraunces_500Medium, Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setAudioModeAsync } from "expo-audio";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { useColorScheme } from "react-native";
+import { AppState, Platform, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { darkColors, lightColors } from "@/lib/theme";
 
 void SplashScreen.preventAutoHideAsync();
+
+// Retour au premier plan : les requêtes périmées sont relancées (statistiques du jour, révisions dues…).
+if (Platform.OS !== "web") {
+  AppState.addEventListener("change", (state) => focusManager.setFocused(state === "active"));
+}
 
 function createQueryClient() {
   return new QueryClient({

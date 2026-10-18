@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { Alert, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -26,7 +27,13 @@ export default function Profile() {
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today.getTime() - (6 - i) * 86_400_000);
     const day = d.toISOString().slice(0, 10);
-    return { day, label: WEEKDAYS[d.getUTCDay()] ?? "", xp: s?.lastDays.find((x) => x.day === day)?.xp ?? 0, isToday: i === 6 };
+    return {
+      day,
+      label: WEEKDAYS[d.getUTCDay()] ?? "",
+      xp: s?.lastDays.find((x) => x.day === day)?.xp ?? 0,
+      frozen: s?.streakFreeze.frozenDays.includes(day) ?? false,
+      isToday: i === 6,
+    };
   });
   const maxXp = Math.max(goal, ...week.map((w) => w.xp));
   const weekXp = week.reduce((n, w) => n + w.xp, 0);
@@ -67,6 +74,9 @@ export default function Profile() {
             {weekXp} XP
           </AppText>
         </View>
+        <AppText variant="caption" muted>
+          Un jour manqué par semaine ne casse pas votre série.
+        </AppText>
         <View style={styles.bars}>
           {week.map((w) => (
             <View key={w.day} style={styles.barCol}>
@@ -80,7 +90,11 @@ export default function Profile() {
                     },
                   ]}
                 />
-                {w.xp === 0 ? <View style={[styles.emptyDot, { backgroundColor: colors.border }]} /> : null}
+                {w.frozen ? (
+                  <Ionicons name="snow" size={14} color={colors.primary} accessibilityLabel="Jour couvert par le répit" />
+                ) : w.xp === 0 ? (
+                  <View style={[styles.emptyDot, { backgroundColor: colors.border }]} />
+                ) : null}
               </View>
               <AppText variant="caption" color={w.isToday ? colors.text : colors.textFaint}>
                 {w.label}

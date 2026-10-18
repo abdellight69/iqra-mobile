@@ -1,10 +1,12 @@
 import { Stack } from "expo-router";
+import { useReminderSync } from "@/lib/reminders";
 import { fonts, useColors } from "@/lib/theme";
 
 export const unstable_settings = { anchor: "(tabs)" };
 
 export default function AppLayout() {
   const colors = useColors();
+  useReminderSync();
   return (
     <Stack
       screenOptions={{
