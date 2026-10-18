@@ -19,8 +19,12 @@ import type { Exercise, SessionResult, VocabWord } from "@/lib/types";
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; review?: string }>();
-  const source = params.lessonId ? { lessonId: params.lessonId } : ({ review: true } as const);
+  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; review?: string }>();
+  const source = params.lessonId
+    ? { lessonId: params.lessonId }
+    : params.chapterId
+      ? { chapterId: Number(params.chapterId) }
+      : ({ review: true } as const);
   const session = useLearningSession(source);
 
   if (session.isPending) return <LoadingState label="Préparation de la séance…" />;
@@ -28,7 +32,11 @@ export default function LearningSessionScreen() {
   if (session.data.exercises.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1 }}>
-        <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => router.back() }} />
+        {params.chapterId ? (
+          <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message="Vous avez déjà appris tous les mots du livre présents dans cette sourate." action={{ title: "Fermer", onPress: () => router.back() }} />
+        ) : (
+          <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => router.back() }} />
+        )}
       </SafeAreaView>
     );
   }

@@ -1,11 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { Fragment } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Switch, View } from "react-native";
 import { useChapterComprehension } from "@/lib/queries";
+import { useReaderSettings } from "@/lib/reader-store";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
 import { ArabicText } from "./ArabicText";
+import { Button } from "./Button";
 
 const percent = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : 0);
 
@@ -16,6 +18,8 @@ const percent = (part: number, total: number) => (total > 0 ? Math.round((part /
 export function ComprehensionCard({ chapterId }: { chapterId: number }) {
   const colors = useColors();
   const comprehension = useChapterComprehension(chapterId);
+  const showKnownWords = useReaderSettings((s) => s.showKnownWords);
+  const toggleKnownWords = useReaderSettings((s) => s.toggleKnownWords);
   const data = comprehension.data;
   if (!data || data.totalWords === 0) return null;
 
@@ -44,6 +48,23 @@ export function ComprehensionCard({ chapterId }: { chapterId: number }) {
         <View style={[styles.fill, { width: `${known}%`, backgroundColor: colors.primary }]} />
       </View>
 
+      {data.knownWords > 0 ? (
+        <View style={styles.toggle}>
+          <View style={[styles.swatch, { backgroundColor: colors.primarySoft }]}>
+            <AppText variant="caption" color={colors.primary}>
+              ب
+            </AppText>
+          </View>
+          <AppText style={styles.flex}>Surligner les mots connus</AppText>
+          <Switch
+            accessibilityLabel="Surligner les mots connus dans le texte"
+            value={showKnownWords}
+            onValueChange={toggleKnownWords}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </View>
+      ) : null}
+
       {data.nextWords.length > 0 ? (
         <View style={styles.next}>
           <AppText variant="label" muted>
@@ -70,6 +91,14 @@ export function ComprehensionCard({ chapterId }: { chapterId: number }) {
               </Pressable>
             </Fragment>
           ))}
+          <Button
+            title="Apprendre les mots utiles"
+            icon="sparkles-outline"
+            variant="secondary"
+            size="md"
+            onPress={() => router.push({ pathname: "/learn/session", params: { chapterId: String(chapterId) } })}
+            style={styles.cta}
+          />
         </View>
       ) : null}
 
@@ -87,6 +116,9 @@ const styles = StyleSheet.create({
   track: { height: 8, borderRadius: radius.pill, overflow: "hidden" },
   fill: { position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: radius.pill },
   next: { gap: spacing.xs },
+  toggle: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  swatch: { width: 28, height: 28, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  cta: { marginTop: spacing.sm },
   word: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
   gain: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2, minWidth: 40, alignItems: "center" },
   separator: { height: StyleSheet.hairlineWidth },

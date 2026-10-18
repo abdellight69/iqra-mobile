@@ -164,7 +164,7 @@ export type Exercise =
   | { type: "intro"; wordId: string }
   | { type: "ar_to_fr" | "fr_to_ar"; wordId: string; choices: Choice[]; answerId: string }
   | { type: "match"; wordIds: string[] };
-export type LearningSession = { kind: "lesson" | "review"; lessonId: string | null; words: VocabWord[]; exercises: Exercise[] };
+export type LearningSession = { kind: "lesson" | "review" | "words"; lessonId: string | null; words: VocabWord[]; exercises: Exercise[] };
 export type SessionResult = { xpGained: number; score: number; correctAnswers: number; totalAnswers: number };
 
 export type PlanProgress = { total: number; started: number; solid: number; due: number };

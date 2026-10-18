@@ -47,6 +47,7 @@ export const keys = {
   example: (wordId: string) => ["vocab-example", wordId] as const,
   comprehension: ["comprehension"] as const,
   chapterComprehension: (id: number) => ["comprehension", id] as const,
+  knownWords: (id: number) => ["comprehension", id, "words"] as const,
   plans: ["plans"] as const,
   plan: (id: string) => ["plan", id] as const,
   due: ["due-verses"] as const,
@@ -263,8 +264,22 @@ export function useChapterComprehension(chapterId: number) {
   });
 }
 
-export function useLearningSession(source: { lessonId: string } | { review: true }) {
-  const path = "lessonId" in source ? `/vocabulary/lessons/${source.lessonId}/session` : "/vocabulary/review/session";
+/** Positions « verset:mot » des mots reconnus d'une sourate, pour les surligner dans le lecteur. */
+export function useKnownWords(chapterId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: keys.knownWords(chapterId),
+    queryFn: async () => new Set((await api<{ known: string[] }>(`/vocabulary/comprehension/${chapterId}/words`)).known),
+    enabled,
+  });
+}
+
+export function useLearningSession(source: { lessonId: string } | { chapterId: number } | { review: true }) {
+  const path =
+    "lessonId" in source
+      ? `/vocabulary/lessons/${source.lessonId}/session`
+      : "chapterId" in source
+        ? `/vocabulary/comprehension/${source.chapterId}/session`
+        : "/vocabulary/review/session";
   return useQuery({
     queryKey: ["session", path],
     queryFn: () => api<LearningSession>(path),

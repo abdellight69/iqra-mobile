@@ -19,6 +19,7 @@ import {
   useChapterAudio,
   useChapterInfo,
   useCreatePlan,
+  useKnownWords,
   useMe,
   useRecordReading,
   useSaveReadingPosition,
@@ -46,6 +47,7 @@ export default function SurahReader() {
   const savePosition = useSaveReadingPosition();
   const recordReading = useRecordReading();
   const settings = useReaderSettings();
+  const knownWords = useKnownWords(chapterId, settings.showKnownWords);
 
   const list = useMemo<Verse[]>(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
   const tracks = useMemo(() => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url })), [audio.data]);
@@ -176,6 +178,7 @@ export default function SurahReader() {
               showTranslation={settings.showTranslation}
               showTransliteration={settings.showTransliteration}
               showWordByWord={settings.showWordByWord}
+              knownWords={settings.showKnownWords ? knownWords.data : undefined}
               active={queue.currentKey === item.key}
               bookmarked={bookmarkByKey.has(item.verseNumber)}
               onWordPress={openWord}

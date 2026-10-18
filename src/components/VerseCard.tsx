@@ -13,6 +13,8 @@ export type VerseCardProps = {
   showTranslation: boolean;
   showTransliteration: boolean;
   showWordByWord: boolean;
+  /** Positions « verset:mot » des mots reconnus, surlignés quand le mode est actif. */
+  knownWords?: Set<string>;
   active: boolean;
   bookmarked: boolean;
   onWordPress: (word: Word) => void;
@@ -28,6 +30,7 @@ function VerseCardBase({
   showTranslation,
   showTransliteration,
   showWordByWord,
+  knownWords,
   active,
   bookmarked,
   onWordPress,
@@ -42,15 +45,17 @@ function VerseCardBase({
   return (
     <View style={[styles.verse, active && { backgroundColor: colors.primarySoft }]}>
       <View style={styles.words}>
-        {words.map((word) => (
+        {words.map((word) => {
+          const known = knownWords?.has(`${verse.verseNumber}:${word.position}`) ?? false;
+          return (
           <Pressable
             key={word.location}
             accessibilityRole="button"
-            accessibilityLabel={`${word.textUthmani}${word.translation ? `, ${word.translation}` : ""}`}
+            accessibilityLabel={`${word.textUthmani}${word.translation ? `, ${word.translation}` : ""}${known ? ", mot connu" : ""}`}
             accessibilityHint="Affiche la phonétique, la traduction et l'analyse du mot"
             onPress={() => onWordPress(word)}
-            style={({ pressed }) => [styles.word, pressed && { backgroundColor: colors.accentSoft }]}>
-            <AppText style={{ fontFamily: fonts.arabic, fontSize: arabicSize, lineHeight: Math.round(arabicSize * 1.9), color: colors.arabic }}>
+            style={({ pressed }) => [styles.word, known && { backgroundColor: colors.primarySoft }, pressed && { backgroundColor: colors.accentSoft }]}>
+            <AppText style={{ fontFamily: fonts.arabic, fontSize: arabicSize, lineHeight: Math.round(arabicSize * 1.9), color: known ? colors.primary : colors.arabic }}>
               {word.textUthmani}
             </AppText>
             {showWordByWord ? (
@@ -68,7 +73,8 @@ function VerseCardBase({
               </View>
             ) : null}
           </Pressable>
-        ))}
+          );
+        })}
       </View>
 
       {transliteration ? (
