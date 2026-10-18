@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
-import { Card } from "@/components/Card";
-import { ProgressBar } from "@/components/ProgressBar";
+import { IconButton } from "@/components/IconButton";
+import { ProgressRing } from "@/components/ProgressRing";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
 import { useChapter, useDeletePlan, usePlan } from "@/lib/queries";
@@ -33,69 +33,79 @@ export default function PlanDetail() {
   if (plan.isError) return <ErrorState error={plan.error} onRetry={() => void plan.refetch()} />;
   const p = plan.data;
   const toStudy = p.verses.filter((v) => v.due || v.status === "new").length;
+  const statusColor = (v: PlanVerse) => (v.status === "solid" ? colors.accent : v.status === "learning" ? colors.primary : colors.border);
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          title: chapter.data?.nameSimple ?? "Plan",
+          title: "",
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
+            <IconButton
+              icon="trash-outline"
+              label="Supprimer ce plan"
               onPress={() =>
                 Alert.alert("Supprimer ce plan ?", "Votre historique de révision des versets est conservé.", [
                   { text: "Annuler", style: "cancel" },
                   { text: "Supprimer", style: "destructive", onPress: () => remove.mutate(p.id, { onSuccess: () => router.back() }) },
                 ])
-              }>
-              <AppText color={colors.danger}>Supprimer</AppText>
-            </Pressable>
+              }
+            />
           ),
         }}
       />
       <FlatList
         data={p.verses}
         keyExtractor={(v) => v.key}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 110 }]}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
         ListHeaderComponent={
-          <Card style={styles.summary}>
-            {chapter.data ? <ArabicText size="lg" center>{chapter.data.nameArabic}</ArabicText> : null}
-            <AppText center muted>
-              {p.isWholeChapter ? "Sourate entière" : `Versets ${p.fromVerse} à ${p.toVerse}`}
+          <View style={styles.summary}>
+            <ProgressRing value={p.progress.total ? p.progress.solid / p.progress.total : 0} size={120} stroke={5} color={colors.accent}>
+              {chapter.data ? <ArabicText size={26} center>{chapter.data.nameArabic}</ArabicText> : null}
+            </ProgressRing>
+            <AppText variant="title" center>
+              {chapter.data?.nameSimple ?? `Sourate ${p.chapterId}`}
             </AppText>
-            <ProgressBar value={p.progress.total ? p.progress.solid / p.progress.total : 0} color={colors.accent} />
-            <AppText variant="caption" muted center>
-              {p.progress.solid} solides · {p.progress.started} commencés · {p.progress.total} au total
+            <AppText muted center>
+              {p.isWholeChapter ? "Sourate entière" : p.fromVerse === p.toVerse ? `Verset ${p.fromVerse}` : `Versets ${p.fromVerse} à ${p.toVerse}`}
             </AppText>
-          </Card>
+            <View style={styles.counts}>
+              {[
+                { value: p.progress.solid, label: "solides" },
+                { value: p.progress.started, label: "commencés" },
+                { value: p.progress.total, label: "au total" },
+              ].map((c) => (
+                <View key={c.label} style={styles.count}>
+                  <AppText variant="headline">{c.value}</AppText>
+                  <AppText variant="caption" muted>
+                    {c.label}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+          </View>
         }
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push({ pathname: "/memorize/session", params: { planId: p.id, verse: String(item.verseNumber) } })}
-            style={[styles.verse, { backgroundColor: colors.surface, borderColor: item.due ? colors.danger : colors.border }]}>
+            style={({ pressed }) => [styles.verse, { opacity: pressed ? 0.55 : 1 }]}>
             <VerseBadge value={item.verseNumber} />
             <View style={styles.flex}>
               <AppText variant="bodyStrong">{STATUS[item.status]}</AppText>
-              <AppText variant="caption" muted>
+              <AppText variant="caption" color={item.due ? colors.danger : colors.textMuted}>
                 {formatDue(item)}
               </AppText>
             </View>
-            <View
-              style={[
-                styles.dot,
-                { backgroundColor: item.status === "solid" ? colors.accent : item.status === "learning" ? colors.primary : colors.border },
-              ]}
-            />
+            <View style={[styles.dot, { backgroundColor: statusColor(item) }]} />
           </Pressable>
         )}
       />
       <View style={[styles.cta, { paddingBottom: insets.bottom + spacing.md, backgroundColor: colors.background }]}>
         <Button
-          title={toStudy > 0 ? `Étudier (${toStudy} verset${toStudy > 1 ? "s" : ""})` : "S'entraîner sur tout le plan"}
-          icon="play"
+          title={toStudy > 0 ? `Étudier · ${toStudy} verset${toStudy > 1 ? "s" : ""}` : "S'entraîner sur tout le plan"}
           onPress={() => router.push({ pathname: "/memorize/session", params: { planId: p.id } })}
         />
       </View>
@@ -105,9 +115,12 @@ export default function PlanDetail() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: spacing.lg },
-  summary: { gap: spacing.sm, marginBottom: spacing.lg },
-  verse: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1 },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  cta: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  content: { paddingHorizontal: spacing.xl - 4 },
+  summary: { alignItems: "center", gap: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.xl },
+  counts: { flexDirection: "row", gap: spacing.xxl, marginTop: spacing.md },
+  count: { alignItems: "center" },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: 34 + spacing.lg },
+  verse: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingVertical: spacing.md + 2 },
+  dot: { width: 8, height: 8, borderRadius: radius.pill },
+  cta: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xl - 4, paddingTop: spacing.md },
 });

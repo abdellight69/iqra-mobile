@@ -106,7 +106,7 @@ function SessionRunner({ keys }: { keys: string[] }) {
           <Ionicons name="close" size={28} color={colors.textMuted} />
         </Pressable>
         <View style={styles.flex}>
-          <ProgressBar value={index / keys.length} height={12} color={colors.success} />
+          <ProgressBar value={index / keys.length} height={6} color={colors.accent} />
         </View>
         <AppText variant="caption" muted>
           {index + 1}/{keys.length}
@@ -262,7 +262,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
         <Button title="Vérifier" icon="eye-outline" onPress={() => setStage("grade")} />
       ) : (
         <View style={styles.grades}>
-          <AppText variant="heading" center>
+          <AppText variant="headline" center>
             Comment s’est passée la récitation ?
           </AppText>
           <View style={styles.gradeRow}>
@@ -309,15 +309,15 @@ const styles = StyleSheet.create({
   words: { flexDirection: "row-reverse", flexWrap: "wrap", columnGap: spacing.sm, rowGap: spacing.xs },
   word: { borderRadius: radius.sm, paddingHorizontal: 4, alignItems: "center" },
   translation: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
-  segmented: { flexDirection: "row", borderRadius: radius.md, padding: 4 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.sm },
+  segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
+  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.pill },
   audioCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   play: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   repeat: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   link: { alignSelf: "center", padding: spacing.xs },
   grades: { gap: spacing.md },
   gradeRow: { flexDirection: "row", gap: spacing.sm },
-  grade: { flex: 1, alignItems: "center", gap: 4, paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderBottomWidth: 3 },
+  grade: { flex: 1, alignItems: "center", gap: 6, paddingVertical: spacing.lg, borderRadius: radius.lg, borderWidth: 1 },
   done: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
-  trophy: { width: 110, height: 110, borderRadius: 55, alignItems: "center", justifyContent: "center" },
+  trophy: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center" },
 });

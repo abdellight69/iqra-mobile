@@ -39,7 +39,7 @@ export default function NewPlan() {
             onChangeText={setQuery}
             placeholder="Rechercher une sourate"
             placeholderTextColor={colors.textMuted}
-            style={[styles.search, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={[styles.search, { color: colors.text, backgroundColor: colors.surfaceMuted }]}
           />
         </View>
         <FlatList
@@ -137,12 +137,12 @@ export default function NewPlan() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   searchWrap: { padding: spacing.lg, paddingBottom: 0 },
-  search: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, minHeight: 46, fontFamily: fonts.regular, fontSize: 15 },
+  search: { borderRadius: radius.pill, paddingHorizontal: spacing.lg, minHeight: 48, fontFamily: fonts.regular, fontSize: 15 },
   list: { padding: spacing.lg },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, gap: spacing.md },
   form: { padding: spacing.lg, gap: spacing.md },
   selected: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  segmented: { flexDirection: "row", borderRadius: radius.md, padding: 4 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.sm },
+  segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
+  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.pill },
   rangeRow: { flexDirection: "row", gap: spacing.md },
 });

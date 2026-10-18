@@ -7,6 +7,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/States";
+import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
 import { useTrackQueue } from "@/lib/audio";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
@@ -23,7 +24,7 @@ import {
   useVerses,
 } from "@/lib/queries";
 import { ARABIC_SIZES, useReaderSettings } from "@/lib/reader-store";
-import { radius, spacing, useColors } from "@/lib/theme";
+import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 
 export default function SurahReader() {
@@ -125,7 +126,7 @@ export default function SurahReader() {
     settings.setArabicSize(ARABIC_SIZES[(i + 1) % ARABIC_SIZES.length] ?? 32);
   };
 
-  const title = chapter.data ? `${chapter.data.id}. ${chapter.data.nameSimple}` : "";
+  const title = chapter.data?.nameSimple ?? "";
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -134,15 +135,17 @@ export default function SurahReader() {
           title,
           headerRight: () => (
             <View style={styles.headerActions}>
-              <HeaderIcon icon="text" label="Taille du texte arabe" onPress={cycleSize} />
-              <HeaderIcon
+              <IconButton icon="text" label="Taille du texte arabe" onPress={cycleSize} />
+              <IconButton
                 icon={settings.showWordByWord ? "grid" : "grid-outline"}
                 label="Mot à mot"
+                color={settings.showWordByWord ? colors.primary : undefined}
                 onPress={settings.toggleWordByWord}
               />
-              <HeaderIcon
+              <IconButton
                 icon={settings.showTranslation ? "language" : "language-outline"}
                 label="Traduction"
+                color={settings.showTranslation ? colors.primary : undefined}
                 onPress={settings.toggleTranslation}
               />
             </View>
@@ -160,7 +163,7 @@ export default function SurahReader() {
           data={list}
           keyExtractor={(v) => v.key}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
           ListHeaderComponent={<ChapterHeader chapterId={chapterId} />}
           onEndReached={() => verses.hasNextPage && !verses.isFetchingNextPage && void verses.fetchNextPage()}
           onEndReachedThreshold={0.6}
@@ -190,22 +193,24 @@ export default function SurahReader() {
       )}
 
       {tracks.length > 0 ? (
-        <View style={[styles.player, { backgroundColor: colors.surface, borderColor: colors.border, bottom: insets.bottom + spacing.md }]}>
+        <View style={[styles.player, { backgroundColor: colors.text, bottom: insets.bottom + spacing.md }, elevation(colors, 2)]}>
           <View style={styles.flex}>
-            <AppText variant="bodyStrong">{queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Écouter la sourate"}</AppText>
-            <AppText variant="caption" muted>
-              {queue.buffering ? "Chargement…" : queue.currentKey ? "Récitation verset par verset" : "Lecture continue depuis le début"}
+            <AppText variant="label" color={`${colors.background}99`}>
+              {queue.buffering ? "Chargement…" : queue.currentKey ? "Récitation" : "Écouter"}
+            </AppText>
+            <AppText variant="headline" color={colors.background}>
+              {queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Toute la sourate"}
             </AppText>
           </View>
-          <HeaderIcon icon="play-skip-back" label="Verset précédent" onPress={queue.previous} />
+          <IconButton icon="play-skip-back" label="Verset précédent" onPress={queue.previous} color={colors.background} size={18} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={queue.playing ? "Pause" : "Lecture"}
             onPress={queue.toggle}
-            style={[styles.playButton, { backgroundColor: colors.primary }]}>
-            <Ionicons name={queue.playing ? "pause" : "play"} size={24} color={colors.onPrimary} />
+            style={({ pressed }) => [styles.playButton, { backgroundColor: colors.background, opacity: pressed ? 0.8 : 1 }]}>
+            <Ionicons name={queue.playing ? "pause" : "play"} size={20} color={colors.text} />
           </Pressable>
-          <HeaderIcon icon="play-skip-forward" label="Verset suivant" onPress={queue.next} />
+          <IconButton icon="play-skip-forward" label="Verset suivant" onPress={queue.next} color={colors.background} size={18} />
         </View>
       ) : null}
     </View>
@@ -222,30 +227,31 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
 
   return (
     <View style={styles.headerBlock}>
-      <Card tone="primary" style={styles.hero}>
-        <ArabicText size="xl" color="#F7EDCC" center>
+      <View style={styles.hero}>
+        <AppText variant="label" muted center>
+          Sourate {c.id} · {c.revelationPlace === "madinah" ? "Médinoise" : "Mecquoise"} · {c.versesCount} versets
+        </AppText>
+        <ArabicText size={52} center>
           {c.nameArabic}
         </ArabicText>
-        <AppText variant="title" color="#FFFFFF" center>
+        <AppText variant="title" center>
           {c.nameSimple}
         </AppText>
-        <AppText color="#DCEFE8" center>
-          {c.translatedName} · {c.versesCount} versets · {c.revelationPlace === "madinah" ? "Médinoise" : "Mecquoise"}
+        <AppText variant="serifBody" italic muted center>
+          {c.translatedName}
         </AppText>
-      </Card>
+      </View>
 
-      <Pressable accessibilityRole="button" onPress={() => setOpen((o) => !o)} style={styles.infoToggle}>
-        <AppText variant="bodyStrong" color={colors.primary}>
-          À propos de cette sourate
-        </AppText>
-        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colors.primary} />
+      <Pressable accessibilityRole="button" onPress={() => setOpen((o) => !o)} style={[styles.infoToggle, { backgroundColor: colors.surfaceMuted }]}>
+        <AppText variant="caption">À propos de la sourate</AppText>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color={colors.textMuted} />
       </Pressable>
       {open ? (
-        <Card>
+        <Card tone="flat" style={styles.about}>
           {info.isPending ? (
             <ActivityIndicator color={colors.primary} />
           ) : info.data ? (
-            <View style={{ gap: spacing.sm }}>
+            <>
               {info.data.paragraphs.slice(0, 12).map((p, i) => (
                 <AppText key={i}>{p}</AppText>
               ))}
@@ -253,7 +259,7 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
                 Source : {info.data.source}
                 {info.data.languageName && info.data.languageName !== "french" ? ` (${info.data.languageName})` : ""}
               </AppText>
-            </View>
+            </>
           ) : (
             <AppText muted>Présentation indisponible.</AppText>
           )}
@@ -261,45 +267,37 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
       ) : null}
 
       {showsBasmala(chapterId) ? (
-        <ArabicText size={30} center>
-          {BASMALA}
-        </ArabicText>
+        <View style={[styles.basmala, { borderColor: colors.border }]}>
+          <ArabicText size={28} center>
+            {BASMALA}
+          </ArabicText>
+        </View>
       ) : null}
     </View>
   );
 }
 
-function HeaderIcon({ icon, label, onPress }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} style={{ padding: spacing.xs }}>
-      <Ionicons name={icon} size={22} color={colors.primary} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  list: { padding: spacing.lg },
-  headerActions: { flexDirection: "row", gap: spacing.xs },
-  headerBlock: { gap: spacing.md, marginBottom: spacing.lg },
-  hero: { gap: spacing.xs, paddingVertical: spacing.xl },
-  infoToggle: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", padding: spacing.xs },
+  list: { paddingHorizontal: spacing.md },
+  headerActions: { flexDirection: "row" },
+  headerBlock: { gap: spacing.lg, paddingHorizontal: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  hero: { gap: spacing.xs, alignItems: "center", paddingVertical: spacing.lg },
+  infoToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  about: { gap: spacing.sm },
+  basmala: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.md },
+  separator: { height: StyleSheet.hairlineWidth, marginHorizontal: spacing.md },
   player: {
     position: "absolute",
     left: spacing.lg,
     right: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.sm,
+    borderRadius: radius.pill,
   },
   playButton: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
 });

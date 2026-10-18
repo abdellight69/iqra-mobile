@@ -6,7 +6,9 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { ProgressBar } from "@/components/ProgressBar";
+import { IconButton } from "@/components/IconButton";
+import { ProgressRing } from "@/components/ProgressRing";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useChapters, useDueVerses, usePlans } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
@@ -27,6 +29,7 @@ export default function MemorizeTab() {
         data={plans.data}
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={
           <RefreshControl
@@ -40,40 +43,37 @@ export default function MemorizeTab() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <AppText variant="display">Mémoriser</AppText>
-              <Button title="Nouveau" icon="add" size="md" onPress={() => router.push("/memorize/new")} />
-            </View>
-            <AppText muted>
-              Choisissez une sourate ou quelques versets : écoutez, masquez progressivement le texte, récitez, puis évaluez-vous. Les
-              révisions sont planifiées automatiquement.
-            </AppText>
+            <ScreenHeader
+              eyebrow="Hifz"
+              title="Mémoriser"
+              subtitle="Écoutez, masquez le texte peu à peu, récitez, puis évaluez-vous. Les révisions sont planifiées pour vous."
+              right={<IconButton icon="add" label="Nouveau plan" tone="primary" onPress={() => router.push("/memorize/new")} />}
+            />
             {dueCount > 0 ? (
               <Card tone="primary" style={styles.due}>
-                <Ionicons name="alarm-outline" size={26} color={colors.accent} />
                 <View style={styles.flex}>
-                  <AppText variant="heading" color="#FFFFFF">
-                    {dueCount} verset{dueCount > 1 ? "s" : ""} à réviser
+                  <AppText variant="label" color="#FFFFFF99">
+                    Révisions du jour
                   </AppText>
-                  <AppText variant="caption" color="#DCEFE8">
-                    Toutes sourates confondues
+                  <AppText variant="title" color="#FFFFFF">
+                    {dueCount} verset{dueCount > 1 ? "s" : ""}
                   </AppText>
                 </View>
-                <Button
-                  title="Réviser"
-                  size="md"
-                  onPress={() => router.push({ pathname: "/memorize/session", params: { due: "1" } })}
-                  style={{ backgroundColor: colors.accent, borderColor: colors.accent }}
-                />
+                <Button title="Réviser" variant="light" size="md" onPress={() => router.push({ pathname: "/memorize/session", params: { due: "1" } })} />
               </Card>
+            ) : null}
+            {plans.data.length > 0 ? (
+              <AppText variant="label" muted>
+                Mes plans
+              </AppText>
             ) : null}
           </View>
         }
         ListEmptyComponent={
           <EmptyState
-            icon="repeat"
-            title="Aucun plan de mémorisation"
-            message="Commencez par une courte sourate, comme Al-Ikhlâs (112) ou Al-Fâtiha (1)."
+            icon="leaf-outline"
+            title="Commencez votre premier plan"
+            message="Une courte sourate est idéale pour débuter, comme Al-Ikhlâs (112) ou Al-Fâtiha (1)."
             action={{ title: "Créer un plan", onPress: () => router.push("/memorize/new") }}
           />
         }
@@ -91,41 +91,40 @@ function PlanCard({ plan }: { plan: MemorizationPlan }) {
 
   return (
     <Card onPress={() => router.push({ pathname: "/memorize/[planId]", params: { planId: plan.id } })} style={styles.plan}>
-      <View style={styles.planTop}>
-        <View style={styles.flex}>
-          <AppText variant="heading">{chapter ? `${chapter.id}. ${chapter.nameSimple}` : `Sourate ${plan.chapterId}`}</AppText>
-          <AppText variant="caption" muted>
-            {plan.isWholeChapter
-              ? `Sourate entière · ${total} versets`
-              : plan.fromVerse === plan.toVerse
-                ? `Verset ${plan.fromVerse}`
-                : `Versets ${plan.fromVerse} à ${plan.toVerse}`}
-          </AppText>
-        </View>
-        {chapter ? <ArabicText size="sm">{chapter.nameArabic}</ArabicText> : null}
-      </View>
-      <ProgressBar value={total ? solid / total : 0} color={colors.accent} />
-      <View style={styles.planStats}>
+      <ProgressRing value={total ? solid / total : 0} size={56} stroke={4} color={colors.accent}>
         <AppText variant="caption" muted>
-          {solid} solide{solid > 1 ? "s" : ""} · {started} commencé{started > 1 ? "s" : ""} / {total}
+          {solid}/{total}
+        </AppText>
+      </ProgressRing>
+      <View style={styles.flex}>
+        <AppText variant="headline">{chapter ? chapter.nameSimple : `Sourate ${plan.chapterId}`}</AppText>
+        <AppText variant="caption" muted>
+          {plan.isWholeChapter
+            ? `Sourate entière · ${total} versets`
+            : plan.fromVerse === plan.toVerse
+              ? `Verset ${plan.fromVerse}`
+              : `Versets ${plan.fromVerse} à ${plan.toVerse}`}
+          {started > 0 ? ` · ${started} commencé${started > 1 ? "s" : ""}` : ""}
         </AppText>
         {due > 0 ? (
-          <AppText variant="caption" color={colors.danger}>
-            {due} à réviser
-          </AppText>
+          <View style={styles.dueRow}>
+            <Ionicons name="ellipse" size={7} color={colors.danger} />
+            <AppText variant="caption" color={colors.danger}>
+              {due} à réviser
+            </AppText>
+          </View>
         ) : null}
       </View>
+      {chapter ? <ArabicText size={22}>{chapter.nameArabic}</ArabicText> : null}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
-  header: { gap: spacing.md, marginBottom: spacing.lg },
-  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
+  header: { gap: spacing.xl, marginBottom: spacing.md },
   due: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  plan: { gap: spacing.md },
-  planTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  planStats: { flexDirection: "row", justifyContent: "space-between" },
+  plan: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+  dueRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
 });

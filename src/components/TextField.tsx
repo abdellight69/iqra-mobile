@@ -13,22 +13,23 @@ export function TextField({ label, error, secure, style, ...props }: TextFieldPr
 
   return (
     <View style={styles.wrapper}>
-      <AppText variant="label" muted>
+      <AppText variant="caption" muted>
         {label}
       </AppText>
       <View
         style={[
           styles.field,
           {
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : focused ? colors.primary : colors.border,
+            backgroundColor: focused ? colors.surface : colors.surfaceMuted,
+            borderColor: error ? colors.danger : focused ? colors.primary : colors.surfaceMuted,
           },
         ]}>
         <TextInput
           {...props}
           accessibilityLabel={label}
           secureTextEntry={secure && hidden}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textFaint}
+          selectionColor={colors.primary}
           onFocus={(e) => {
             setFocused(true);
             props.onFocus?.(e);
@@ -45,7 +46,7 @@ export function TextField({ label, error, secure, style, ...props }: TextFieldPr
             accessibilityLabel={hidden ? "Afficher le mot de passe" : "Masquer le mot de passe"}
             hitSlop={12}
             onPress={() => setHidden((h) => !h)}>
-            <Ionicons name={hidden ? "eye-outline" : "eye-off-outline"} size={20} color={colors.textMuted} />
+            <Ionicons name={hidden ? "eye-outline" : "eye-off-outline"} size={19} color={colors.textMuted} />
           </Pressable>
         )}
       </View>
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
-    minHeight: 52,
+    minHeight: 54,
     gap: spacing.sm,
   },
   input: { flex: 1, fontFamily: fonts.regular, fontSize: 16, paddingVertical: spacing.md },

@@ -9,9 +9,13 @@ import { Button } from "./Button";
 export function LoadingState({ label }: { label?: string }) {
   const colors = useColors();
   return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      {label ? <AppText muted>{label}</AppText> : null}
+    <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <ActivityIndicator color={colors.primary} />
+      {label ? (
+        <AppText variant="caption" muted>
+          {label}
+        </AppText>
+      ) : null}
     </View>
   );
 }
@@ -19,9 +23,9 @@ export function LoadingState({ label }: { label?: string }) {
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const colors = useColors();
   return (
-    <View style={styles.center}>
-      <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
-      <AppText center muted>
+    <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <Ionicons name="cloud-offline-outline" size={32} color={colors.textFaint} />
+      <AppText center muted style={styles.message}>
         {errorMessage(error)}
       </AppText>
       {onRetry ? <Button title="Réessayer" variant="secondary" size="md" onPress={onRetry} /> : null}
@@ -43,23 +47,21 @@ export function EmptyState({
   const colors = useColors();
   return (
     <View style={styles.center}>
-      <View style={[styles.iconBubble, { backgroundColor: colors.primarySoft }]}>
-        <Ionicons name={icon} size={30} color={colors.primary} />
-      </View>
-      <AppText variant="heading" center>
+      <Ionicons name={icon} size={30} color={colors.accent} />
+      <AppText variant="headline" center>
         {title}
       </AppText>
       {message ? (
-        <AppText center muted>
+        <AppText center muted style={styles.message}>
           {message}
         </AppText>
       ) : null}
-      {action ? <Button title={action.title} onPress={action.onPress} size="md" /> : null}
+      {action ? <Button title={action.title} onPress={action.onPress} size="md" style={{ marginTop: spacing.sm }} /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xl },
-  iconBubble: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xxl },
+  message: { maxWidth: 300 },
 });

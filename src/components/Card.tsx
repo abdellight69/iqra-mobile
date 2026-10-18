@@ -1,23 +1,34 @@
 import { Pressable, StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
-import { radius, spacing, useColors } from "@/lib/theme";
+import { elevation, radius, spacing, useColors } from "@/lib/theme";
 
-export type CardProps = ViewProps & { onPress?: () => void; padded?: boolean; tone?: "default" | "primary" | "accent" };
+export type CardProps = ViewProps & {
+  onPress?: () => void;
+  padded?: boolean;
+  /** default : surface blanche ombrée · flat : surface atténuée · primary : vert profond · accent : or pâle */
+  tone?: "default" | "flat" | "primary" | "accent";
+};
 
 export function Card({ onPress, padded = true, tone = "default", style, children, ...props }: CardProps) {
   const colors = useColors();
-  const background = tone === "primary" ? colors.primary : tone === "accent" ? colors.accentSoft : colors.surface;
+  const background = {
+    default: colors.surface,
+    flat: colors.surfaceMuted,
+    primary: colors.hero,
+    accent: colors.accentSoft,
+  }[tone];
   const base: ViewStyle[] = [
     styles.card,
-    { backgroundColor: background, borderColor: tone === "default" ? colors.border : background },
-    padded && styles.padded,
-  ].filter(Boolean) as ViewStyle[];
+    { backgroundColor: background },
+    tone === "default" ? elevation(colors) : {},
+    padded ? styles.padded : {},
+  ];
 
   if (onPress) {
     return (
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [...base, { opacity: pressed ? 0.9 : 1 }, style as ViewStyle]}
+        style={({ pressed }) => [...base, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] }, style as ViewStyle]}
         {...props}>
         {children}
       </Pressable>
@@ -31,6 +42,6 @@ export function Card({ onPress, padded = true, tone = "default", style, children
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg, borderWidth: 1 },
-  padded: { padding: spacing.lg },
+  card: { borderRadius: radius.lg },
+  padded: { padding: spacing.xl - 4 },
 });

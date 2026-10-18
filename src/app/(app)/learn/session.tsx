@@ -89,7 +89,7 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
           <Ionicons name="close" size={28} color={colors.textMuted} />
         </Pressable>
         <View style={styles.flex}>
-          <ProgressBar value={progress} height={12} color={colors.success} />
+          <ProgressBar value={progress} height={6} color={colors.accent} />
         </View>
       </View>
 
@@ -170,7 +170,7 @@ function MultipleChoice({ exercise, byId, onAnswer, onNext, submitting }: Exerci
   return (
     <View style={styles.body}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <AppText variant="heading">{arabicPrompt ? "Que signifie ce mot ?" : "Comment dit-on en arabe ?"}</AppText>
+        <AppText variant="headline">{arabicPrompt ? "Que signifie ce mot ?" : "Comment dit-on en arabe ?"}</AppText>
         <Card style={styles.prompt}>
           {arabicPrompt ? (
             <ArabicText size={44} center>
@@ -195,7 +195,7 @@ function MultipleChoice({ exercise, byId, onAnswer, onNext, submitting }: Exerci
                 style={({ pressed }) => [
                   styles.choice,
                   {
-                    backgroundColor: state === "right" ? colors.primarySoft : state === "wrong" ? colors.dangerSoft : colors.surface,
+                    backgroundColor: state === "right" ? colors.successSoft : state === "wrong" ? colors.dangerSoft : colors.surface,
                     borderColor: state === "right" ? colors.success : state === "wrong" ? colors.danger : colors.border,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
@@ -267,7 +267,7 @@ function MatchPairs({ exercise, byId, onAnswer, onNext, submitting }: ExercisePr
   return (
     <View style={styles.body}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <AppText variant="heading">Associez chaque mot à son sens</AppText>
+        <AppText variant="headline">Associez chaque mot à son sens</AppText>
         <View style={styles.columns}>
           <View style={styles.column}>
             {left.map((id) => (
@@ -297,10 +297,10 @@ function MatchPairs({ exercise, byId, onAnswer, onNext, submitting }: ExercisePr
 function Feedback({ correct, answer, arabic, onNext, loading }: { correct: boolean; answer?: string | null; arabic?: boolean; onNext: () => void; loading: boolean }) {
   const colors = useColors();
   return (
-    <View style={[styles.feedback, { backgroundColor: correct ? colors.primarySoft : colors.dangerSoft }]}>
+    <View style={[styles.feedback, { backgroundColor: correct ? colors.successSoft : colors.dangerSoft }]}>
       <View style={styles.feedbackRow}>
         <Ionicons name={correct ? "checkmark-circle" : "close-circle"} size={26} color={correct ? colors.success : colors.danger} />
-        <AppText variant="heading" color={correct ? colors.success : colors.danger}>
+        <AppText variant="headline" color={correct ? colors.success : colors.danger}>
           {correct ? "Excellent !" : "Pas tout à fait"}
         </AppText>
       </View>
@@ -321,7 +321,7 @@ function ResultScreen({ result }: { result: SessionResult }) {
   return (
     <SafeAreaView style={[styles.flex, styles.result, { backgroundColor: colors.background }]}>
       <View style={[styles.trophy, { backgroundColor: colors.accentSoft }]}>
-        <Ionicons name="trophy" size={56} color={colors.accent} />
+        <Ionicons name="ribbon-outline" size={44} color={colors.accent} />
       </View>
       <AppText variant="display" center>
         Séance terminée
@@ -357,17 +357,17 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   body: { flex: 1, padding: spacing.lg, gap: spacing.lg },
   scroll: { gap: spacing.lg, paddingBottom: spacing.lg },
-  newBadge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "flex-start", paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.pill },
-  introCard: { gap: spacing.md, paddingVertical: spacing.xxl },
+  newBadge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
+  introCard: { gap: spacing.md, paddingVertical: spacing.xxxl },
   prompt: { paddingVertical: spacing.xl, alignItems: "center" },
   choices: { gap: spacing.md },
-  choice: { borderWidth: 2, borderRadius: radius.md, padding: spacing.lg, minHeight: 60, justifyContent: "center", borderBottomWidth: 4 },
+  choice: { borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, minHeight: 60, justifyContent: "center" },
   columns: { flexDirection: "row", gap: spacing.md },
   column: { flex: 1, gap: spacing.md },
-  tile: { borderWidth: 2, borderBottomWidth: 4, borderRadius: radius.md, minHeight: 72, padding: spacing.sm, justifyContent: "center" },
-  feedback: { margin: -spacing.lg, marginTop: 0, padding: spacing.lg, gap: spacing.md, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+  tile: { borderWidth: 1.5, borderRadius: radius.lg, minHeight: 72, padding: spacing.sm, justifyContent: "center" },
+  feedback: { margin: -spacing.lg, marginTop: 0, padding: spacing.xl, gap: spacing.md, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
   feedbackRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   result: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
-  trophy: { width: 110, height: 110, borderRadius: 55, alignItems: "center", justifyContent: "center" },
+  trophy: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center" },
   resultStats: { flexDirection: "row", gap: spacing.md, alignSelf: "stretch" },
 });

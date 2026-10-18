@@ -34,41 +34,40 @@ export default function WordSheet() {
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
-        <ArabicText size={52} center>
+        <AppText variant="label" muted center>
+          {chapter}:{verse} · mot {position}
+        </AppText>
+        <ArabicText size={60} center>
           {params.text}
         </ArabicText>
-        <AppText variant="caption" muted center>
-          Sourate {chapter}, verset {verse}, mot {position}
-        </AppText>
         {params.audio ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Écouter la prononciation"
             onPress={() => sound.play(params.audio!)}
-            style={[styles.listen, { backgroundColor: colors.primary }]}>
-            <Ionicons name={sound.playing ? "volume-high" : "play"} size={18} color={colors.onPrimary} />
-            <AppText variant="bodyStrong" color={colors.onPrimary}>
-              Écouter
-            </AppText>
+            style={({ pressed }) => [styles.listen, { backgroundColor: colors.surfaceMuted, opacity: pressed ? 0.7 : 1 }]}>
+            <Ionicons name={sound.playing ? "volume-high" : "play"} size={15} color={colors.text} />
+            <AppText variant="caption">Écouter</AppText>
           </Pressable>
         ) : null}
       </View>
 
-      <View style={styles.row}>
-        <Card style={styles.flex}>
+      <View style={[styles.pair, { borderColor: colors.border }]}>
+        <View style={styles.flex}>
           <AppText variant="label" muted>
             Phonétique
           </AppText>
-          <AppText variant="heading" color={colors.primary}>
+          <AppText variant="headline" italic color={colors.accent}>
             {params.transliteration || "—"}
           </AppText>
-        </Card>
-        <Card style={styles.flex}>
+        </View>
+        <View style={[styles.pairDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.flex}>
           <AppText variant="label" muted>
-            Traduction{language ? ` (${language})` : ""}
+            Traduction{language ? ` · ${language}` : ""}
           </AppText>
-          <AppText variant="heading">{params.translation || "—"}</AppText>
-        </Card>
+          <AppText variant="headline">{params.translation || "—"}</AppText>
+        </View>
       </View>
 
       {details.isPending ? (
@@ -80,9 +79,7 @@ export default function WordSheet() {
       ) : (
         <>
           <Card style={styles.section}>
-            <AppText variant="label" muted>
-              Définition grammaticale
-            </AppText>
+            <AppText variant="headline">Définition grammaticale</AppText>
             {morphology.segments.map((segment, i) => (
               <SegmentRow key={i} segment={segment} />
             ))}
@@ -159,9 +156,7 @@ export default function WordSheet() {
 
       {details.data?.vocabulary.length ? (
         <Card tone="accent" style={styles.section}>
-          <AppText variant="label" muted>
-            Dans le lexique « 80% des mots du Qour’ân »
-          </AppText>
+          <AppText variant="headline">Dans le lexique « 80% des mots du Qour’ân »</AppText>
           {details.data.vocabulary.map((v) => (
             <Pressable
               key={v.wordId}
@@ -183,7 +178,7 @@ export default function WordSheet() {
         </Card>
       ) : null}
 
-      <AppText variant="caption" muted center>
+      <AppText variant="caption" faint center>
         Phonétique, traduction mot à mot et audio : Quran.com (Quran Foundation).{"\n"}Analyse grammaticale : Quranic Arabic
         Corpus (corpus.quran.com).
       </AppText>
@@ -226,17 +221,18 @@ function SegmentRow({ segment }: { segment: Segment }) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
-  hero: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.md },
-  listen: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
-  row: { flexDirection: "row", gap: spacing.md },
+  flex: { flex: 1, gap: 4 },
+  content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl * 2 },
+  hero: { alignItems: "center", gap: spacing.xs, paddingBottom: spacing.sm },
+  listen: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  pair: { flexDirection: "row", gap: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.lg },
+  pairDivider: { width: StyleSheet.hairlineWidth },
   section: { gap: spacing.md },
   kv: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   segment: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md, gap: spacing.sm },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  chip: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.pill },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
   link: { alignSelf: "flex-start", paddingVertical: spacing.xs },
   occurrences: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  occurrence: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.sm, alignItems: "center" },
+  occurrence: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, paddingHorizontal: spacing.sm, alignItems: "center" },
 });

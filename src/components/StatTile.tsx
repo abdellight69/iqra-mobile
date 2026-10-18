@@ -1,25 +1,13 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import type { ComponentProps } from "react";
 import { StyleSheet, View } from "react-native";
-import { radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
 
-export function StatTile({
-  icon,
-  value,
-  label,
-  color,
-}: {
-  icon: ComponentProps<typeof Ionicons>["name"];
-  value: string | number;
-  label: string;
-  color?: string;
-}) {
-  const colors = useColors();
+/** Chiffre clé : grand nombre serif et légende discrète, sans encadré. */
+export function StatTile({ value, label, color }: { value: string | number; label: string; color?: string }) {
   return (
-    <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Ionicons name={icon} size={20} color={color ?? colors.primary} />
-      <AppText variant="title">{value}</AppText>
+    <View style={styles.tile}>
+      <AppText variant="title" color={color}>
+        {value}
+      </AppText>
       <AppText variant="caption" muted numberOfLines={2}>
         {label}
       </AppText>
@@ -27,6 +15,4 @@ export function StatTile({
   );
 }
 
-const styles = StyleSheet.create({
-  tile: { flex: 1, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md, gap: 2 },
-});
+const styles = StyleSheet.create({ tile: { flex: 1, gap: 2 } });

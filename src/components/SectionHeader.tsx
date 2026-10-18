@@ -6,10 +6,10 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   const colors = useColors();
   return (
     <View style={styles.row}>
-      <AppText variant="heading">{title}</AppText>
+      <AppText variant="headline">{title}</AppText>
       {action && onAction ? (
         <Pressable accessibilityRole="button" hitSlop={8} onPress={onAction}>
-          <AppText variant="bodyStrong" color={colors.primary}>
+          <AppText variant="caption" color={colors.primary}>
             {action}
           </AppText>
         </Pressable>
@@ -19,5 +19,5 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: spacing.sm },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: -spacing.sm },
 });

@@ -10,8 +10,8 @@ export default function AppLayout() {
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.primary,
-        headerTitleStyle: { fontFamily: fonts.semibold, color: colors.text },
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
         headerBackButtonDisplayMode: "minimal",
         contentStyle: { backgroundColor: colors.background },
       }}>

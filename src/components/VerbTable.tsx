@@ -18,10 +18,10 @@ export function VerbTable({ verb }: { verb: VerbForms }) {
   const columns = COLUMNS.filter((c) => verb[c.key]);
   if (columns.length === 0) return null;
   return (
-    <View style={[styles.table, { borderColor: colors.border }]}>
+    <View style={styles.table}>
       {columns.map((column) => (
-        <View key={column.key} style={[styles.cell, { borderColor: colors.border }]}>
-          <AppText variant="caption" muted>
+        <View key={column.key} style={[styles.cell, { backgroundColor: colors.surfaceMuted }]}>
+          <AppText variant="label" muted style={styles.label}>
             {column.label}
           </AppText>
           <ArabicText size="sm" center>
@@ -34,6 +34,7 @@ export function VerbTable({ verb }: { verb: VerbForms }) {
 }
 
 const styles = StyleSheet.create({
-  table: { flexDirection: "row-reverse", flexWrap: "wrap", borderWidth: 1, borderRadius: radius.md, overflow: "hidden" },
-  cell: { flexGrow: 1, minWidth: "30%", alignItems: "center", padding: spacing.sm, borderWidth: StyleSheet.hairlineWidth },
+  table: { flexDirection: "row-reverse", flexWrap: "wrap", gap: 4 },
+  cell: { flexGrow: 1, minWidth: "30%", alignItems: "center", paddingVertical: spacing.sm, paddingHorizontal: spacing.xs, borderRadius: radius.sm },
+  label: { fontSize: 9, letterSpacing: 1 },
 });
