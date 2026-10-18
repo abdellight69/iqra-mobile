@@ -47,7 +47,12 @@ export default function MemorizeTab() {
               eyebrow="Hifz"
               title="Mémoriser"
               subtitle="Écoutez, masquez le texte peu à peu, récitez, puis évaluez-vous. Les révisions sont planifiées pour vous."
-              right={<IconButton icon="add" label="Nouveau plan" tone="primary" onPress={() => router.push("/memorize/new")} />}
+              right={
+                <View style={styles.headerActions}>
+                  <IconButton icon="calendar-outline" label="Programmes guidés" tone="filled" onPress={() => router.push("/programs")} />
+                  <IconButton icon="add" label="Nouveau plan" tone="primary" onPress={() => router.push("/memorize/new")} />
+                </View>
+              }
             />
             {dueCount > 0 ? (
               <Card tone="primary" style={styles.due}>
@@ -124,6 +129,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { gap: spacing.xl, marginBottom: spacing.md },
+  headerActions: { flexDirection: "row", gap: spacing.sm },
   due: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   plan: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
   dueRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },

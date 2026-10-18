@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
-import { useChapters, useComprehension, useMe, useReadingPosition, useStats } from "@/lib/queries";
+import { useChapters, useComprehension, useMe, usePrograms, useReadingPosition, useStats } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 
 // Texte uthmani de 17:9 tel que dans Tanzil (vérifié), voir backend/data/README.md.
@@ -34,6 +34,8 @@ export default function Home() {
   const position = useReadingPosition();
   const chapters = useChapters();
   const comprehension = useComprehension();
+  const programs = usePrograms();
+  const activeProgram = programs.data?.find((p) => p.progress && !p.progress.finished);
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
   const goal = s ? s.today.xp / s.today.goalXp : 0;
@@ -48,6 +50,7 @@ export default function Home() {
         void position.refetch();
         void me.refetch();
         void comprehension.refetch();
+        void programs.refetch();
       }}>
       <View style={styles.header}>
         <AppText variant="label" muted>
@@ -147,6 +150,21 @@ export default function Home() {
           </AppText>
         </View>
         <Ionicons name="arrow-forward" size={18} color={colors.accent} />
+      </Card>
+
+      <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
+        <View style={styles.flex}>
+          <AppText variant="label" muted>
+            Programme guidé
+          </AppText>
+          <AppText variant="headline">{activeProgram ? activeProgram.title : "Avancer pas à pas"}</AppText>
+          <AppText variant="caption" muted>
+            {activeProgram?.progress?.nextDay
+              ? `Jour ${activeProgram.progress.nextDay} sur ${activeProgram.dayCount}`
+              : "Juz’ ‘Amma en 60 jours, lecture du Coran en 30 jours…"}
+          </AppText>
+        </View>
+        <Ionicons name="calendar-outline" size={20} color={colors.primary} />
       </Card>
 
       <SectionHeader title="Aujourd’hui" />

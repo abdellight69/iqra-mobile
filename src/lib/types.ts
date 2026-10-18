@@ -194,6 +194,21 @@ export type MemorizationPlanDetail = MemorizationPlan & { verses: PlanVerse[] };
 export type ReviewResult = { key: string; status: PlanVerse["status"]; dueAt: string; intervalDays: number; xpGained: number };
 export type DueVerse = { key: string; chapterId: number; verseNumber: number; dueAt: string; status: PlanVerse["status"] };
 
+/** Programmes guidés : étapes quotidiennes de mémorisation ou de lecture. */
+export type VerseRange = { chapterId: number; fromVerse: number; toVerse: number };
+export type ProgramDay = { day: number; ranges: VerseRange[]; verses: number };
+export type ProgramProgress = { startedOn: string; completedDays: number[]; nextDay: number | null; scheduledDay: number; finished: boolean };
+export type ProgramSummary = {
+  id: string;
+  kind: "memorize" | "read";
+  title: string;
+  description: string;
+  dayCount: number;
+  verseCount: number;
+  progress: ProgramProgress | null;
+};
+export type ProgramDetail = ProgramSummary & { days: ProgramDay[] };
+
 export type Stats = {
   xp: number;
   currentStreak: number;

@@ -12,7 +12,16 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useTrackQueue } from "@/lib/audio";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
-import { useChapterAudio, useDueVerses, useMe, useOfflineChapter, usePlan, useReviewVerse, useVerse } from "@/lib/queries";
+import {
+  useChapterAudio,
+  useDueVerses,
+  useMe,
+  useOfflineChapter,
+  usePlan,
+  useProgramAction,
+  useReviewVerse,
+  useVerse,
+} from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
 
@@ -37,11 +46,14 @@ function firstLetter(text: string): string {
 }
 
 export default function MemorizationSession() {
-  const params = useLocalSearchParams<{ planId?: string; verse?: string; due?: string }>();
+  const params = useLocalSearchParams<{ planId?: string; verse?: string; due?: string; keys?: string; programId?: string; day?: string }>();
+  const programAction = useProgramAction(params.programId ?? "");
   const plan = usePlan(params.planId ?? "");
   const due = useDueVerses();
 
   const keys = useMemo<string[] | null>(() => {
+    // Étape d'un programme guidé : les versets du jour.
+    if (params.keys) return params.keys.split(",").filter((k) => /^\d{1,3}:\d{1,3}$/.test(k));
     if (params.due) return due.data ? due.data.map((v) => v.key) : null;
     if (!plan.data) return null;
     if (params.verse) return [`${plan.data.chapterId}:${params.verse}`];
@@ -54,7 +66,7 @@ export default function MemorizationSession() {
   }, [params.due ? due.isSuccess : plan.isSuccess]);
 
   const source = params.due ? due : plan;
-  if (source.isError) return <ErrorState error={source.error} onRetry={() => router.back()} />;
+  if (!params.keys && source.isError) return <ErrorState error={source.error} onRetry={() => router.back()} />;
   if (!keys) return <LoadingState label="Préparation de la séance…" />;
   if (keys.length === 0) {
     return (
@@ -63,10 +75,17 @@ export default function MemorizationSession() {
       </SafeAreaView>
     );
   }
-  return <SessionRunner keys={keys} />;
+  return (
+    <SessionRunner
+      keys={keys}
+      onFinished={() => {
+        if (params.programId && params.day) programAction.mutate({ type: "complete", day: Number(params.day) });
+      }}
+    />
+  );
 }
 
-function SessionRunner({ keys }: { keys: string[] }) {
+function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () => void }) {
   const colors = useColors();
   const [index, setIndex] = useState(0);
   const [xp, setXp] = useState(0);
@@ -120,7 +139,10 @@ function SessionRunner({ keys }: { keys: string[] }) {
         onDone={(gained) => {
           setXp((x) => x + gained);
           if (index + 1 < keys.length) setIndex(index + 1);
-          else setFinished(true);
+          else {
+            setFinished(true);
+            onFinished();
+          }
         }}
       />
     </SafeAreaView>

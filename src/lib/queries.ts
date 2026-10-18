@@ -17,6 +17,8 @@ import type {
   MemorizationPlan,
   MemorizationPlanDetail,
   QuranExample,
+  ProgramDetail,
+  ProgramSummary,
   ReadingPosition,
   Recitation,
   ReviewResult,
@@ -48,6 +50,8 @@ export const keys = {
   lesson: (id: string) => ["lesson", id] as const,
   example: (wordId: string) => ["vocab-example", wordId] as const,
   comprehension: ["comprehension"] as const,
+  programs: ["programs"] as const,
+  program: (id: string) => ["program", id] as const,
   chapterComprehension: (id: number) => ["comprehension", id] as const,
   knownWords: (id: number) => ["comprehension", id, "words"] as const,
   plans: ["plans"] as const,
@@ -384,6 +388,38 @@ export function useReviewVerse() {
       void client.invalidateQueries({ queryKey: ["plan"] });
       void client.invalidateQueries({ queryKey: keys.due });
       void client.invalidateQueries({ queryKey: keys.stats });
+    },
+  });
+}
+
+// --- Programmes guidés --------------------------------------------------------
+
+export function usePrograms() {
+  return useQuery({
+    queryKey: keys.programs,
+    queryFn: async () => (await api<{ programs: ProgramSummary[] }>("/programs")).programs,
+  });
+}
+
+export function useProgram(id: string) {
+  return useQuery({
+    queryKey: keys.program(id),
+    queryFn: async () => (await api<{ program: ProgramDetail }>(`/programs/${id}`)).program,
+  });
+}
+
+/** Commencer (ou recommencer), valider un jour ou abandonner un programme. */
+export function useProgramAction(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (action: { type: "start" } | { type: "complete"; day: number } | { type: "quit" }) => {
+      if (action.type === "quit") return api<void>(`/programs/${id}`, { method: "DELETE" });
+      const path = action.type === "start" ? `/programs/${id}/start` : `/programs/${id}/days/${action.day}/complete`;
+      return api<{ program: ProgramDetail }>(path, { method: "POST" });
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: keys.programs });
+      void client.invalidateQueries({ queryKey: keys.program(id) });
     },
   });
 }

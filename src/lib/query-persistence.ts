@@ -20,6 +20,8 @@ const PERSISTED = new Set([
   "reading-position",
   "translations",
   "recitations",
+  "programs",
+  "program",
 ]);
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const supported = Platform.OS !== "web";
