@@ -60,10 +60,10 @@ export default function ReadingCourse() {
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </Card>
 
-      {units.map((unit) => (
+      {units.map((unit, i) => (
         <View key={unit.id} style={styles.unit}>
           <AppText variant="label" color={colors.accent}>
-            {unit.id}. {unit.title}
+            {i + 1}. {unit.title}
           </AppText>
           <Card padded={false}>
             {unit.lessons.map((lesson, i) => (

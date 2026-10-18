@@ -289,12 +289,16 @@ export type ReadingStep =
   | {
       type: "choice";
       question: string;
-      prompt: { arabic?: string; text?: string; detail?: string; highlight?: string[]; word?: ReadingWord; listen?: boolean };
+      prompt: { arabic?: string; text?: string; detail?: string; highlight?: string[]; marks?: number[]; word?: ReadingWord; listen?: boolean };
       choices: ReadingChoice[];
       answerId: string;
       reveal?: ReadingWord;
+      /** Règle ou précision affichée après la réponse. */
+      explain?: string;
     }
   | { type: "match"; question: string; pairs: { id: string; arabic: string; text: string }[] }
-  | { type: "reading"; title: string; verses: { verseKey: string; words: ReadingWord[] }[] };
+  | { type: "reading"; title: string; verses: { verseKey: string; words: ReadingWord[] }[] }
+  | { type: "trace"; letterId: string }
+  | { type: "spell"; word: ReadingWord; answer: string[]; tiles: string[] };
 export type ReadingSession = { lesson: { id: string; title: string; summary: string; kind: string }; steps: ReadingStep[] };
 export type ReadingResult = { xpGained: number; score: number; firstCompletion: boolean };

@@ -16,12 +16,19 @@ export function clusters(text: string): string[] {
  * Texte arabe dont certaines lettres sont colorées. Seule la couleur change d'un segment à
  * l'autre (Text imbriqués) : les lettres restent attachées comme dans le mot.
  */
-export function HighlightedArabic({ text, highlight = [], color, ...props }: ArabicTextProps & { text: string; highlight?: string[] }) {
+export function HighlightedArabic({
+  text,
+  highlight = [],
+  marks,
+  color,
+  ...props
+}: ArabicTextProps & { text: string; highlight?: string[]; marks?: number[] }) {
   const colors = useColors();
-  if (highlight.length === 0) return <ArabicText {...props} color={color}>{text}</ArabicText>;
+  if (highlight.length === 0 && !marks?.length) return <ArabicText {...props} color={color}>{text}</ArabicText>;
   const runs: { text: string; on: boolean }[] = [];
-  for (const cluster of clusters(text)) {
-    const on = highlight.includes([...cluster][0]!);
+  for (const [i, cluster] of clusters(text).entries()) {
+    // `marks` (rangs précis) l'emporte sur `highlight` (toutes les occurrences d'une lettre).
+    const on = marks?.length ? marks.includes(i) : highlight.includes([...cluster][0]!);
     const last = runs.at(-1);
     if (last && last.on === on) last.text += cluster;
     else runs.push({ text: cluster, on });

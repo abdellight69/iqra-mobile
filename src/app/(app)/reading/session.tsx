@@ -11,6 +11,7 @@ import { HighlightedArabic } from "@/components/HighlightedArabic";
 import { LetterCard } from "@/components/LetterCard";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
+import { TracePad } from "@/components/TracePad";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useOneShot } from "@/lib/audio";
 import { useAlphabet, useCompleteReadingLesson, useReadingSession } from "@/lib/queries";
@@ -130,6 +131,10 @@ function StepView({ step, ...props }: StepProps & { step: ReadingStep }) {
       return <MatchView step={step} {...props} />;
     case "reading":
       return <GuidedReading step={step} {...props} />;
+    case "trace":
+      return <TraceStep step={step} {...props} />;
+    case "spell":
+      return <SpellStep step={step} {...props} />;
   }
 }
 
@@ -244,7 +249,7 @@ function ChoiceView({ step, onAnswer, onNext, busy }: StepProps & { step: Choice
               {picked || !prompt.word.audioUrl ? <ArabicText size={40} center>{prompt.word.text}</ArabicText> : null}
             </>
           ) : prompt.word ? (
-            <HighlightedArabic text={prompt.word.text} highlight={prompt.highlight} size={52} center />
+            <HighlightedArabic text={prompt.word.text} highlight={prompt.highlight} marks={prompt.marks} size={52} center />
           ) : prompt.arabic ? (
             <HighlightedArabic text={prompt.arabic} highlight={prompt.highlight} size={shortArabic ? 84 : 52} center style={shortArabic ? styles.promptGlyph : undefined} />
           ) : null}
@@ -325,6 +330,144 @@ function ChoiceView({ step, onAnswer, onNext, busy }: StepProps & { step: Choice
               </View>
             </View>
           ) : null}
+          {step.explain ? (
+            <AppText variant="caption" muted>
+              {step.explain}
+            </AppText>
+          ) : null}
+          <Button title="Continuer" onPress={onNext} loading={busy} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Tracer une lettre au doigt sur le modèle (non noté). */
+function TraceStep({ step, letters, onNext }: StepProps & { step: Extract<ReadingStep, { type: "trace" }> }) {
+  const colors = useColors();
+  const letter = letters.get(step.letterId);
+  const [drawn, setDrawn] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [showModel, setShowModel] = useState(true);
+  if (!letter) return null;
+  return (
+    <View style={styles.body}>
+      <View>
+        <AppText variant="headline">Tracez la lettre {letter.name}</AppText>
+        <AppText variant="caption" muted>
+          Suivez le modèle avec le doigt, puis ajoutez les points.
+        </AppText>
+      </View>
+      <TracePad key={attempt} glyph={letter.char} showModel={showModel} onDraw={setDrawn} />
+      <View style={styles.traceActions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setAttempt((a) => a + 1);
+            setDrawn(false);
+          }}
+          style={styles.link}>
+          <AppText variant="bodyStrong" color={colors.primary}>
+            Effacer
+          </AppText>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => setShowModel((m) => !m)} style={styles.link}>
+          <AppText variant="bodyStrong" color={colors.primary}>
+            {showModel ? "Sans modèle" : "Avec modèle"}
+          </AppText>
+        </Pressable>
+      </View>
+      <View style={styles.flex} />
+      <Button title={drawn ? "Continuer" : "Passer"} variant={drawn ? "primary" : "ghost"} onPress={onNext} />
+    </View>
+  );
+}
+
+/** Composer un mot du Coran en touchant ses lettres dans l'ordre ; elles s'attachent d'elles-mêmes. */
+function SpellStep({ step, onAnswer, onNext, busy }: StepProps & { step: Extract<ReadingStep, { type: "spell" }> }) {
+  const colors = useColors();
+  const [chosen, setChosen] = useState<number[]>([]);
+  const [result, setResult] = useState<boolean | null>(null);
+  const typed = chosen.map((i) => step.tiles[i]!);
+
+  function tap(index: number) {
+    if (result !== null || chosen.includes(index)) return;
+    void Haptics.selectionAsync();
+    const next = [...chosen, index];
+    setChosen(next);
+    if (next.length === step.answer.length) {
+      const ok = next.every((i, k) => step.tiles[i] === step.answer[k]);
+      void Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+      setResult(ok);
+      onAnswer(ok);
+    }
+  }
+
+  return (
+    <View style={styles.body}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <AppText variant="headline">Composez le mot</AppText>
+        <Card style={styles.prompt}>
+          <View style={styles.reveal}>
+            <PlayButton url={step.word.audioUrl} label="Écouter le mot" size={44} />
+            <AppText variant="title" italic color={colors.accent}>
+              {step.word.reading}
+            </AppText>
+          </View>
+          <View style={[styles.spellAnswer, { borderBottomColor: colors.border }]}>
+            <ArabicText size={48} center color={result === false ? colors.danger : result ? colors.success : colors.arabic} style={styles.spellLine}>
+              {typed.join("") || " "}
+            </ArabicText>
+          </View>
+          <AppText variant="caption" muted center>
+            {typed.length}/{step.answer.length} lettres
+          </AppText>
+        </Card>
+        <View style={[styles.grid, styles.centered]}>
+          {step.tiles.map((c, i) => (
+            <Pressable
+              key={i}
+              accessibilityRole="button"
+              accessibilityLabel={`Lettre ${c}`}
+              disabled={chosen.includes(i) || result !== null}
+              onPress={() => tap(i)}
+              style={({ pressed }) => [
+                styles.letterTile,
+                { backgroundColor: colors.surface, borderColor: colors.border, opacity: chosen.includes(i) ? 0.3 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] },
+              ]}>
+              <ArabicText size={36} center style={styles.choiceGlyph}>
+                {c}
+              </ArabicText>
+            </Pressable>
+          ))}
+        </View>
+        {result === null && chosen.length > 0 ? (
+          <Pressable accessibilityRole="button" onPress={() => setChosen((c) => c.slice(0, -1))} style={styles.link}>
+            <AppText variant="bodyStrong" color={colors.primary}>
+              Effacer la dernière lettre
+            </AppText>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+      {result !== null ? (
+        <View style={[styles.feedback, { backgroundColor: result ? colors.successSoft : colors.dangerSoft }]}>
+          <View style={styles.feedbackRow}>
+            <Ionicons name={result ? "checkmark-circle" : "close-circle"} size={26} color={result ? colors.success : colors.danger} />
+            <AppText variant="headline" color={result ? colors.success : colors.danger}>
+              {result ? "Excellent !" : "Pas tout à fait"}
+            </AppText>
+          </View>
+          <View style={styles.reveal}>
+            <PlayButton url={step.word.audioUrl} label="Écouter le mot" size={44} autoPlay />
+            <View style={styles.flex}>
+              <ArabicText size={30}>{step.word.text}</ArabicText>
+              {!result ? (
+                <AppText variant="caption" muted style={styles.right}>
+                  Lettres : {step.answer.join(" ")}
+                </AppText>
+              ) : null}
+            </View>
+          </View>
           <Button title="Continuer" onPress={onNext} loading={busy} />
         </View>
       ) : null}
@@ -522,6 +665,11 @@ const styles = StyleSheet.create({
   choiceGlyph: { lineHeight: 84, paddingBottom: 14 },
   promptGlyph: { lineHeight: 160, paddingBottom: 24 },
   matchGlyph: { lineHeight: 76, paddingBottom: 12 },
+  traceActions: { flexDirection: "row", justifyContent: "center", gap: spacing.xl },
+  spellAnswer: { alignSelf: "stretch", borderBottomWidth: StyleSheet.hairlineWidth, minHeight: 90, justifyContent: "center" },
+  spellLine: { lineHeight: 100, paddingBottom: 8 },
+  centered: { justifyContent: "center" },
+  letterTile: { width: "22%", borderWidth: 1.5, borderRadius: radius.lg, minHeight: 76, justifyContent: "center", alignItems: "center" },
   columns: { flexDirection: "row", gap: spacing.md },
   matchTile: { borderWidth: 1.5, borderRadius: radius.lg, minHeight: 72, padding: spacing.sm, justifyContent: "center" },
   verse: { gap: spacing.xs },
