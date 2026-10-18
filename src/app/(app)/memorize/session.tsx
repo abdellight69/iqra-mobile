@@ -141,7 +141,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const [showTransliteration, setShowTransliteration] = useState(true);
 
   const url = audio.data?.files.find((f) => f.verseKey === verseKey)?.url;
-  const tracks = useMemo(() => (url ? [{ key: verseKey, url }] : []), [url, verseKey]);
+  const timings = audio.data?.files.find((f) => f.verseKey === verseKey)?.words;
+  const tracks = useMemo(() => (url ? [{ key: verseKey, url, words: timings }] : []), [url, verseKey, timings]);
   const player = useTrackQueue(tracks, { repeat, autoAdvance: false });
 
   if (verse.isPending) return <LoadingState />;
@@ -153,6 +154,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
 
   function renderWord(word: Word) {
     const visible = effectiveHide === 0 || revealed.has(word.location);
+    const recited = player.currentWord === word.position;
     const text = visible ? word.textUthmani : effectiveHide === 1 ? firstLetter(word.textUthmani) : "";
     return (
       <Pressable
@@ -160,8 +162,12 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
         accessibilityRole="button"
         accessibilityLabel={visible ? word.textUthmani : "Mot masqué, toucher pour révéler"}
         onPress={() => setRevealed((r) => new Set(r).add(word.location))}
-        style={[styles.word, !visible && { backgroundColor: colors.surfaceMuted, minWidth: effectiveHide === 2 ? 56 : undefined }]}>
-        <AppText style={{ fontFamily: fonts.arabic, fontSize: 30, lineHeight: 56, color: visible ? colors.arabic : colors.textMuted }}>
+        style={[
+          styles.word,
+          !visible && { backgroundColor: colors.surfaceMuted, minWidth: effectiveHide === 2 ? 56 : undefined },
+          recited && { backgroundColor: colors.accentSoft },
+        ]}>
+        <AppText style={{ fontFamily: fonts.arabic, fontSize: 30, lineHeight: 56, color: recited && visible ? colors.accent : visible ? colors.arabic : colors.textMuted }}>
           {text || " "}
         </AppText>
       </Pressable>

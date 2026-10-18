@@ -50,7 +50,10 @@ export default function SurahReader() {
   const knownWords = useKnownWords(chapterId, settings.showKnownWords);
 
   const list = useMemo<Verse[]>(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
-  const tracks = useMemo(() => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url })), [audio.data]);
+  const tracks = useMemo(
+    () => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+    [audio.data],
+  );
   const queue = useTrackQueue(tracks);
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
@@ -180,6 +183,7 @@ export default function SurahReader() {
               showWordByWord={settings.showWordByWord}
               knownWords={settings.showKnownWords ? knownWords.data : undefined}
               active={queue.currentKey === item.key}
+              recitedWord={queue.currentKey === item.key ? queue.currentWord : null}
               bookmarked={bookmarkByKey.has(item.verseNumber)}
               onWordPress={openWord}
               onPlay={() => (queue.currentKey === item.key ? queue.toggle() : queue.playKey(item.key))}

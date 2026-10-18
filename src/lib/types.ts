@@ -68,7 +68,9 @@ export type VersePage = {
 };
 
 export type ChapterInfo = { chapterId: number; paragraphs: string[]; shortText: string; source: string; languageName: string | null };
-export type ChapterAudio = { chapterId: number; recitationId: number; files: { verseKey: string; url: string }[] };
+/** Moment où un mot est récité dans l'audio du verset (position du mot à partir de 1). */
+export type WordTiming = { position: number; startMs: number; endMs: number };
+export type ChapterAudio = { chapterId: number; recitationId: number; files: { verseKey: string; url: string; words: WordTiming[] }[] };
 
 export type Label = { code: string; ar: string; fr: string };
 export type Segment = {

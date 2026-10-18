@@ -1,15 +1,26 @@
 import { useEventListener } from "expo";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useCallback, useState } from "react";
+import type { WordTiming } from "./types";
 
-export type Track = { key: string; url: string };
+export type Track = { key: string; url: string; words?: WordTiming[] };
+
+/**
+ * Mot en cours de récitation : le dernier mot commencé, tant que l'on n'a pas dépassé sa fin
+ * de plus de 300 ms (les courts silences entre deux mots ne font pas clignoter le surlignage).
+ */
+export function wordAt(words: WordTiming[] | undefined, timeMs: number): number | null {
+  const current = words?.filter((w) => w.startMs <= timeMs).at(-1);
+  return current && timeMs < current.endMs + 300 ? current.position : null;
+}
 
 /**
  * Lecture d'une suite de pistes (versets) avec un seul lecteur :
  * enchaînement automatique, ou répétition d'une même piste pour la mémorisation.
  */
 export function useTrackQueue(tracks: Track[], options: { repeat?: number; autoAdvance?: boolean } = {}) {
-  const player = useAudioPlayer(null, { updateInterval: 250 });
+  // Mises à jour rapprochées pour suivre la récitation mot par mot.
+  const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const [index, setIndex] = useState<number | null>(null);
   const [plays, setPlays] = useState(0);
@@ -48,8 +59,11 @@ export function useTrackQueue(tracks: Track[], options: { repeat?: number; autoA
     }
   });
 
+  const current = index === null ? undefined : tracks[index];
   return {
-    currentKey: index === null ? null : (tracks[index]?.key ?? null),
+    currentKey: current?.key ?? null,
+    /** Position du mot récité dans le verset en cours, si l'API fournit le minutage. */
+    currentWord: current && status.playing ? wordAt(current.words, status.currentTime * 1000) : null,
     index,
     plays,
     playing: status.playing,

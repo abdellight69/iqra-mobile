@@ -16,6 +16,8 @@ export type VerseCardProps = {
   /** Positions « verset:mot » des mots reconnus, surlignés quand le mode est actif. */
   knownWords?: Set<string>;
   active: boolean;
+  /** Position du mot en cours de récitation, surligné pour suivre l'audio. */
+  recitedWord?: number | null;
   bookmarked: boolean;
   onWordPress: (word: Word) => void;
   onPlay: () => void;
@@ -32,6 +34,7 @@ function VerseCardBase({
   showWordByWord,
   knownWords,
   active,
+  recitedWord,
   bookmarked,
   onWordPress,
   onPlay,
@@ -47,6 +50,7 @@ function VerseCardBase({
       <View style={styles.words}>
         {words.map((word) => {
           const known = knownWords?.has(`${verse.verseNumber}:${word.position}`) ?? false;
+          const recited = recitedWord === word.position;
           return (
           <Pressable
             key={word.location}
@@ -54,8 +58,18 @@ function VerseCardBase({
             accessibilityLabel={`${word.textUthmani}${word.translation ? `, ${word.translation}` : ""}${known ? ", mot connu" : ""}`}
             accessibilityHint="Affiche la phonétique, la traduction et l'analyse du mot"
             onPress={() => onWordPress(word)}
-            style={({ pressed }) => [styles.word, known && { backgroundColor: colors.primarySoft }, pressed && { backgroundColor: colors.accentSoft }]}>
-            <AppText style={{ fontFamily: fonts.arabic, fontSize: arabicSize, lineHeight: Math.round(arabicSize * 1.9), color: known ? colors.primary : colors.arabic }}>
+            style={({ pressed }) => [
+              styles.word,
+              known && { backgroundColor: colors.primarySoft },
+              (pressed || recited) && { backgroundColor: colors.accentSoft },
+            ]}>
+            <AppText
+              style={{
+                fontFamily: fonts.arabic,
+                fontSize: arabicSize,
+                lineHeight: Math.round(arabicSize * 1.9),
+                color: recited ? colors.accent : known ? colors.primary : colors.arabic,
+              }}>
               {word.textUthmani}
             </AppText>
             {showWordByWord ? (
