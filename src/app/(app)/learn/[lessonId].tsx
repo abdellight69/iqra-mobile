@@ -7,6 +7,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { QuranExample } from "@/components/QuranExample";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
 import { useLesson, useLessons } from "@/lib/queries";
@@ -136,6 +137,7 @@ function WordRow({ word }: { word: VocabWord }) {
         </View>
         {word.ar ? <ArabicText size={30}>{word.ar}</ArabicText> : null}
       </View>
+      {!word.isPatternRow && word.fr ? <QuranExample wordId={word.id} compact /> : null}
       {word.verb ? <VerbTable verb={word.verb} /> : null}
       {word.sourceUncertain ? (
         <View style={styles.warning}>

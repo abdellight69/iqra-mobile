@@ -37,6 +37,9 @@ export type Word = {
   audioUrl: string | null;
 };
 
+/** Le mot du lexique tel qu'il apparaît dans le Coran (occurrence trouvée via le Corpus). */
+export type QuranExample = { verseKey: string; word: Word };
+
 export type Verse = {
   key: string;
   chapterId: number;
@@ -47,6 +50,8 @@ export type Verse = {
   pageNumber: number;
   words: Word[];
   translation: { resourceId: number; resourceName: string | null; text: string } | null;
+  /** Translittération du verset entier fournie par Quran.com. */
+  transliteration: { resourceId: number; text: string } | null;
 };
 
 export type VersePage = {

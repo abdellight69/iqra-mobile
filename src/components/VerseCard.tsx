@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { memo, type ComponentProps } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { verseTransliteration } from "@/lib/quran-text";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 import { AppText } from "./AppText";
@@ -10,6 +11,7 @@ export type VerseCardProps = {
   verse: Verse;
   arabicSize: number;
   showTranslation: boolean;
+  showTransliteration: boolean;
   showWordByWord: boolean;
   active: boolean;
   bookmarked: boolean;
@@ -19,11 +21,12 @@ export type VerseCardProps = {
   onMemorize: () => void;
 };
 
-/** Un verset en pleine largeur : arabe, traduction puis actions discrètes. */
+/** Un verset en pleine largeur : arabe, phonétique, traduction puis actions discrètes. */
 function VerseCardBase({
   verse,
   arabicSize,
   showTranslation,
+  showTransliteration,
   showWordByWord,
   active,
   bookmarked,
@@ -34,6 +37,7 @@ function VerseCardBase({
 }: VerseCardProps) {
   const colors = useColors();
   const words = verse.words.filter((w) => w.type === "word");
+  const transliteration = showTransliteration ? verseTransliteration(verse) : null;
 
   return (
     <View style={[styles.verse, active && { backgroundColor: colors.primarySoft }]}>
@@ -66,6 +70,12 @@ function VerseCardBase({
           </Pressable>
         ))}
       </View>
+
+      {transliteration ? (
+        <AppText italic color={colors.accent} style={styles.transliteration} accessibilityLabel={`Phonétique : ${transliteration}`}>
+          {transliteration}
+        </AppText>
+      ) : null}
 
       {showTranslation && verse.translation ? <AppText style={styles.translation}>{verse.translation.text}</AppText> : null}
 
@@ -104,6 +114,7 @@ const styles = StyleSheet.create({
   wbw: { alignItems: "center", maxWidth: 110, marginTop: -spacing.md, gap: 1 },
   translit: { fontSize: 14 },
   wbwText: { fontSize: 12, lineHeight: 15 },
+  transliteration: { fontSize: 15, lineHeight: 23 },
   translation: { fontSize: 16, lineHeight: 26 },
   footer: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.xs },
   action: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },

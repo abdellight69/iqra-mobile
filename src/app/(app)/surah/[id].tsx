@@ -10,6 +10,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
 import { useTrackQueue } from "@/lib/audio";
+import { openWordSheet } from "@/lib/navigation";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
 import {
   useBookmarks,
@@ -97,19 +98,7 @@ export default function SurahReader() {
     ),
   );
 
-  const openWord = useCallback((word: Word) => {
-    router.push({
-      pathname: "/word/[location]",
-      params: {
-        location: word.location,
-        text: word.textUthmani,
-        transliteration: word.transliteration ?? "",
-        translation: word.translation ?? "",
-        language: word.translationLanguage ?? "",
-        audio: word.audioUrl ?? "",
-      },
-    });
-  }, []);
+  const openWord = useCallback((word: Word) => openWordSheet(word), []);
 
   const memorizeVerse = useCallback(
     (verse: Verse) => {
@@ -136,6 +125,12 @@ export default function SurahReader() {
           headerRight: () => (
             <View style={styles.headerActions}>
               <IconButton icon="text" label="Taille du texte arabe" onPress={cycleSize} />
+              <IconButton
+                icon={settings.showTransliteration ? "ear" : "ear-outline"}
+                label="Phonétique"
+                color={settings.showTransliteration ? colors.primary : undefined}
+                onPress={settings.toggleTransliteration}
+              />
               <IconButton
                 icon={settings.showWordByWord ? "grid" : "grid-outline"}
                 label="Mot à mot"
@@ -178,6 +173,7 @@ export default function SurahReader() {
               verse={item}
               arabicSize={settings.arabicSize}
               showTranslation={settings.showTranslation}
+              showTransliteration={settings.showTransliteration}
               showWordByWord={settings.showWordByWord}
               active={queue.currentKey === item.key}
               bookmarked={bookmarkByKey.has(item.verseNumber)}

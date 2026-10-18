@@ -12,6 +12,7 @@ import type {
   LessonSummary,
   MemorizationPlan,
   MemorizationPlanDetail,
+  QuranExample,
   ReadingPosition,
   Recitation,
   ReviewResult,
@@ -41,6 +42,7 @@ export const keys = {
   recitations: ["recitations"] as const,
   lessons: ["lessons"] as const,
   lesson: (id: string) => ["lesson", id] as const,
+  example: (wordId: string) => ["vocab-example", wordId] as const,
   plans: ["plans"] as const,
   plan: (id: string) => ["plan", id] as const,
   due: ["due-verses"] as const,
@@ -233,6 +235,14 @@ export function useLessons() {
 
 export function useLesson(id: string) {
   return useQuery({ queryKey: keys.lesson(id), queryFn: () => api<LessonDetail>(`/vocabulary/lessons/${id}`), staleTime: DAY });
+}
+
+export function useWordExample(wordId: string) {
+  return useQuery({
+    queryKey: keys.example(wordId),
+    queryFn: async () => (await api<{ example: QuranExample | null }>(`/vocabulary/words/${wordId}/example`)).example,
+    staleTime: DAY,
+  });
 }
 
 export function useLearningSession(source: { lessonId: string } | { review: true }) {

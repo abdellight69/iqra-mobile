@@ -10,6 +10,7 @@ import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useTrackQueue } from "@/lib/audio";
+import { verseTransliteration } from "@/lib/quran-text";
 import { useChapterAudio, useDueVerses, useMe, usePlan, useReviewVerse, useVerse } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
@@ -137,6 +138,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState<"study" | "recite" | "grade">("study");
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showTransliteration, setShowTransliteration] = useState(true);
 
   const url = audio.data?.files.find((f) => f.verseKey === verseKey)?.url;
   const tracks = useMemo(() => (url ? [{ key: verseKey, url }] : []), [url, verseKey]);
@@ -146,6 +148,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   if (verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
   const words = verse.data.words.filter((w) => w.type === "word");
   const effectiveHide: HideLevel = stage === "recite" ? 2 : stage === "grade" ? 0 : hide;
+  // La phonétique accompagne le texte visible ; elle disparaît dès qu'on masque pour réciter.
+  const transliteration = showTransliteration && effectiveHide === 0 ? verseTransliteration(verse.data) : null;
 
   function renderWord(word: Word) {
     const visible = effectiveHide === 0 || revealed.has(word.location);
@@ -172,6 +176,11 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
         </AppText>
         <Card style={styles.verseCard}>
           <View style={styles.words}>{words.map(renderWord)}</View>
+          {transliteration ? (
+            <AppText italic color={colors.accent} style={styles.transliteration}>
+              {transliteration}
+            </AppText>
+          ) : null}
           {showTranslation && verse.data.translation ? (
             <AppText muted style={[styles.translation, { borderTopColor: colors.border }]}>
               {verse.data.translation.text}
@@ -232,11 +241,18 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
               ))}
             </Card>
 
-            <Pressable accessibilityRole="button" onPress={() => setShowTranslation((s) => !s)} style={styles.link}>
-              <AppText variant="bodyStrong" color={colors.primary}>
-                {showTranslation ? "Masquer la traduction" : "Afficher la traduction"}
-              </AppText>
-            </Pressable>
+            <View style={styles.links}>
+              <Pressable accessibilityRole="button" onPress={() => setShowTransliteration((s) => !s)} style={styles.link}>
+                <AppText variant="bodyStrong" color={colors.primary}>
+                  {showTransliteration ? "Masquer la phonétique" : "Afficher la phonétique"}
+                </AppText>
+              </Pressable>
+              <Pressable accessibilityRole="button" onPress={() => setShowTranslation((s) => !s)} style={styles.link}>
+                <AppText variant="bodyStrong" color={colors.primary}>
+                  {showTranslation ? "Masquer la traduction" : "Afficher la traduction"}
+                </AppText>
+              </Pressable>
+            </View>
           </>
         ) : null}
 
@@ -314,6 +330,8 @@ const styles = StyleSheet.create({
   audioCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   play: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   repeat: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  transliteration: { fontSize: 15, lineHeight: 23 },
+  links: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", columnGap: spacing.lg },
   link: { alignSelf: "center", padding: spacing.xs },
   grades: { gap: spacing.md },
   gradeRow: { flexDirection: "row", gap: spacing.sm },

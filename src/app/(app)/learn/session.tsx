@@ -9,6 +9,7 @@ import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
+import { QuranExample } from "@/components/QuranExample";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
 import { useLearningSession, useSubmitSession } from "@/lib/queries";
@@ -145,6 +146,7 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
             </AppText>
           ) : null}
         </Card>
+        <QuranExample wordId={word.id} />
         {word.verb ? <VerbTable verb={word.verb} /> : null}
       </ScrollView>
       <Button title="Continuer" onPress={onNext} />
