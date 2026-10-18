@@ -228,6 +228,7 @@ export default function SurahReader() {
               }
               onMemorize={() => memorizeVerse(item)}
               onShare={() => router.push({ pathname: "/share/[key]", params: { key: item.key } })}
+              onTafsir={() => router.push({ pathname: "/tafsir/[key]", params: { key: item.key } })}
             />
           )}
         />

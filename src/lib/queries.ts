@@ -25,7 +25,9 @@ import type {
   RootOccurrences,
   SessionResult,
   Stats,
+  TafsirResource,
   Translation,
+  VerseTafsir,
   User,
   Verse,
   VersePage,
@@ -80,7 +82,7 @@ export function useUpdateMe() {
   const setUser = useAuth((s) => s.setUser);
   return useMutation({
     mutationFn: (
-      changes: Partial<Pick<User, "displayName" | "translationId" | "recitationId" | "dailyGoalXp" | "goal" | "arabicLevel">> & {
+      changes: Partial<Pick<User, "displayName" | "translationId" | "recitationId" | "tafsirId" | "dailyGoalXp" | "goal" | "arabicLevel">> & {
         onboarded?: true;
       },
     ) =>
@@ -90,6 +92,7 @@ export function useUpdateMe() {
       client.setQueryData(keys.me, user);
       void client.invalidateQueries({ queryKey: ["verses"] });
       void client.invalidateQueries({ queryKey: ["audio"] });
+      void client.invalidateQueries({ queryKey: ["tafsir"] });
     },
   });
 }
@@ -197,6 +200,22 @@ export function useTranslations() {
   return useQuery({
     queryKey: keys.translations,
     queryFn: async () => (await api<{ translations: Translation[] }>("/quran/resources/translations")).translations,
+    staleTime: DAY,
+  });
+}
+
+export function useTafsirs() {
+  return useQuery({
+    queryKey: ["tafsirs"],
+    queryFn: async () => (await api<{ tafsirs: TafsirResource[] }>("/quran/resources/tafsirs")).tafsirs,
+    staleTime: DAY,
+  });
+}
+
+export function useVerseTafsir(verseKey: string, tafsirId: number | null) {
+  return useQuery({
+    queryKey: ["tafsir", verseKey, tafsirId],
+    queryFn: () => api<VerseTafsir>(`/quran/verses/${verseKey}/tafsir${tafsirId ? `?tafsirId=${tafsirId}` : ""}`),
     staleTime: DAY,
   });
 }

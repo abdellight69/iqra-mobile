@@ -32,6 +32,10 @@ export default function AppLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="tafsir/[key]"
+        options={{ presentation: "formSheet", sheetAllowedDetents: [0.7, 1], sheetGrabberVisible: false, sheetCornerRadius: 24, headerShown: false }}
+      />
       <Stack.Screen name="learn/[lessonId]" options={{ title: "Fiche" }} />
       <Stack.Screen name="learn/session" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="memorize/new" options={{ presentation: "modal", title: "Nouveau plan" }} />

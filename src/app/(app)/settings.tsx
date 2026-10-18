@@ -11,8 +11,9 @@ import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { isFrench, languageLabel } from "@/lib/language";
 import { formatTime, REMINDER_TIMES, requestReminderPermission, useReminders } from "@/lib/reminders";
-import { useMe, useRecitations, useResourceDefaults, useTranslations, useUpdateMe } from "@/lib/queries";
+import { useMe, useRecitations, useResourceDefaults, useTafsirs, useTranslations, useUpdateMe } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
+import type { TafsirResource } from "@/lib/types";
 
 const GOALS = [10, 30, 50, 100];
 
@@ -24,6 +25,8 @@ export default function Settings() {
   const recitations = useRecitations();
   const defaults = useResourceDefaults();
   const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const tafsirs = useTafsirs();
+  const [showAllTafsirs, setShowAllTafsirs] = useState(false);
   const reminders = useReminders();
   const signOut = useAuth((s) => s.signOut);
   const [name, setName] = useState<string | null>(null);
@@ -187,6 +190,25 @@ export default function Settings() {
         )}
       </Card>
 
+      <SectionHeader title="Tafsir" />
+      <Card padded={false}>
+        {tafsirs.isPending ? (
+          <ActivityIndicator style={{ margin: spacing.lg }} color={colors.primary} />
+        ) : tafsirs.isError ? (
+          <AppText style={{ margin: spacing.lg }} muted>
+            {errorMessage(tafsirs.error)}
+          </AppText>
+        ) : (
+          <TafsirOptions
+            tafsirs={tafsirs.data}
+            selectedId={user.tafsirId ?? null}
+            showAll={showAllTafsirs}
+            onToggleAll={() => setShowAllTafsirs((v) => !v)}
+            onSelect={(tafsirId) => update.mutate({ tafsirId })}
+          />
+        )}
+      </Card>
+
       <SectionHeader title="Récitateur" />
       <Card padded={false}>
         {recitations.isPending ? (
@@ -217,6 +239,60 @@ export default function Settings() {
 
       <Button title="Supprimer mon compte" variant="danger" icon="trash-outline" onPress={deleteAccount} />
     </Screen>
+  );
+}
+
+/** Tafsirs en français d'abord ; les autres langues sur demande, présentées comme telles. */
+function TafsirOptions({
+  tafsirs,
+  selectedId,
+  showAll,
+  onToggleAll,
+  onSelect,
+}: {
+  tafsirs: TafsirResource[];
+  selectedId: number | null;
+  showAll: boolean;
+  onToggleAll: () => void;
+  onSelect: (tafsirId: number | null) => void;
+}) {
+  const colors = useColors();
+  const french = tafsirs.filter((t) => isFrench(t.languageName));
+  const languages = [...new Set(tafsirs.filter((t) => !isFrench(t.languageName)).map((t) => t.languageName))];
+  return (
+    <>
+      <Option
+        label={french[0] ? `Par défaut · ${french[0].name}` : "Par défaut"}
+        detail={french[0] ? "Français" : "Quran.com ne propose pas encore de tafsir en français"}
+        selected={selectedId === null}
+        onPress={() => onSelect(null)}
+      />
+      {french.slice(1).map((t) => (
+        <Option key={t.id} label={t.name} detail={t.authorName} selected={selectedId === t.id} onPress={() => onSelect(t.id)} />
+      ))}
+      {languages.length > 0 ? (
+        <Pressable accessibilityRole="button" onPress={onToggleAll} style={[styles.option, { borderBottomColor: colors.border }]}>
+          <AppText color={colors.primary} style={styles.flex}>
+            {showAll ? "Masquer les autres langues" : "Tafsirs dans d’autres langues"}
+          </AppText>
+          <Ionicons name={showAll ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+        </Pressable>
+      ) : null}
+      {showAll
+        ? languages.map((language) => (
+            <View key={language}>
+              <AppText variant="label" muted style={styles.languageHeader}>
+                {languageLabel(language)}
+              </AppText>
+              {tafsirs
+                .filter((t) => t.languageName === language)
+                .map((t) => (
+                  <Option key={t.id} label={t.name} detail={t.authorName} selected={selectedId === t.id} onPress={() => onSelect(t.id)} />
+                ))}
+            </View>
+          ))
+        : null}
+    </>
   );
 }
 

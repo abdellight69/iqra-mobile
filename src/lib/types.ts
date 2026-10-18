@@ -6,6 +6,8 @@ export type User = {
   displayName: string;
   translationId: number | null;
   recitationId: number | null;
+  /** Tafsir choisi (absent sur un serveur plus ancien ; null : français par défaut s'il existe). */
+  tafsirId?: number | null;
   dailyGoalXp: number;
   /** Réponses du premier lancement (absentes sur un serveur plus ancien). */
   goal?: Goal | null;
@@ -114,6 +116,20 @@ export type RootOccurrences = {
 };
 
 export type Translation = { id: number; name: string; authorName: string; languageName: string };
+export type TafsirResource = { id: number; name: string; authorName: string; languageName: string };
+export type VerseTafsir = {
+  verseKey: string;
+  frenchAvailable: boolean;
+  tafsir: {
+    resourceId: number;
+    name: string;
+    authorName: string | null;
+    languageName: string | null;
+    paragraphs: string[];
+    groupFrom: string | null;
+    groupTo: string | null;
+  } | null;
+};
 export type Recitation = { id: number; reciterName: string; style: string | null; translatedName: string | null };
 
 export type VerbForms = {

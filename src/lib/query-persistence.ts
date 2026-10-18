@@ -21,6 +21,7 @@ const PERSISTED = new Set([
   "translations",
   "recitations",
   "programs",
+  "tafsirs",
   "program",
 ]);
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
