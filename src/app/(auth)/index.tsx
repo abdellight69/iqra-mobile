@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
+import { SafeArea } from "@/components/SafeArea";
 import { ArabicText } from "@/components/ArabicText";
 import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/Button";
@@ -21,7 +21,7 @@ const GOLD = "#D4B36E";
 export default function Welcome() {
   return (
     <View style={[styles.flex, { backgroundColor: INK }]}>
-      <SafeAreaView style={styles.container}>
+      <SafeArea style={styles.container}>
         <View style={styles.hero}>
           <BrandMark size={44} color={GOLD} />
           <View style={styles.titleBlock}>
@@ -54,7 +54,7 @@ export default function Welcome() {
           <Button title="Commencer" variant="light" onPress={() => router.push("/register")} />
           <Button title="J'ai déjà un compte" variant="onDark" onPress={() => router.push("/login")} />
         </View>
-      </SafeAreaView>
+      </SafeArea>
     </View>
   );
 }

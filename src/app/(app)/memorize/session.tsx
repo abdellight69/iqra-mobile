@@ -3,8 +3,8 @@ import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
+import { SafeArea } from "@/components/SafeArea";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -73,9 +73,9 @@ export default function MemorizationSession() {
   if (!keys) return <LoadingState label="Préparation de la séance…" />;
   if (keys.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeArea style={{ flex: 1 }}>
         <EmptyState icon="checkmark-done" title="Tout est à jour" message="Aucun verset à réviser pour le moment." action={{ title: "Fermer", onPress: () => router.back() }} />
-      </SafeAreaView>
+      </SafeArea>
     );
   }
   return (
@@ -96,7 +96,7 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
 
   if (finished) {
     return (
-      <SafeAreaView style={[styles.flex, styles.done, { backgroundColor: colors.background }]}>
+      <SafeArea style={[styles.flex, styles.done, { backgroundColor: colors.background }]}>
         <View style={[styles.trophy, { backgroundColor: colors.accentSoft }]}>
           <Ionicons name="ribbon" size={56} color={colors.accent} />
         </View>
@@ -110,12 +110,12 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
           Les prochaines révisions sont planifiées selon votre auto-évaluation.
         </AppText>
         <Button title="Terminer" onPress={() => router.back()} style={{ alignSelf: "stretch" }} />
-      </SafeAreaView>
+      </SafeArea>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
+    <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <Pressable
           accessibilityRole="button"
@@ -148,7 +148,7 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
           }
         }}
       />
-    </SafeAreaView>
+    </SafeArea>
   );
 }
 

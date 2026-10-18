@@ -3,8 +3,8 @@ import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
+import { SafeArea } from "@/components/SafeArea";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -31,13 +31,13 @@ export default function LearningSessionScreen() {
   if (session.isError) return <ErrorState error={session.error} onRetry={() => router.back()} />;
   if (session.data.exercises.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeArea style={{ flex: 1 }}>
         {params.chapterId ? (
           <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message="Vous avez déjà appris tous les mots du livre présents dans cette sourate." action={{ title: "Fermer", onPress: () => router.back() }} />
         ) : (
           <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => router.back() }} />
         )}
-      </SafeAreaView>
+      </SafeArea>
     );
   }
   return <SessionRunner words={session.data.words} exercises={session.data.exercises} lessonId={params.lessonId} />;
@@ -83,7 +83,7 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
   const progress = step / Math.max(queue.length, 1);
 
   return (
-    <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
+    <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <Pressable
           accessibilityRole="button"
@@ -105,7 +105,7 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
       {exercise ? (
         <ExerciseView key={step} exercise={exercise} byId={byId} onAnswer={record} onNext={next} submitting={submit.isPending} />
       ) : null}
-    </SafeAreaView>
+    </SafeArea>
   );
 }
 
@@ -329,7 +329,7 @@ function Feedback({ correct, answer, arabic, onNext, loading }: { correct: boole
 function ResultScreen({ result }: { result: SessionResult }) {
   const colors = useColors();
   return (
-    <SafeAreaView style={[styles.flex, styles.result, { backgroundColor: colors.background }]}>
+    <SafeArea style={[styles.flex, styles.result, { backgroundColor: colors.background }]}>
       <View style={[styles.trophy, { backgroundColor: colors.accentSoft }]}>
         <Ionicons name="ribbon-outline" size={44} color={colors.accent} />
       </View>
@@ -358,7 +358,7 @@ function ResultScreen({ result }: { result: SessionResult }) {
         </Card>
       </View>
       <Button title="Terminer" onPress={() => router.back()} style={{ alignSelf: "stretch" }} />
-    </SafeAreaView>
+    </SafeArea>
   );
 }
 

@@ -2,8 +2,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState, type ComponentProps } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
+import { SafeArea } from "@/components/SafeArea";
 import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/Button";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -90,7 +90,7 @@ export default function Onboarding() {
   const rec = goal && level ? recommendation(goal, level) : null;
 
   return (
-    <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
+    <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.top}>
         {step > 0 ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Retour" hitSlop={10} onPress={() => setStep(step - 1)}>
@@ -194,7 +194,7 @@ export default function Onboarding() {
           </>
         )}
       </View>
-    </SafeAreaView>
+    </SafeArea>
   );
 }
 
