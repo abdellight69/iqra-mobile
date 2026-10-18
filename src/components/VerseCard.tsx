@@ -1,7 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { memo, type ComponentProps } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { verseTransliteration } from "@/lib/quran-text";
+import { tajweedColor } from "@/lib/tajweed";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 import { AppText } from "./AppText";
@@ -13,6 +14,8 @@ export type VerseCardProps = {
   showTranslation: boolean;
   showTransliteration: boolean;
   showWordByWord: boolean;
+  /** Colore les règles de tajwid (texte balisé fourni par l'API). */
+  showTajweed?: boolean;
   /** Positions « verset:mot » des mots reconnus, surlignés quand le mode est actif. */
   knownWords?: Set<string>;
   active: boolean;
@@ -33,6 +36,7 @@ function VerseCardBase({
   showTranslation,
   showTransliteration,
   showWordByWord,
+  showTajweed,
   knownWords,
   active,
   recitedWord,
@@ -44,6 +48,7 @@ function VerseCardBase({
   onShare,
 }: VerseCardProps) {
   const colors = useColors();
+  const dark = useColorScheme() === "dark";
   const words = verse.words.filter((w) => w.type === "word");
   const transliteration = showTransliteration ? verseTransliteration(verse) : null;
 
@@ -72,7 +77,14 @@ function VerseCardBase({
                 lineHeight: Math.round(arabicSize * 1.9),
                 color: recited ? colors.accent : known ? colors.primary : colors.arabic,
               }}>
-              {word.textUthmani}
+              {showTajweed && word.tajweed
+                ? word.tajweed.map((segment, i) => (
+                    // Text natif : hérite de la police et de la taille du mot, seule la couleur change.
+                    <Text key={i} style={{ color: tajweedColor(segment.rule, dark) ?? colors.arabic }}>
+                      {segment.text}
+                    </Text>
+                  ))
+                : word.textUthmani}
             </AppText>
             {showWordByWord ? (
               <View style={styles.wbw}>

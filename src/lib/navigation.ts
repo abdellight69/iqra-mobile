@@ -12,6 +12,7 @@ export function openWordSheet(word: Word) {
       translation: word.translation ?? "",
       language: word.translationLanguage ?? "",
       audio: word.audioUrl ?? "",
+      tajweed: [...new Set((word.tajweed ?? []).map((s) => s.rule).filter((r): r is string => Boolean(r)))].join(","),
     },
   });
 }

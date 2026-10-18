@@ -35,6 +35,8 @@ export type Word = {
   translation: string | null;
   translationLanguage: string | null;
   audioUrl: string | null;
+  /** Texte du mot découpé selon les règles de tajwid (absent sur un serveur plus ancien). */
+  tajweed?: { text: string; rule: string | null }[] | null;
 };
 
 /** Le mot du lexique tel qu'il apparaît dans le Coran (occurrence trouvée via le Corpus). */

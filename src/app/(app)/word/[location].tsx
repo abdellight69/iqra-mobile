@@ -1,13 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useColorScheme, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { useOneShot } from "@/lib/audio";
 import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
+import { TAJWEED_RULES, type TajweedRule } from "@/lib/tajweed";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Label, Segment } from "@/lib/types";
 
@@ -20,10 +21,16 @@ export default function WordSheet() {
     location: string;
     text?: string;
     transliteration?: string;
+    tajweed?: string;
     translation?: string;
     language?: string;
     audio?: string;
   }>();
+  const dark = useColorScheme() === "dark";
+  const tajweedRules = (params.tajweed ?? "")
+    .split(",")
+    .map((code) => TAJWEED_RULES[code])
+    .filter((rule): rule is TajweedRule => rule !== undefined);
   const details = useWordDetails(params.location);
   const sound = useOneShot();
   const [showOccurrences, setShowOccurrences] = useState(false);
@@ -70,6 +77,23 @@ export default function WordSheet() {
           <AppText variant="headline">{params.translation || "—"}</AppText>
         </View>
       </View>
+
+      {tajweedRules.length > 0 ? (
+        <Card style={styles.section}>
+          <AppText variant="headline">Tajwid</AppText>
+          {tajweedRules.map((rule) => (
+            <View key={rule.name} style={styles.tajweedRow}>
+              <View style={[styles.tajweedDot, { backgroundColor: dark ? rule.dark : rule.light }]} />
+              <View style={styles.flex}>
+                <AppText variant="bodyStrong">{rule.name}</AppText>
+                <AppText variant="caption" muted>
+                  {rule.description}
+                </AppText>
+              </View>
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       {details.isPending ? (
         <ActivityIndicator color={colors.primary} />
@@ -180,7 +204,7 @@ export default function WordSheet() {
       ) : null}
 
       <AppText variant="caption" faint center>
-        Phonétique, traduction mot à mot et audio : Quran.com (Quran Foundation).{"\n"}Analyse grammaticale : Quranic Arabic
+        Phonétique, traduction mot à mot, tajwid et audio : Quran.com (Quran Foundation).{"\n"}Analyse grammaticale : Quranic Arabic
         Corpus (corpus.quran.com).
       </AppText>
     </ScrollView>
@@ -222,6 +246,8 @@ function SegmentRow({ segment }: { segment: Segment }) {
 }
 
 const styles = StyleSheet.create({
+  tajweedRow: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start" },
+  tajweedDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
   flex: { flex: 1, gap: 4 },
   content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl * 2 },
   hero: { alignItems: "center", gap: spacing.xs, paddingBottom: spacing.sm },

@@ -8,6 +8,7 @@ import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { ComprehensionCard } from "@/components/ComprehensionCard";
 import { DownloadButton } from "@/components/DownloadButton";
+import { TajweedLegend } from "@/components/TajweedLegend";
 import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
@@ -153,6 +154,12 @@ export default function SurahReader() {
                 onPress={settings.toggleTransliteration}
               />
               <IconButton
+                icon={settings.showTajweed ? "color-palette" : "color-palette-outline"}
+                label="Tajwid"
+                color={settings.showTajweed ? colors.primary : undefined}
+                onPress={settings.toggleTajweed}
+              />
+              <IconButton
                 icon={settings.showWordByWord ? "grid" : "grid-outline"}
                 label="Mot à mot"
                 color={settings.showWordByWord ? colors.primary : undefined}
@@ -196,6 +203,7 @@ export default function SurahReader() {
               showTranslation={settings.showTranslation}
               showTransliteration={settings.showTransliteration}
               showWordByWord={settings.showWordByWord}
+              showTajweed={settings.showTajweed}
               knownWords={settings.showKnownWords ? knownWords.data : undefined}
               active={queue.currentKey === item.key}
               recitedWord={queue.currentKey === item.key ? queue.currentWord : null}
@@ -242,6 +250,7 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
   const chapter = useChapter(chapterId);
   const info = useChapterInfo(chapterId);
   const [open, setOpen] = useState(false);
+  const showTajweed = useReaderSettings((r) => r.showTajweed);
   const c = chapter.data;
   if (!c) return null;
 
@@ -287,6 +296,8 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
       ) : null}
 
       <DownloadButton chapterId={chapterId} />
+
+      {showTajweed ? <TajweedLegend /> : null}
 
       <ComprehensionCard chapterId={chapterId} />
 
