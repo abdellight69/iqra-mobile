@@ -28,9 +28,13 @@ export function RecitationRecorder({
   onStart,
   onStop,
   onCancel,
+  maxSeconds = MAX_RECORDING_SECONDS,
+  title = "Vérifier à la voix",
 }: {
   state: RecitationState;
   seconds: number;
+  maxSeconds?: number;
+  title?: string;
   onStart: () => void;
   onStop: () => void;
   onCancel: () => void;
@@ -52,7 +56,7 @@ export function RecitationRecorder({
           </Pressable>
         </View>
         <AppText variant="caption" muted>
-          Récitez le verset, puis touchez « Terminer ». Arrêt automatique après {MAX_RECORDING_SECONDS / 60} minutes.
+          Récitez, puis touchez « Terminer ». Arrêt automatique après {maxSeconds / 60} minutes.
         </AppText>
         <Button title="Terminer et vérifier" icon="stop" onPress={onStop} />
       </Card>
@@ -73,7 +77,7 @@ export function RecitationRecorder({
       <View style={styles.row}>
         <Ionicons name="mic-outline" size={22} color={colors.primary} />
         <View style={styles.flex}>
-          <AppText variant="bodyStrong">Vérifier à la voix</AppText>
+          <AppText variant="bodyStrong">{title}</AppText>
           <AppText variant="caption" muted>
             Récitez à voix haute : l’application repère les mots oubliés. L’enregistrement est envoyé au serveur pour analyse,
             puis supprimé.

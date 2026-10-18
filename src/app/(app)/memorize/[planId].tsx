@@ -8,7 +8,7 @@ import { IconButton } from "@/components/IconButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
-import { useChapter, useDeletePlan, usePlan } from "@/lib/queries";
+import { useChapter, useDeletePlan, usePlan, useRecitationAvailable } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { PlanVerse } from "@/lib/types";
 
@@ -28,6 +28,7 @@ export default function PlanDetail() {
   const plan = usePlan(planId);
   const chapter = useChapter(plan.data?.chapterId ?? 0);
   const remove = useDeletePlan();
+  const recitation = useRecitationAvailable();
 
   if (plan.isPending) return <LoadingState />;
   if (plan.isError) return <ErrorState error={plan.error} onRetry={() => void plan.refetch()} />;
@@ -58,7 +59,7 @@ export default function PlanDetail() {
         data={p.verses}
         keyExtractor={(v) => v.key}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 110 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + (recitation.data ? 170 : 110) }]}
         ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
         ListHeaderComponent={
           <View style={styles.summary}>
@@ -104,6 +105,20 @@ export default function PlanDetail() {
         )}
       />
       <View style={[styles.cta, { paddingBottom: insets.bottom + spacing.md, backgroundColor: colors.background }]}>
+        {recitation.data ? (
+          <Button
+            title={p.toVerse - p.fromVerse + 1 > 30 ? `Réciter à voix haute · versets ${p.fromVerse} à ${p.fromVerse + 29}` : "Réciter le plan à voix haute"}
+            icon="mic-outline"
+            variant="secondary"
+            onPress={() =>
+              router.push({
+                pathname: "/memorize/recite",
+                // Au plus 30 versets par vérification (environ 5 minutes de récitation).
+                params: { chapterId: String(p.chapterId), from: String(p.fromVerse), to: String(Math.min(p.toVerse, p.fromVerse + 29)) },
+              })
+            }
+          />
+        ) : null}
         <Button
           title={toStudy > 0 ? `Étudier · ${toStudy} verset${toStudy > 1 ? "s" : ""}` : "S'entraîner sur tout le plan"}
           onPress={() => router.push({ pathname: "/memorize/session", params: { planId: p.id } })}
@@ -122,5 +137,5 @@ const styles = StyleSheet.create({
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 34 + spacing.lg },
   verse: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingVertical: spacing.md + 2 },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
-  cta: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xl - 4, paddingTop: spacing.md },
+  cta: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xl - 4, paddingTop: spacing.md, gap: spacing.sm },
 });

@@ -63,7 +63,12 @@ export default function QuranTab() {
               <ScreenHeader
                 eyebrow={`${chapters.data.length} sourates`}
                 title="Le Coran"
-                right={<IconButton icon="bookmark-outline" label="Signets" tone="filled" onPress={() => router.push("/bookmarks")} />}
+                right={
+                  <View style={styles.headerActions}>
+                    <IconButton icon="search" label="Rechercher dans le Coran" tone="filled" onPress={() => router.push("/search")} />
+                    <IconButton icon="bookmark-outline" label="Signets" tone="filled" onPress={() => router.push("/bookmarks")} />
+                  </View>
+                }
               />
               <View style={[styles.search, { backgroundColor: colors.surfaceMuted }]}>
                 <Ionicons name="search" size={17} color={colors.textMuted} />
@@ -127,6 +132,7 @@ function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehensio
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: "row", gap: spacing.sm },
   flex: { flex: 1 },
   list: { paddingHorizontal: spacing.xl - 4, paddingBottom: spacing.xxl },
   header: { gap: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.md },

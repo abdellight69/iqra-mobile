@@ -250,13 +250,21 @@ export type ReadingPosition = { chapterId: number; verseNumber: number; updatedA
 
 /** Vérification de la récitation : chaque mot du verset reconnu, oublié ou différent. */
 export type RecitationWordStatus = "ok" | "missed" | "different";
+type RecitationCounts = { total: number; ok: number; missed: number; different: number };
 export type RecitationCheck = {
   verseKey: string;
+  /** Absents d'un serveur plus ancien (un seul verset vérifié). */
+  verseKeys?: string[];
   heard: string;
-  words: { position: number; location: string; textUthmani: string; status: RecitationWordStatus; heard: string | null }[];
-  extras: { afterPosition: number; text: string }[];
-  summary: { total: number; ok: number; missed: number; different: number };
+  words: { position: number; verseKey?: string; location: string; textUthmani: string; status: RecitationWordStatus; heard: string | null }[];
+  extras: { afterLocation?: string | null; text: string }[];
+  summary: RecitationCounts;
+  verses?: (RecitationCounts & { verseKey: string })[];
+  /** Note proposée : 5 parfait, 4 bien, 3 difficile, 1 à revoir. */
+  suggestedQuality?: 1 | 3 | 4 | 5;
 };
+/** Mot souvent oublié à la vérification vocale. */
+export type WeakWord = { location: string; verseKey: string; misses: number; hits: number; lastMissedAt: string | null };
 
 /** Apprendre à lire : lettres, parcours et séances (exercices générés par le serveur). */
 export type LetterForms = { isolated: string; initial: string | null; medial: string | null; final: string | null };
@@ -302,3 +310,29 @@ export type ReadingStep =
   | { type: "spell"; word: ReadingWord; answer: string[]; tiles: string[] };
 export type ReadingSession = { lesson: { id: string; title: string; summary: string; kind: string }; steps: ReadingStep[] };
 export type ReadingResult = { xpGained: number; score: number; firstCompletion: boolean };
+
+/** Carte de la mémorisation : sourates, juz' et totaux (pages du Mushaf de Médine). */
+export type MemorizationMap = {
+  chapters: { chapterId: number; versesCount: number; tracked: number; solid: number; due: number }[];
+  juzs: { juz: number; verses: number; tracked: number; solid: number }[];
+  totals: {
+    verses: number;
+    versesTracked: number;
+    versesSolid: number;
+    pages: number;
+    pagesSolid: number;
+    pagesStarted: number;
+    juzSolid: number;
+    juzStarted: number;
+  };
+};
+
+/** Recherche : en arabe dans le texte du Coran, sinon dans les traductions (Quran Foundation). */
+export type SearchResults = {
+  query: string;
+  source: "arabic" | "translation";
+  total: number;
+  page: number;
+  pageSize: number;
+  results: { key: string; chapterId: number; verseNumber: number; textUthmani: string; translation: string | null }[];
+};

@@ -15,11 +15,13 @@ import type {
   LearningSession,
   LessonDetail,
   LessonSummary,
+  MemorizationMap,
   MemorizationPlan,
   MemorizationPlanDetail,
   QuranExample,
   ProgramDetail,
   ReadingResult,
+  SearchResults,
   ReadingSession,
   ProgramSummary,
   ReadingPosition,
@@ -31,6 +33,7 @@ import type {
   TafsirResource,
   Translation,
   VerseTafsir,
+  WeakWord,
   User,
   Verse,
   VersePage,
@@ -406,6 +409,42 @@ export function useDeletePlan() {
   });
 }
 
+/** Recherche dans le Coran, page après page. */
+export function useQuranSearch(q: string, wholeWord: boolean, translationId: number | null) {
+  const query = q.trim();
+  return useInfiniteQuery({
+    queryKey: ["search", query, wholeWord, translationId],
+    enabled: query.length >= 2,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      api<SearchResults>(
+        `/quran/search?q=${encodeURIComponent(query)}&page=${pageParam}&wholeWord=${wholeWord ? 1 : 0}${translationId ? `&translationId=${translationId}` : ""}`,
+      ),
+    getNextPageParam: (last) => (last.page * last.pageSize < last.total ? last.page + 1 : undefined),
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+/** Mots souvent oubliés à la vérification vocale (vide sur un serveur sans cette fonction). */
+export function useWeakWords(enabled = true) {
+  return useQuery({
+    queryKey: ["weak-words"],
+    enabled,
+    queryFn: async () => {
+      try {
+        return (await api<{ words: WeakWord[] }>("/recitation/weak-words")).words;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return [];
+        throw error;
+      }
+    },
+  });
+}
+
+export function useMemorizationMap() {
+  return useQuery({ queryKey: ["memorization-map"], queryFn: () => api<MemorizationMap>("/memorization/map") });
+}
+
 export function useDueVerses() {
   return useQuery({
     queryKey: keys.due,
@@ -431,6 +470,7 @@ export function useReviewVerse() {
       void client.invalidateQueries({ queryKey: ["plan"] });
       void client.invalidateQueries({ queryKey: keys.due });
       void client.invalidateQueries({ queryKey: keys.stats });
+      void client.invalidateQueries({ queryKey: ["memorization-map"] });
     },
   });
 }

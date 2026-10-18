@@ -40,9 +40,12 @@ export default function AppLayout() {
       <Stack.Screen name="learn/session" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="memorize/new" options={{ presentation: "modal", title: "Nouveau plan" }} />
       <Stack.Screen name="memorize/[planId]" options={{ title: "Plan de mémorisation" }} />
+      <Stack.Screen name="memorize/map" options={{ title: "Carte de mémorisation" }} />
+      <Stack.Screen name="memorize/recite" options={{ title: "" }} />
       <Stack.Screen name="memorize/session" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="settings" options={{ title: "Réglages" }} />
       <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
+      <Stack.Screen name="search" options={{ title: "Rechercher" }} />
       <Stack.Screen name="prayer" options={{ title: "" }} />
       <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: "fade" }} />

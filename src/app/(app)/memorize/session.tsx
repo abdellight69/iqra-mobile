@@ -24,6 +24,7 @@ import {
   useRecitationAvailable,
   useReviewVerse,
   useVerse,
+  useWeakWords,
 } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
@@ -182,7 +183,9 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate });
   const recitationAvailable = useRecitationAvailable();
   // Vérification terminée : le verset réapparaît, mots oubliés et différents surlignés.
-  const check = useRecitationCheck(verseKey, () => setStage("grade"));
+  const check = useRecitationCheck({ verseKey }, () => setStage("grade"));
+  const weakWords = useWeakWords(Boolean(recitationAvailable.data));
+  const weak = useMemo(() => new Set(weakWords.data?.filter((w) => w.verseKey === verseKey).map((w) => w.location)), [weakWords.data, verseKey]);
   const statusColors = useStatusColors();
   const result = check.state.phase === "done" ? check.state.result : null;
   const statusByLocation = useMemo(() => new Map(result?.words.map((w) => [w.location, w.status])), [result]);
@@ -200,6 +203,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
     const recited = player.currentWord === word.position;
     const text = visible ? word.textUthmani : effectiveHide === 1 ? firstLetter(word.textUthmani) : "";
     const tone = stage === "grade" ? statusColors(statusByLocation.get(word.location)) : null;
+    // Mot souvent oublié : souligné en ocre pendant l'étude.
+    const fragile = stage === "study" && visible && weak.has(word.location);
     return (
       <Pressable
         key={word.location}
@@ -211,6 +216,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           !visible && { backgroundColor: colors.surfaceMuted, minWidth: effectiveHide === 2 ? 56 : undefined },
           recited && { backgroundColor: colors.accentSoft },
           tone && { backgroundColor: tone.background },
+          fragile && { borderBottomWidth: 3, borderBottomColor: colors.accent },
         ]}>
         <AppText
           style={{
@@ -247,6 +253,11 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
 
         {stage === "study" ? (
           <>
+            {weak.size > 0 ? (
+              <AppText variant="caption" color={colors.accent}>
+                Les mots soulignés sont ceux que vous avez oubliés lors de vos dernières vérifications à la voix.
+              </AppText>
+            ) : null}
             <View style={[styles.segmented, { backgroundColor: colors.surfaceMuted }]}>
               {([0, 1, 2] as HideLevel[]).map((level) => (
                 <Pressable
@@ -370,6 +381,11 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           <AppText variant="headline" center>
             Comment s’est passée la récitation ?
           </AppText>
+          {result?.suggestedQuality ? (
+            <AppText variant="caption" muted center>
+              Note proposée d’après la vérification : à vous de confirmer.
+            </AppText>
+          ) : null}
           <View style={styles.gradeRow}>
             {GRADES.map((g) => (
               <Pressable
@@ -393,6 +409,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                 style={({ pressed }) => [
                   styles.grade,
                   { borderColor: colors.border, backgroundColor: colors.surface, transform: [{ scale: pressed ? 0.96 : 1 }] },
+                  result?.suggestedQuality === g.quality && { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accentSoft },
                 ]}>
                 <Ionicons name={g.icon} size={22} color={g.quality < 3 ? colors.danger : g.quality === 5 ? colors.accent : colors.primary} />
                 <AppText variant="caption">{g.label}</AppText>

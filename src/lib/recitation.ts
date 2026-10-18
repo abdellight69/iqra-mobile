@@ -7,13 +7,15 @@ import {
   type RecordingOptions,
 } from "expo-audio";
 import { File } from "expo-file-system";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { api, errorMessage } from "./api";
 import type { RecitationCheck } from "./types";
 
-/** Le serveur accepte 3 Mo : 2 minutes en AAC mono 64 kbit/s en font moins d'un. */
+/** Le serveur accepte 3 Mo : 5 minutes en AAC mono 64 kbit/s en font environ 2,4. */
 export const MAX_RECORDING_SECONDS = 120;
+export const MAX_PASSAGE_SECONDS = 300;
 const RECORDING: RecordingOptions = { ...RecordingPresets.HIGH_QUALITY, numberOfChannels: 1, bitRate: 64000 };
 /** Réglage audio de l'application (voir app/_layout.tsx), rétabli après l'enregistrement. */
 const PLAYBACK_MODE = { playsInSilentMode: true, shouldPlayInBackground: true, allowsRecording: false };
@@ -40,8 +42,13 @@ async function readRecording(uri: string): Promise<{ data: ArrayBuffer | Blob; c
   }
 }
 
-/** Enregistre la récitation d'un verset puis la fait vérifier par le serveur. */
-export function useRecitationCheck(verseKey: string, onResult?: (result: RecitationCheck) => void) {
+/** Un verset, ou un passage de versets consécutifs d'une même sourate. */
+export type RecitationTarget = { verseKey: string } | { from: string; to: string };
+
+/** Enregistre la récitation d'un verset (ou d'un passage) puis la fait vérifier par le serveur. */
+export function useRecitationCheck(target: RecitationTarget, onResult?: (result: RecitationCheck) => void, maxSeconds = MAX_RECORDING_SECONDS) {
+  const query = "verseKey" in target ? `verseKey=${encodeURIComponent(target.verseKey)}` : `from=${encodeURIComponent(target.from)}&to=${encodeURIComponent(target.to)}`;
+  const client = useQueryClient();
   const recorder = useAudioRecorder(RECORDING);
   const recorderState = useAudioRecorderState(recorder, 250);
   const [state, setState] = useState<RecitationState>({ phase: "idle" });
@@ -64,7 +71,7 @@ export function useRecitationCheck(verseKey: string, onResult?: (result: Recitat
       await recorder.prepareToRecordAsync();
       recorder.record();
       recording.current = true;
-      limit.current = setTimeout(() => void stopAndCheck(), MAX_RECORDING_SECONDS * 1000);
+      limit.current = setTimeout(() => void stopAndCheck(), maxSeconds * 1000);
       setState({ phase: "recording" });
     } catch {
       setState({ phase: "error", message: "Impossible de démarrer l’enregistrement." });
@@ -81,9 +88,11 @@ export function useRecitationCheck(verseKey: string, onResult?: (result: Recitat
       await setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
       if (!recorder.uri) throw new Error("no recording");
       const raw = await readRecording(recorder.uri);
-      const result = await api<RecitationCheck>(`/recitation/check?verseKey=${encodeURIComponent(verseKey)}`, { method: "POST", raw });
+      const result = await api<RecitationCheck>(`/recitation/check?${query}`, { method: "POST", raw });
       setState({ phase: "done", result });
       onResult?.(result);
+      // Les mots oubliés (ou retrouvés) changent la liste des mots à retravailler.
+      void client.invalidateQueries({ queryKey: ["weak-words"] });
     } catch (error) {
       setState({ phase: "error", message: error instanceof Error && error.message === "no recording" ? "L’enregistrement est vide." : errorMessage(error) });
     }

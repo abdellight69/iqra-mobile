@@ -10,7 +10,7 @@ import { IconButton } from "@/components/IconButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
-import { useChapters, useDueVerses, usePlans } from "@/lib/queries";
+import { useChapters, useDueVerses, usePlans, useWeakWords } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 import type { MemorizationPlan } from "@/lib/types";
 
@@ -19,6 +19,15 @@ export default function MemorizeTab() {
   const plans = usePlans();
   const due = useDueVerses();
   const dueCount = due.data?.length ?? 0;
+  const weak = useWeakWords();
+  // Versets contenant des mots souvent oubliés, dans l'ordre du Mushaf (10 au plus par séance).
+  const weakVerses = [...new Set(weak.data?.map((w) => w.verseKey))]
+    .sort((a, b) => {
+      const [ca, va] = a.split(":").map(Number) as [number, number];
+      const [cb, vb] = b.split(":").map(Number) as [number, number];
+      return ca - cb || va - vb;
+    })
+    .slice(0, 10);
 
   if (plans.isPending) return <LoadingState />;
   if (plans.isError) return <ErrorState error={plans.error} onRetry={() => void plans.refetch()} />;
@@ -49,6 +58,7 @@ export default function MemorizeTab() {
               subtitle="Écoutez, masquez le texte peu à peu, récitez, puis évaluez-vous. Les révisions sont planifiées pour vous."
               right={
                 <View style={styles.headerActions}>
+                  <IconButton icon="grid-outline" label="Carte de mémorisation" tone="filled" onPress={() => router.push("/memorize/map")} />
                   <IconButton icon="calendar-outline" label="Programmes guidés" tone="filled" onPress={() => router.push("/programs")} />
                   <IconButton icon="add" label="Nouveau plan" tone="primary" onPress={() => router.push("/memorize/new")} />
                 </View>
@@ -65,6 +75,20 @@ export default function MemorizeTab() {
                   </AppText>
                 </View>
                 <Button title="Réviser" variant="light" size="md" onPress={() => router.push({ pathname: "/memorize/session", params: { due: "1" } })} />
+              </Card>
+            ) : null}
+            {weakVerses.length > 0 ? (
+              <Card tone="accent" onPress={() => router.push({ pathname: "/memorize/session", params: { keys: weakVerses.join(",") } })} style={styles.due}>
+                <Ionicons name="mic-outline" size={22} color={colors.accent} />
+                <View style={styles.flex}>
+                  <AppText variant="bodyStrong">
+                    {weak.data!.length} mot{weak.data!.length > 1 ? "s" : ""} à retravailler
+                  </AppText>
+                  <AppText variant="caption" muted>
+                    Oubliés lors de vos vérifications à la voix · {weakVerses.length} verset{weakVerses.length > 1 ? "s" : ""}
+                  </AppText>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
               </Card>
             ) : null}
             {plans.data.length > 0 ? (

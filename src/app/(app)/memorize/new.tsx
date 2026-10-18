@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -16,7 +16,10 @@ export default function NewPlan() {
   const colors = useColors();
   const chapters = useChapters();
   const create = useCreatePlan();
-  const [chapter, setChapter] = useState<Chapter | null>(null);
+  // Depuis la carte de mémorisation, la sourate est déjà choisie.
+  const params = useLocalSearchParams<{ chapterId?: string }>();
+  const [picked, setChapter] = useState<Chapter | null>(null);
+  const chapter = picked ?? chapters.data?.find((c) => String(c.id) === params.chapterId) ?? null;
   const [mode, setMode] = useState<"whole" | "range">("whole");
   const [from, setFrom] = useState("1");
   const [to, setTo] = useState("");
