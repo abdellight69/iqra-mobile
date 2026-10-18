@@ -79,14 +79,14 @@ export default function Home() {
               {s?.currentStreak ?? 0} jour{(s?.currentStreak ?? 0) > 1 ? "s" : ""} de suite
             </AppText>
           </View>
-          {s?.streakFreeze.pending ? (
+          {s?.streakFreeze?.pending ? (
             <View style={styles.streak}>
               <Ionicons name="snow" size={14} color={colors.primary} />
               <AppText variant="caption" color={colors.primary} style={styles.shrink}>
                 Hier manqué : pratiquez aujourd’hui, votre jour de répit garde la série
               </AppText>
             </View>
-          ) : s?.streakFreeze.available ? (
+          ) : s?.streakFreeze?.available ? (
             <View style={styles.streak}>
               <Ionicons name="snow-outline" size={14} color={colors.textMuted} />
               <AppText variant="caption" muted>

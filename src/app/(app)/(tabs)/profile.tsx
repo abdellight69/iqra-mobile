@@ -32,7 +32,7 @@ export default function Profile() {
       day,
       label: WEEKDAYS[d.getUTCDay()] ?? "",
       xp: s?.lastDays.find((x) => x.day === day)?.xp ?? 0,
-      frozen: s?.streakFreeze.frozenDays.includes(day) ?? false,
+      frozen: s?.streakFreeze?.frozenDays.includes(day) ?? false,
       isToday: i === 6,
     };
   });
