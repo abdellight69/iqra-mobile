@@ -79,7 +79,11 @@ export function useUpdateMe() {
   const client = useQueryClient();
   const setUser = useAuth((s) => s.setUser);
   return useMutation({
-    mutationFn: (changes: Partial<Pick<User, "displayName" | "translationId" | "recitationId" | "dailyGoalXp">>) =>
+    mutationFn: (
+      changes: Partial<Pick<User, "displayName" | "translationId" | "recitationId" | "dailyGoalXp" | "goal" | "arabicLevel">> & {
+        onboarded?: true;
+      },
+    ) =>
       api<{ user: User }>("/me", { method: "PATCH", body: changes }),
     onSuccess: ({ user }) => {
       setUser(user);

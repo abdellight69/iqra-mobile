@@ -9,7 +9,8 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
-import { useChapters, useComprehension, useMe, usePrograms, useReadingPosition, useStats } from "@/lib/queries";
+import { nextStep } from "@/lib/next-step";
+import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 
 // Texte uthmani de 17:9 tel que dans Tanzil (vérifié), voir backend/data/README.md.
@@ -36,6 +37,8 @@ export default function Home() {
   const comprehension = useComprehension();
   const programs = usePrograms();
   const activeProgram = programs.data?.find((p) => p.progress && !p.progress.finished);
+  const lessons = useLessons();
+  const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data });
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
   const goal = s ? s.today.xp / s.today.goalXp : 0;
@@ -61,6 +64,23 @@ export default function Home() {
           {userName ? `,\n${userName}` : ""}
         </AppText>
       </View>
+
+      {step ? (
+        <Card tone="primary" onPress={() => router.push(step.href)} style={styles.resume}>
+          <View style={styles.flex}>
+            <AppText variant="label" color="#FFFFFF99">
+              {step.eyebrow}
+            </AppText>
+            <AppText variant="title" color="#FFFFFF">
+              {step.title}
+            </AppText>
+            <AppText variant="caption" color="#FFFFFFCC">
+              {step.detail}
+            </AppText>
+          </View>
+          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+        </Card>
+      ) : null}
 
       <Card style={styles.goalCard}>
         <ProgressRing value={goal} size={88} stroke={6} color={colors.accent}>
@@ -152,20 +172,22 @@ export default function Home() {
         <Ionicons name="arrow-forward" size={18} color={colors.accent} />
       </Card>
 
-      <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
-        <View style={styles.flex}>
-          <AppText variant="label" muted>
-            Programme guidé
-          </AppText>
-          <AppText variant="headline">{activeProgram ? activeProgram.title : "Avancer pas à pas"}</AppText>
-          <AppText variant="caption" muted>
-            {activeProgram?.progress?.nextDay
-              ? `Jour ${activeProgram.progress.nextDay} sur ${activeProgram.dayCount}`
-              : "Juz’ ‘Amma en 60 jours, lecture du Coran en 30 jours…"}
-          </AppText>
-        </View>
-        <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-      </Card>
+{step?.programId && step.programId === activeProgram?.id ? null : (
+              <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
+          <View style={styles.flex}>
+            <AppText variant="label" muted>
+              Programme guidé
+            </AppText>
+            <AppText variant="headline">{activeProgram ? activeProgram.title : "Avancer pas à pas"}</AppText>
+            <AppText variant="caption" muted>
+              {activeProgram?.progress?.nextDay
+                ? `Jour ${activeProgram.progress.nextDay} sur ${activeProgram.dayCount}`
+                : "Juz’ ‘Amma en 60 jours, lecture du Coran en 30 jours…"}
+            </AppText>
+          </View>
+          <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+        </Card>
+      )}
 
       <SectionHeader title="Aujourd’hui" />
       <View style={styles.row}>

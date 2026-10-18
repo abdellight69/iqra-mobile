@@ -7,8 +7,15 @@ export type User = {
   translationId: number | null;
   recitationId: number | null;
   dailyGoalXp: number;
+  /** Réponses du premier lancement (absentes sur un serveur plus ancien). */
+  goal?: Goal | null;
+  arabicLevel?: ArabicLevel | null;
+  onboarded?: boolean;
   createdAt: string;
 };
+
+export type Goal = "understand" | "memorize" | "read";
+export type ArabicLevel = "none" | "beginner" | "fluent";
 
 export type AuthResponse = { user: User; accessToken: string; refreshToken: string; expiresIn: number };
 export type Tokens = { accessToken: string; refreshToken: string };
