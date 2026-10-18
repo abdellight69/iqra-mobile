@@ -121,6 +121,19 @@ export default function Home() {
         ) : null}
       </Card>
 
+      <Card tone="accent" onPress={() => router.push("/prayer")} style={styles.resume}>
+        <View style={styles.flex}>
+          <AppText variant="label" color={colors.accent}>
+            Parcours
+          </AppText>
+          <AppText variant="headline">Comprendre sa prière</AppText>
+          <AppText variant="caption" muted>
+            Al-Fâtiha et les dix dernières sourates, mot à mot
+          </AppText>
+        </View>
+        <Ionicons name="arrow-forward" size={18} color={colors.accent} />
+      </Card>
+
       <SectionHeader title="Aujourd’hui" />
       <View style={styles.row}>
         <Card style={styles.flex} onPress={() => router.push("/memorize")}>

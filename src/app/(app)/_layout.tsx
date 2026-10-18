@@ -34,6 +34,7 @@ export default function AppLayout() {
       <Stack.Screen name="memorize/session" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="settings" options={{ title: "Réglages" }} />
       <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
+      <Stack.Screen name="prayer" options={{ title: "" }} />
     </Stack>
   );
 }

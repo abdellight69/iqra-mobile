@@ -83,6 +83,16 @@ export default function LearnTab() {
                 </AppText>
               )}
             </Card>
+            <Card tone="accent" onPress={() => router.push("/prayer")} style={styles.prayer}>
+              <Ionicons name="moon-outline" size={20} color={colors.accent} />
+              <View style={styles.flex}>
+                <AppText variant="bodyStrong">Comprendre sa prière</AppText>
+                <AppText variant="caption" muted>
+                  Le vocabulaire d’Al-Fâtiha et des dix dernières sourates
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+            </Card>
           </View>
         }
         renderSectionHeader={({ section }) => (
@@ -139,6 +149,7 @@ function LessonNode({ lesson, offset }: { lesson: LessonSummary; offset: number 
 }
 
 const styles = StyleSheet.create({
+  prayer: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4, paddingBottom: spacing.xxxl, paddingTop: spacing.lg },
   header: { gap: spacing.xl, marginBottom: spacing.md },
