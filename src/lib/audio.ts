@@ -1,6 +1,6 @@
 import { useEventListener } from "expo";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { WordTiming } from "./types";
 
 export type Track = { key: string; url: string; words?: WordTiming[] };
@@ -14,48 +14,71 @@ export function wordAt(words: WordTiming[] | undefined, timeMs: number): number 
   return current && timeMs < current.endMs + 300 ? current.position : null;
 }
 
+/** Passage répété : pistes de `start` à `end` (indices inclus), `rounds` fois (Infinity : sans fin). */
+export type LoopRange = { start: number; end: number; rounds: number };
+
+export const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
+
 /**
- * Lecture d'une suite de pistes (versets) avec un seul lecteur :
- * enchaînement automatique, ou répétition d'une même piste pour la mémorisation.
+ * Lecture d'une suite de pistes (versets) avec un seul lecteur : enchaînement automatique,
+ * répétition de chaque piste (`repeat`), d'un passage entier (`loop`) et vitesse (`rate`,
+ * sans changer la hauteur de la voix).
  */
-export function useTrackQueue(tracks: Track[], options: { repeat?: number; autoAdvance?: boolean } = {}) {
+export function useTrackQueue(
+  tracks: Track[],
+  options: { repeat?: number; autoAdvance?: boolean; rate?: number; loop?: LoopRange | null } = {},
+) {
   // Mises à jour rapprochées pour suivre la récitation mot par mot.
   const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const [index, setIndex] = useState<number | null>(null);
   const [plays, setPlays] = useState(0);
+  const [round, setRound] = useState(1);
   const repeat = Math.max(1, options.repeat ?? 1);
   const autoAdvance = options.autoAdvance ?? true;
+  const rate = options.rate ?? 1;
+  const loop = options.loop ?? null;
 
   const playAt = useCallback(
-    (i: number) => {
+    (i: number, nextRound = 1) => {
       const track = tracks[i];
       if (!track) return;
       player.replace({ uri: track.url });
+      player.setPlaybackRate(rate, "high");
       player.play();
       setIndex(i);
       setPlays(1);
+      setRound(nextRound);
     },
-    [player, tracks],
+    [player, tracks, rate],
   );
+
+  // Vitesse modifiée pendant la lecture.
+  const loaded = status.isLoaded;
+  useEffect(() => {
+    if (loaded) player.setPlaybackRate(rate, "high");
+  }, [player, rate, loaded]);
 
   const stop = useCallback(() => {
     player.pause();
     setIndex(null);
     setPlays(0);
+    setRound(1);
   }, [player]);
 
-  // Fin d'une piste : on la rejoue, on passe à la suivante ou on s'arrête.
+  // Fin d'une piste : on la rejoue, on passe à la suivante, on reprend le passage ou on s'arrête.
   useEventListener(player, "playbackStatusUpdate", (update) => {
     if (!update.didJustFinish || index === null) return;
     if (plays < repeat) {
       setPlays(plays + 1);
       void player.seekTo(0).then(() => player.play());
-    } else if (autoAdvance && index + 1 < tracks.length) {
-      playAt(index + 1);
+    } else if (loop && index >= loop.end) {
+      if (round < loop.rounds) playAt(loop.start, round + 1);
+      else stop();
+    } else if ((autoAdvance || loop) && index + 1 < tracks.length) {
+      playAt(index + 1, round);
     } else {
-      setIndex(null);
-      setPlays(0);
+      stop();
     }
   });
 
@@ -66,6 +89,8 @@ export function useTrackQueue(tracks: Track[], options: { repeat?: number; autoA
     currentWord: current && status.playing ? wordAt(current.words, status.currentTime * 1000) : null,
     index,
     plays,
+    /** Tour en cours du passage répété. */
+    round,
     playing: status.playing,
     buffering: status.isBuffering,
     playAt,
@@ -74,15 +99,15 @@ export function useTrackQueue(tracks: Track[], options: { repeat?: number; autoA
       if (i >= 0) playAt(i);
     },
     toggle: () => {
-      if (index === null) playAt(0);
+      if (index === null) playAt(loop?.start ?? 0);
       else if (status.playing) player.pause();
       else player.play();
     },
     next: () => {
-      if (index !== null && index + 1 < tracks.length) playAt(index + 1);
+      if (index !== null && index + 1 < tracks.length) playAt(index + 1, round);
     },
     previous: () => {
-      if (index !== null && index > 0) playAt(index - 1);
+      if (index !== null && index > 0) playAt(index - 1, round);
     },
     stop,
   };

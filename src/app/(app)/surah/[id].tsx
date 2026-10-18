@@ -12,8 +12,10 @@ import { TajweedLegend } from "@/components/TajweedLegend";
 import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
+import { RepeatSheet, type RepeatSettings } from "@/components/RepeatSheet";
 import { useTrackQueue } from "@/lib/audio";
 import { openWordSheet } from "@/lib/navigation";
+import { formatRate, usePlayback } from "@/lib/playback-store";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
 import {
   useBookmarks,
@@ -70,7 +72,18 @@ export default function SurahReader() {
     [audioFiles],
   );
   const canLoadMore = !offlineText && verses.hasNextPage;
-  const queue = useTrackQueue(tracks);
+
+  // Répétition d'un passage et vitesse de récitation.
+  const rate = usePlayback((p) => p.rate);
+  const cycleRate = usePlayback((p) => p.cycleRate);
+  const [repeatOpen, setRepeatOpen] = useState(false);
+  const [repeatSettings, setRepeatSettings] = useState<RepeatSettings | null>(null);
+  const trackIndex = (verse: number) => tracks.findIndex((t) => t.key === `${chapterId}:${verse}`);
+  const loop =
+    repeatSettings && trackIndex(repeatSettings.fromVerse) >= 0 && trackIndex(repeatSettings.toVerse) >= 0
+      ? { start: trackIndex(repeatSettings.fromVerse), end: trackIndex(repeatSettings.toVerse), rounds: repeatSettings.rounds }
+      : null;
+  const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1 });
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
     [bookmarks.data, chapterId],
@@ -224,7 +237,15 @@ export default function SurahReader() {
         <View style={[styles.player, { backgroundColor: colors.text, bottom: insets.bottom + spacing.md }, elevation(colors, 2)]}>
           <View style={styles.flex}>
             <AppText variant="label" color={`${colors.background}99`}>
-              {queue.buffering ? "Chargement…" : queue.currentKey ? "Récitation" : "Écouter"}
+              {queue.buffering
+                ? "Chargement…"
+                : repeatSettings
+                  ? `Versets ${repeatSettings.fromVerse}–${repeatSettings.toVerse}${
+                      repeatSettings.rounds > 1 ? ` · tour ${queue.round}${repeatSettings.rounds === Infinity ? "" : `/${repeatSettings.rounds}`}` : ""
+                    }`
+                  : queue.currentKey
+                    ? "Récitation"
+                    : "Écouter"}
             </AppText>
             <AppText variant="headline" color={colors.background}>
               {queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Toute la sourate"}
@@ -239,7 +260,47 @@ export default function SurahReader() {
             <Ionicons name={queue.playing ? "pause" : "play"} size={20} color={colors.text} />
           </Pressable>
           <IconButton icon="play-skip-forward" label="Verset suivant" onPress={queue.next} color={colors.background} size={18} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Vitesse ${formatRate(rate)}, toucher pour changer`}
+            onPress={cycleRate}
+            hitSlop={6}
+            style={styles.rateButton}>
+            <AppText variant="caption" color={rate === 1 ? `${colors.background}99` : colors.accent}>
+              {formatRate(rate)}
+            </AppText>
+          </Pressable>
+          <IconButton
+            icon={repeatSettings ? "close-circle" : "repeat"}
+            label={repeatSettings ? "Arrêter la répétition" : "Répéter un passage"}
+            onPress={() => {
+              if (!repeatSettings) return setRepeatOpen(true);
+              setRepeatSettings(null);
+              queue.stop();
+            }}
+            color={repeatSettings ? colors.accent : colors.background}
+            size={18}
+          />
         </View>
+      ) : null}
+
+      {repeatOpen ? (
+        <RepeatSheet
+          visible
+          versesCount={chapter.data?.versesCount ?? tracks.length}
+          initial={(() => {
+            const current = queue.currentKey ? Number(queue.currentKey.split(":")[1]) : 1;
+            const count = chapter.data?.versesCount ?? tracks.length;
+            return { fromVerse: current, toVerse: Math.min(count, current + 4), verseRepeat: 1, rounds: 3 };
+          })()}
+          onClose={() => setRepeatOpen(false)}
+          onStart={(settings) => {
+            setRepeatOpen(false);
+            setRepeatSettings(settings);
+            const start = trackIndex(settings.fromVerse);
+            if (start >= 0) queue.playAt(start);
+          }}
+        />
       ) : null}
     </View>
   );
@@ -322,6 +383,7 @@ const styles = StyleSheet.create({
   about: { gap: spacing.sm },
   basmala: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.md },
   separator: { height: StyleSheet.hairlineWidth, marginHorizontal: spacing.md },
+  rateButton: { minWidth: 36, alignItems: "center" },
   player: {
     position: "absolute",
     left: spacing.lg,

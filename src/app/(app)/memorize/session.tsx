@@ -10,6 +10,7 @@ import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useTrackQueue } from "@/lib/audio";
+import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
 import { useChapterAudio, useDueVerses, useMe, useOfflineChapter, usePlan, useReviewVerse, useVerse } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
@@ -151,7 +152,9 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const timings = audioFile?.words;
   const verseData = verse.data ?? (verse.isError ? offline.data?.verses.find((v) => v.key === verseKey) : undefined);
   const tracks = useMemo(() => (url ? [{ key: verseKey, url, words: timings }] : []), [url, verseKey, timings]);
-  const player = useTrackQueue(tracks, { repeat, autoAdvance: false });
+  const rate = usePlayback((p) => p.rate);
+  const cycleRate = usePlayback((p) => p.cycleRate);
+  const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate });
 
   if (!verseData && verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
   if (!verseData) return <LoadingState />;
@@ -223,36 +226,52 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
             </View>
 
             <Card style={styles.audioCard}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={player.playing ? "Pause" : "Écouter le verset"}
-                disabled={!url}
-                onPress={() => (player.index === null ? player.playAt(0) : player.toggle())}
-                style={[styles.play, { backgroundColor: url ? colors.primary : colors.border }]}>
-                {audio.isPending && !url ? (
-                  <ActivityIndicator color={colors.onPrimary} />
-                ) : (
-                  <Ionicons name={player.playing ? "pause" : "play"} size={24} color={colors.onPrimary} />
-                )}
-              </Pressable>
-              <View style={styles.flex}>
-                <AppText variant="bodyStrong">Écouter et répéter</AppText>
-                <AppText variant="caption" muted>
-                  {player.index !== null ? `Écoute ${player.plays}/${repeat}` : "Récitation verset par verset"}
-                </AppText>
-              </View>
-              {[1, 3, 5].map((n) => (
+              <View style={styles.audioRow}>
                 <Pressable
-                  key={n}
                   accessibilityRole="button"
-                  accessibilityLabel={`Répéter ${n} fois`}
-                  onPress={() => setRepeat(n)}
-                  style={[styles.repeat, { borderColor: repeat === n ? colors.primary : colors.border, backgroundColor: repeat === n ? colors.primarySoft : "transparent" }]}>
-                  <AppText variant="caption" color={repeat === n ? colors.primary : colors.textMuted}>
-                    ×{n}
+                  accessibilityLabel={player.playing ? "Pause" : "Écouter le verset"}
+                  disabled={!url}
+                  onPress={() => (player.index === null ? player.playAt(0) : player.toggle())}
+                  style={[styles.play, { backgroundColor: url ? colors.primary : colors.border }]}>
+                  {audio.isPending && !url ? (
+                    <ActivityIndicator color={colors.onPrimary} />
+                  ) : (
+                    <Ionicons name={player.playing ? "pause" : "play"} size={24} color={colors.onPrimary} />
+                  )}
+                </Pressable>
+                <View style={styles.flex}>
+                  <AppText variant="bodyStrong">Écouter et répéter</AppText>
+                  <AppText variant="caption" muted>
+                    {player.index !== null ? `Écoute ${player.plays}/${repeat}` : "Récitation verset par verset"}
+                  </AppText>
+                </View>
+              </View>
+              <View style={styles.audioRow}>
+                <AppText variant="caption" muted style={styles.flex}>
+                  Répétitions et vitesse
+                </AppText>
+                {[1, 3, 5].map((n) => (
+                  <Pressable
+                    key={n}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Répéter ${n} fois`}
+                    onPress={() => setRepeat(n)}
+                    style={[styles.repeat, { borderColor: repeat === n ? colors.primary : colors.border, backgroundColor: repeat === n ? colors.primarySoft : "transparent" }]}>
+                    <AppText variant="caption" color={repeat === n ? colors.primary : colors.textMuted}>
+                      ×{n}
+                    </AppText>
+                  </Pressable>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Vitesse ${formatRate(rate)}, toucher pour changer`}
+                  onPress={cycleRate}
+                  style={[styles.repeat, { borderColor: rate === 1 ? colors.border : colors.accent, backgroundColor: rate === 1 ? "transparent" : colors.accentSoft }]}>
+                  <AppText variant="caption" color={rate === 1 ? colors.textMuted : colors.accent}>
+                    {formatRate(rate)}
                   </AppText>
                 </Pressable>
-              ))}
+              </View>
             </Card>
 
             <View style={styles.links}>
@@ -341,7 +360,8 @@ const styles = StyleSheet.create({
   translation: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
   segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
   segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.pill },
-  audioCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  audioCard: { gap: spacing.md },
+  audioRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   play: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   repeat: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   transliteration: { fontSize: 15, lineHeight: 23 },
