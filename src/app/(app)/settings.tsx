@@ -9,7 +9,8 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
-import { useMe, useRecitations, useTranslations, useUpdateMe } from "@/lib/queries";
+import { isFrench, languageLabel } from "@/lib/language";
+import { useMe, useRecitations, useResourceDefaults, useTranslations, useUpdateMe } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 
 const GOALS = [10, 30, 50, 100];
@@ -20,6 +21,8 @@ export default function Settings() {
   const update = useUpdateMe();
   const translations = useTranslations();
   const recitations = useRecitations();
+  const defaults = useResourceDefaults();
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
   const signOut = useAuth((s) => s.signOut);
   const [name, setName] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -64,7 +67,14 @@ export default function Settings() {
     );
   }
 
-  const frenchTranslations = (translations.data ?? []).filter((t) => t.languageName.toLowerCase() === "french");
+  const all = translations.data ?? [];
+  const frenchTranslations = all.filter((t) => isFrench(t.languageName));
+  // Autres langues, regroupées et triées par nom de langue.
+  const otherLanguages = [...new Set(all.filter((t) => !isFrench(t.languageName)).map((t) => t.languageName))].sort((a, b) =>
+    a.localeCompare(b, "fr"),
+  );
+  const defaultTranslation = all.find((t) => t.id === defaults.data?.translationId);
+  const chosen = all.find((t) => t.id === user.translationId);
 
   return (
     <Screen edges={[]} keyboard>
@@ -98,10 +108,42 @@ export default function Settings() {
           </AppText>
         ) : (
           <>
-            <Option label="Par défaut (Muhammad Hamidullah)" selected={user.translationId === null} onPress={() => update.mutate({ translationId: null })} />
+            <Option
+              label={`Par défaut${defaultTranslation ? ` · ${defaultTranslation.name}` : ""}`}
+              detail={defaultTranslation ? languageLabel(defaultTranslation.languageName) : undefined}
+              selected={user.translationId === null}
+              onPress={() => update.mutate({ translationId: null })}
+            />
             {frenchTranslations.map((t) => (
               <Option key={t.id} label={t.name} detail={t.authorName} selected={user.translationId === t.id} onPress={() => update.mutate({ translationId: t.id })} />
             ))}
+            {otherLanguages.length > 0 ? (
+              <Pressable accessibilityRole="button" onPress={() => setShowAllLanguages((v) => !v)} style={[styles.option, { borderBottomColor: colors.border }]}>
+                <View style={styles.flex}>
+                  <AppText color={colors.primary}>{showAllLanguages ? "Masquer les autres langues" : "Autres langues"}</AppText>
+                  {!showAllLanguages && chosen && !isFrench(chosen.languageName) ? (
+                    <AppText variant="caption" muted>
+                      Actuellement : {chosen.name} ({languageLabel(chosen.languageName)})
+                    </AppText>
+                  ) : null}
+                </View>
+                <Ionicons name={showAllLanguages ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+            {showAllLanguages
+              ? otherLanguages.map((language) => (
+                  <View key={language}>
+                    <AppText variant="label" muted style={styles.languageHeader}>
+                      {languageLabel(language)}
+                    </AppText>
+                    {all
+                      .filter((t) => t.languageName === language)
+                      .map((t) => (
+                        <Option key={t.id} label={t.name} detail={t.authorName} selected={user.translationId === t.id} onPress={() => update.mutate({ translationId: t.id })} />
+                      ))}
+                  </View>
+                ))
+              : null}
           </>
         )}
       </Card>
@@ -180,5 +222,6 @@ const styles = StyleSheet.create({
   group: { gap: spacing.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: { borderWidth: 1.5, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  languageHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xs },
   option: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth },
 });

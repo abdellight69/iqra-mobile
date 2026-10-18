@@ -162,6 +162,14 @@ export function useTranslations() {
   });
 }
 
+export function useResourceDefaults() {
+  return useQuery({
+    queryKey: ["resource-defaults"],
+    queryFn: () => api<{ translationId: number | null; recitationId: number | null }>("/quran/resources/defaults"),
+    staleTime: DAY,
+  });
+}
+
 export function useRecitations() {
   return useQuery({
     queryKey: keys.recitations,

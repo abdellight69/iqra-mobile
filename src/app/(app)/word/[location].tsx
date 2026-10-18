@@ -6,6 +6,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { useOneShot } from "@/lib/audio";
+import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Label, Segment } from "@/lib/types";
@@ -29,7 +30,7 @@ export default function WordSheet() {
   const morphology = details.data?.morphology;
   const occurrences = useRootOccurrences(showOccurrences ? (morphology?.root ?? null) : null);
   const [chapter, verse, position] = params.location.split(":");
-  const language = params.language ? (LANGUAGES[params.language] ?? params.language) : null;
+  const language = params.language ? (isFrench(params.language) ? "français" : (LANGUAGES[params.language.toLowerCase()] ?? params.language)) : null;
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
