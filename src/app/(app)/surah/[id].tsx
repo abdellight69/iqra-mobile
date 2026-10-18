@@ -7,6 +7,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { ComprehensionCard } from "@/components/ComprehensionCard";
+import { DownloadButton } from "@/components/DownloadButton";
 import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
@@ -20,6 +21,7 @@ import {
   useChapterInfo,
   useCreatePlan,
   useKnownWords,
+  useOfflineChapter,
   useMe,
   useRecordReading,
   useSaveReadingPosition,
@@ -48,12 +50,25 @@ export default function SurahReader() {
   const recordReading = useRecordReading();
   const settings = useReaderSettings();
   const knownWords = useKnownWords(chapterId, settings.showKnownWords);
+  const offline = useOfflineChapter(chapterId);
 
-  const list = useMemo<Verse[]>(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
-  const tracks = useMemo(
-    () => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
-    [audio.data],
+  // Sourate téléchargée : on lit la copie locale si elle correspond aux réglages, ou sans réseau.
+  const offlineText =
+    offline.data && (offline.data.translationId === (me.data?.translationId ?? null) || verses.isError) ? offline.data : null;
+  const offlineAudio =
+    offline.data && (me.data?.recitationId == null || me.data.recitationId === offline.data.recitationId || audio.isError)
+      ? offline.data.audio
+      : null;
+  const list = useMemo<Verse[]>(
+    () => offlineText?.verses ?? verses.data?.pages.flatMap((p) => p.verses) ?? [],
+    [offlineText, verses.data],
   );
+  const audioFiles = offlineAudio?.files ?? audio.data?.files;
+  const tracks = useMemo(
+    () => (audioFiles ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+    [audioFiles],
+  );
+  const canLoadMore = !offlineText && verses.hasNextPage;
   const queue = useTrackQueue(tracks);
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
@@ -67,23 +82,23 @@ export default function SurahReader() {
 
   // Ouvre la sourate au verset demandé (signet, reprise de lecture) en chargeant les pages nécessaires.
   useEffect(() => {
-    if (!targetVerse || scrolledToTarget.current || !verses.data) return;
+    if (!targetVerse || scrolledToTarget.current || list.length === 0) return;
     const index = list.findIndex((v) => v.verseNumber === targetVerse);
     if (index >= 0) {
       scrolledToTarget.current = true;
       requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0 }));
-    } else if (verses.hasNextPage && !verses.isFetchingNextPage) {
+    } else if (canLoadMore && !verses.isFetchingNextPage) {
       void verses.fetchNextPage();
     }
-  }, [targetVerse, list, verses]);
+  }, [targetVerse, list, verses, canLoadMore]);
 
   // Suit le verset en cours de récitation.
   useEffect(() => {
     if (!queue.currentKey) return;
     const index = list.findIndex((v) => v.key === queue.currentKey);
     if (index >= 0) listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.1 });
-    else if (verses.hasNextPage) void verses.fetchNextPage();
-  }, [queue.currentKey, list, verses]);
+    else if (canLoadMore) void verses.fetchNextPage();
+  }, [queue.currentKey, list, verses, canLoadMore]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     const visible = viewableItems.map((v) => v.item as Verse | undefined).filter((v): v is Verse => Boolean(v));
@@ -154,9 +169,9 @@ export default function SurahReader() {
         }}
       />
 
-      {verses.isPending ? (
+      {!offlineText && verses.isPending ? (
         <LoadingState label="Chargement de la sourate…" />
-      ) : verses.isError ? (
+      ) : !offlineText && verses.isError ? (
         <ErrorState error={verses.error} onRetry={() => void verses.refetch()} />
       ) : (
         <FlatList
@@ -166,7 +181,7 @@ export default function SurahReader() {
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
           ListHeaderComponent={<ChapterHeader chapterId={chapterId} />}
-          onEndReached={() => verses.hasNextPage && !verses.isFetchingNextPage && void verses.fetchNextPage()}
+          onEndReached={() => canLoadMore && !verses.isFetchingNextPage && void verses.fetchNextPage()}
           onEndReachedThreshold={0.6}
           ListFooterComponent={verses.isFetchingNextPage ? <ActivityIndicator style={{ margin: spacing.lg }} color={colors.primary} /> : undefined}
           onViewableItemsChanged={onViewableItemsChanged}
@@ -269,6 +284,8 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
           )}
         </Card>
       ) : null}
+
+      <DownloadButton chapterId={chapterId} />
 
       <ComprehensionCard chapterId={chapterId} />
 

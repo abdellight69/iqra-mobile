@@ -9,6 +9,7 @@ import { IconButton } from "@/components/IconButton";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
+import { useOffline } from "@/lib/offline";
 import { useChapters, useComprehension } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Chapter, ChapterComprehension } from "@/lib/types";
@@ -88,6 +89,7 @@ export default function QuranTab() {
 
 function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehension?: ChapterComprehension }) {
   const colors = useColors();
+  const downloaded = useOffline((s) => Boolean(s.entries[chapter.id]));
   const known = comprehension && comprehension.totalWords > 0 ? Math.round((comprehension.knownWords / comprehension.totalWords) * 100) : 0;
   return (
     <Pressable
@@ -100,6 +102,14 @@ function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehensio
         <AppText variant="caption" muted>
           {chapter.translatedName} · {chapter.versesCount} versets
         </AppText>
+        {downloaded ? (
+          <View style={styles.offline}>
+            <Ionicons name="cloud-done-outline" size={13} color={colors.textMuted} />
+            <AppText variant="caption" muted>
+              Hors ligne
+            </AppText>
+          </View>
+        ) : null}
         {known > 0 ? (
           <AppText variant="caption" color={colors.primary}>
             {known} % des mots reconnus
@@ -124,5 +134,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingVertical: spacing.md + 2 },
   right: { alignItems: "flex-end" },
+  offline: { flexDirection: "row", alignItems: "center", gap: 4 },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 38 + spacing.lg },
 });

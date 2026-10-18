@@ -1,5 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
+import { queueReview } from "./outbox";
+import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
 import type {
   Bookmark,
@@ -93,8 +95,30 @@ export function useStats() {
 export function useChapters() {
   return useQuery({
     queryKey: keys.chapters,
-    queryFn: async () => (await api<{ chapters: Chapter[] }>("/quran/chapters")).chapters,
+    queryFn: async () => {
+      try {
+        const chapters = (await api<{ chapters: Chapter[] }>("/quran/chapters")).chapters;
+        saveChaptersCache(chapters);
+        return chapters;
+      } catch (error) {
+        // Sans réseau : la liste gardée sur l'appareil.
+        const cached = isNetworkError(error) ? loadChaptersCache() : null;
+        if (cached) return cached;
+        throw error;
+      }
+    },
     staleTime: DAY,
+  });
+}
+
+/** Copie téléchargée d'une sourate (null si elle n'a pas été téléchargée). */
+export function useOfflineChapter(chapterId: number) {
+  const downloadedAt = useOffline((s) => s.entries[chapterId]?.downloadedAt ?? null);
+  return useQuery({
+    queryKey: ["offline", chapterId, downloadedAt],
+    queryFn: () => (downloadedAt ? readOfflineChapter(chapterId) : null),
+    staleTime: Infinity,
+    networkMode: "always",
   });
 }
 
@@ -345,8 +369,16 @@ export function useDueVerses() {
 export function useReviewVerse() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: { chapterId: number; verseNumber: number; quality: number }) =>
-      api<ReviewResult>("/memorization/reviews", { method: "POST", body: input }),
+    mutationFn: async (input: { chapterId: number; verseNumber: number; quality: number }): Promise<ReviewResult & { queued?: boolean }> => {
+      try {
+        return await api<ReviewResult>("/memorization/reviews", { method: "POST", body: input });
+      } catch (error) {
+        if (!isNetworkError(error)) throw error;
+        // Sans réseau : l'évaluation sera envoyée à la reconnexion.
+        queueReview(input);
+        return { key: `${input.chapterId}:${input.verseNumber}`, status: "learning", dueAt: "", intervalDays: 0, xpGained: 0, queued: true };
+      }
+    },
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: keys.plans });
       void client.invalidateQueries({ queryKey: ["plan"] });

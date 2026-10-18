@@ -1,0 +1,202 @@
+import { Directory, File, Paths } from "expo-file-system";
+import { Platform } from "react-native";
+import { create } from "zustand";
+import { api, ApiError } from "./api";
+import type { Chapter, ChapterAudio, Verse, VersePage } from "./types";
+
+/**
+ * Sourates téléchargées pour une lecture sans réseau : texte, traduction, phonétique,
+ * minutage des mots (contenu.json) et audio de chaque verset, dans le dossier de l'app.
+ */
+export type OfflineChapter = {
+  version: 1;
+  chapterId: number;
+  translationId: number | null;
+  recitationId: number;
+  downloadedAt: string;
+  verses: Verse[];
+  audio: ChapterAudio;
+};
+
+export type OfflineEntry = { chapterId: number; translationId: number | null; recitationId: number; downloadedAt: string; bytes: number };
+
+export const offlineSupported = Platform.OS !== "web";
+
+const PER_PAGE = 50;
+const PARALLEL_DOWNLOADS = 4;
+
+const root = () => new Directory(Paths.document, "offline");
+const chapterDir = (chapterId: number) => new Directory(root(), String(chapterId));
+const contentFile = (chapterId: number) => new File(chapterDir(chapterId), "content.json");
+const audioName = (verseKey: string) => `${verseKey.replace(":", "_")}.mp3`;
+const audioFile = (chapterId: number, verseKey: string) => new File(chapterDir(chapterId), audioName(verseKey));
+const indexFile = () => new File(root(), "index.json");
+const chaptersFile = () => new File(root(), "chapters.json");
+
+type OfflineStore = {
+  entries: Record<number, OfflineEntry>;
+  /** Progression (0 à 1) des téléchargements en cours. */
+  progress: Record<number, number>;
+  loaded: boolean;
+  load: () => void;
+  download: (chapterId: number, translationId: number | null, recitationId: number | null) => Promise<void>;
+  remove: (chapterId: number) => void;
+};
+
+function ensureRoot() {
+  const dir = root();
+  if (!dir.exists) dir.create({ intermediates: true });
+}
+
+function saveIndex(entries: Record<number, OfflineEntry>) {
+  ensureRoot();
+  indexFile().write(JSON.stringify(Object.values(entries)));
+}
+
+function directorySize(dir: Directory): number {
+  return dir.list().reduce((total, item) => total + (item instanceof File ? (item.size ?? 0) : directorySize(item)), 0);
+}
+
+export const useOffline = create<OfflineStore>((set, get) => ({
+  entries: {},
+  progress: {},
+  loaded: false,
+
+  load: () => {
+    if (!offlineSupported || get().loaded) return;
+    let entries: Record<number, OfflineEntry> = {};
+    try {
+      const file = indexFile();
+      if (file.exists) {
+        const list = JSON.parse(file.textSync()) as OfflineEntry[];
+        entries = Object.fromEntries(list.filter((e) => contentFile(e.chapterId).exists).map((e) => [e.chapterId, e]));
+      }
+    } catch {
+      entries = {};
+    }
+    set({ entries, loaded: true });
+  },
+
+  download: async (chapterId, translationId, recitationId) => {
+    if (!offlineSupported || get().progress[chapterId] !== undefined) return;
+    const setProgress = (value: number) => set((s) => ({ progress: { ...s.progress, [chapterId]: value } }));
+    setProgress(0);
+    // Téléchargement dans un dossier temporaire : la copie précédente reste intacte en cas d'échec.
+    const partial = new Directory(root(), `${chapterId}.partial`);
+    try {
+      // 1. Texte : toutes les pages de versets, avec la traduction choisie.
+      const verses: Verse[] = [];
+      for (let page = 1; ; page++) {
+        const query = new URLSearchParams({ page: String(page), perPage: String(PER_PAGE) });
+        if (translationId) query.set("translationId", String(translationId));
+        const result = await api<VersePage>(`/quran/chapters/${chapterId}/verses?${query}`);
+        verses.push(...result.verses);
+        if (page >= result.pagination.totalPages) break;
+      }
+      const audio = await api<ChapterAudio>(`/quran/chapters/${chapterId}/audio${recitationId ? `?recitationId=${recitationId}` : ""}`);
+      setProgress(0.05);
+
+      // 2. Audio : un fichier par verset, quelques téléchargements en parallèle.
+      if (partial.exists) partial.delete();
+      partial.create({ intermediates: true });
+      let done = 0;
+      const queue = [...audio.files];
+      const worker = async () => {
+        for (let file = queue.shift(); file; file = queue.shift()) {
+          await File.downloadFileAsync(file.url, new File(partial, audioName(file.verseKey)), { idempotent: true });
+          done++;
+          setProgress(0.05 + 0.95 * (done / audio.files.length));
+        }
+      };
+      await Promise.all(Array.from({ length: PARALLEL_DOWNLOADS }, worker));
+
+      const content: OfflineChapter = {
+        version: 1,
+        chapterId,
+        translationId,
+        recitationId: audio.recitationId,
+        downloadedAt: new Date().toISOString(),
+        verses,
+        audio,
+      };
+      new File(partial, "content.json").write(JSON.stringify(content));
+      const previous = chapterDir(chapterId);
+      if (previous.exists) previous.delete();
+      partial.rename(String(chapterId));
+      const entry: OfflineEntry = {
+        chapterId,
+        translationId,
+        recitationId: audio.recitationId,
+        downloadedAt: content.downloadedAt,
+        bytes: directorySize(chapterDir(chapterId)),
+      };
+      const entries = { ...get().entries, [chapterId]: entry };
+      saveIndex(entries);
+      set({ entries });
+    } catch (error) {
+      if (partial.exists) partial.delete();
+      throw error;
+    } finally {
+      set((s) => {
+        const progress = { ...s.progress };
+        delete progress[chapterId];
+        return { progress };
+      });
+    }
+  },
+
+  remove: (chapterId) => {
+    const dir = chapterDir(chapterId);
+    if (dir.exists) dir.delete();
+    const entries = { ...get().entries };
+    delete entries[chapterId];
+    saveIndex(entries);
+    set({ entries });
+  },
+}));
+
+/** Contenu d'une sourate téléchargée, avec l'audio pointant vers les fichiers locaux. */
+export async function readOfflineChapter(chapterId: number): Promise<OfflineChapter | null> {
+  if (!offlineSupported) return null;
+  const file = contentFile(chapterId);
+  if (!file.exists) return null;
+  const content = JSON.parse(await file.text()) as OfflineChapter;
+  return {
+    ...content,
+    audio: {
+      ...content.audio,
+      files: content.audio.files.map((f) => {
+        const local = audioFile(chapterId, f.verseKey);
+        return local.exists ? { ...f, url: local.uri } : f;
+      }),
+    },
+  };
+}
+
+/** Liste des sourates gardée sur l'appareil, pour naviguer sans réseau. */
+export function saveChaptersCache(chapters: Chapter[]) {
+  if (!offlineSupported) return;
+  try {
+    ensureRoot();
+    chaptersFile().write(JSON.stringify(chapters));
+  } catch {
+    // Cache facultatif.
+  }
+}
+
+export function loadChaptersCache(): Chapter[] | null {
+  if (!offlineSupported) return null;
+  try {
+    const file = chaptersFile();
+    return file.exists ? (JSON.parse(file.textSync()) as Chapter[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export const isNetworkError = (error: unknown) => error instanceof ApiError && error.code === "NETWORK_ERROR";
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+}

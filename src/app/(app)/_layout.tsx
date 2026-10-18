@@ -1,4 +1,6 @@
 import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { useOffline } from "@/lib/offline";
 import { useReminderSync } from "@/lib/reminders";
 import { fonts, useColors } from "@/lib/theme";
 
@@ -7,6 +9,7 @@ export const unstable_settings = { anchor: "(tabs)" };
 export default function AppLayout() {
   const colors = useColors();
   useReminderSync();
+  useEffect(() => useOffline.getState().load(), []);
   return (
     <Stack
       screenOptions={{
@@ -37,6 +40,7 @@ export default function AppLayout() {
       <Stack.Screen name="settings" options={{ title: "Réglages" }} />
       <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
       <Stack.Screen name="prayer" options={{ title: "" }} />
+      <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
     </Stack>
   );
 }

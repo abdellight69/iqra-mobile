@@ -11,6 +11,8 @@ import { AppState, Platform, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { clearOutbox, flushReviews } from "@/lib/outbox";
+import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
 import { darkColors, lightColors } from "@/lib/theme";
 
 void SplashScreen.preventAutoHideAsync();
@@ -21,7 +23,7 @@ if (Platform.OS !== "web") {
 }
 
 function createQueryClient() {
-  return new QueryClient({
+  const client = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 30_000,
@@ -30,6 +32,8 @@ function createQueryClient() {
       },
     },
   });
+  restoreQueryCache(client);
+  return client;
 }
 
 export default function RootLayout() {
@@ -55,9 +59,26 @@ export default function RootLayout() {
     void setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => undefined);
   }, [bootstrap]);
 
+  useEffect(() => persistQueryCache(queryClient), [queryClient]);
+
   // À la déconnexion, on vide le cache pour ne rien laisser du compte précédent.
   useEffect(() => {
-    if (status === "signedOut") queryClient.clear();
+    if (status !== "signedOut") return;
+    queryClient.clear();
+    clearQueryCache();
+    clearOutbox();
+  }, [status, queryClient]);
+
+  // Connecté, au démarrage et à chaque retour au premier plan : envoi des évaluations faites hors ligne.
+  useEffect(() => {
+    if (status !== "signedIn") return;
+    const flush = () =>
+      void flushReviews().then((sent) => {
+        if (sent > 0) void queryClient.invalidateQueries();
+      });
+    flush();
+    const subscription = AppState.addEventListener("change", (state) => state === "active" && flush());
+    return () => subscription.remove();
   }, [status, queryClient]);
 
   const ready = (fontsLoaded || fontError) && status !== "loading";

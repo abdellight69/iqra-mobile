@@ -11,7 +11,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useTrackQueue } from "@/lib/audio";
 import { verseTransliteration } from "@/lib/quran-text";
-import { useChapterAudio, useDueVerses, useMe, usePlan, useReviewVerse, useVerse } from "@/lib/queries";
+import { useChapterAudio, useDueVerses, useMe, useOfflineChapter, usePlan, useReviewVerse, useVerse } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
 
@@ -132,6 +132,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const [chapterId, verseNumber] = verseKey.split(":").map(Number) as [number, number];
   const verse = useVerse(verseKey, me.data?.translationId ?? null);
   const audio = useChapterAudio(chapterId, me.data?.recitationId ?? null);
+  const offline = useOfflineChapter(chapterId);
   const review = useReviewVerse();
   const [repeat, setRepeat] = useState(3);
   const [hide, setHide] = useState<HideLevel>(0);
@@ -140,17 +141,24 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const [showTranslation, setShowTranslation] = useState(false);
   const [showTransliteration, setShowTransliteration] = useState(true);
 
-  const url = audio.data?.files.find((f) => f.verseKey === verseKey)?.url;
-  const timings = audio.data?.files.find((f) => f.verseKey === verseKey)?.words;
+  // Sourate téléchargée : audio local (même récitateur) et texte de secours sans réseau.
+  const offlineAudio =
+    offline.data && (me.data?.recitationId == null || me.data.recitationId === offline.data.recitationId || audio.isError)
+      ? offline.data.audio
+      : undefined;
+  const audioFile = (offlineAudio ?? audio.data)?.files.find((f) => f.verseKey === verseKey);
+  const url = audioFile?.url;
+  const timings = audioFile?.words;
+  const verseData = verse.data ?? (verse.isError ? offline.data?.verses.find((v) => v.key === verseKey) : undefined);
   const tracks = useMemo(() => (url ? [{ key: verseKey, url, words: timings }] : []), [url, verseKey, timings]);
   const player = useTrackQueue(tracks, { repeat, autoAdvance: false });
 
-  if (verse.isPending) return <LoadingState />;
-  if (verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
-  const words = verse.data.words.filter((w) => w.type === "word");
+  if (!verseData && verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
+  if (!verseData) return <LoadingState />;
+  const words = verseData.words.filter((w) => w.type === "word");
   const effectiveHide: HideLevel = stage === "recite" ? 2 : stage === "grade" ? 0 : hide;
   // La phonétique accompagne le texte visible ; elle disparaît dès qu'on masque pour réciter.
-  const transliteration = showTransliteration && effectiveHide === 0 ? verseTransliteration(verse.data) : null;
+  const transliteration = showTransliteration && effectiveHide === 0 ? verseTransliteration(verseData) : null;
 
   function renderWord(word: Word) {
     const visible = effectiveHide === 0 || revealed.has(word.location);
@@ -187,9 +195,9 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
               {transliteration}
             </AppText>
           ) : null}
-          {showTranslation && verse.data.translation ? (
+          {showTranslation && verseData.translation ? (
             <AppText muted style={[styles.translation, { borderTopColor: colors.border }]}>
-              {verse.data.translation.text}
+              {verseData.translation.text}
             </AppText>
           ) : null}
         </Card>
@@ -221,7 +229,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                 disabled={!url}
                 onPress={() => (player.index === null ? player.playAt(0) : player.toggle())}
                 style={[styles.play, { backgroundColor: url ? colors.primary : colors.border }]}>
-                {audio.isPending ? (
+                {audio.isPending && !url ? (
                   <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Ionicons name={player.playing ? "pause" : "play"} size={24} color={colors.onPrimary} />

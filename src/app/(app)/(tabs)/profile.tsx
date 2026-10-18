@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { offlineSupported } from "@/lib/offline";
 import { useMe, useStats } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 
@@ -115,6 +116,9 @@ export default function Profile() {
       <ListGroup>
         <ListRow icon="options-outline" title="Réglages" subtitle="Traduction, récitateur, objectif, compte" onPress={() => router.push("/settings")} />
         <ListRow icon="bookmark-outline" title="Signets" onPress={() => router.push("/bookmarks")} />
+        {offlineSupported ? (
+          <ListRow icon="cloud-download-outline" title="Téléchargements" subtitle="Sourates disponibles hors ligne" onPress={() => router.push("/downloads")} />
+        ) : null}
         <ListRow
           icon="log-out-outline"
           title="Se déconnecter"
