@@ -1,0 +1,28 @@
+import { Text, type TextProps } from "react-native";
+import { fonts, useColors } from "@/lib/theme";
+
+const sizes = { sm: 20, md: 26, lg: 32, xl: 40 } as const;
+
+export type ArabicTextProps = TextProps & { size?: keyof typeof sizes | number; color?: string; center?: boolean };
+
+/** Texte arabe en police Amiri Quran, aligné de droite à gauche, avec un interligne généreux pour les signes. */
+export function ArabicText({ size = "md", color, center, style, ...props }: ArabicTextProps) {
+  const colors = useColors();
+  const fontSize = typeof size === "number" ? size : sizes[size];
+  return (
+    <Text
+      {...props}
+      style={[
+        {
+          fontFamily: fonts.arabic,
+          fontSize,
+          lineHeight: Math.round(fontSize * 1.9),
+          color: color ?? colors.arabic,
+          writingDirection: "rtl",
+          textAlign: center ? "center" : "right",
+        },
+        style,
+      ]}
+    />
+  );
+}
