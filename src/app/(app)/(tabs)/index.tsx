@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
-import { useChapters, useMe, useReadingPosition, useStats } from "@/lib/queries";
+import { useChapters, useComprehension, useMe, useReadingPosition, useStats } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 
 // Texte uthmani de 17:9 tel que dans Tanzil (vérifié), voir backend/data/README.md.
@@ -33,9 +33,12 @@ export default function Home() {
   const stats = useStats();
   const position = useReadingPosition();
   const chapters = useChapters();
+  const comprehension = useComprehension();
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
   const goal = s ? s.today.xp / s.today.goalXp : 0;
+  const resumeChapter = comprehension.data?.find((c) => c.chapterId === (position.data?.chapterId ?? 1));
+  const recognized = resumeChapter?.totalWords ? Math.round((resumeChapter.knownWords / resumeChapter.totalWords) * 100) : 0;
 
   return (
     <Screen
@@ -44,6 +47,7 @@ export default function Home() {
         void stats.refetch();
         void position.refetch();
         void me.refetch();
+        void comprehension.refetch();
       }}>
       <View style={styles.header}>
         <AppText variant="label" muted>
@@ -105,7 +109,7 @@ export default function Home() {
           </AppText>
           <View style={styles.resumeCta}>
             <AppText variant="caption" color="#FFFFFFCC">
-              Ouvrir
+              {recognized > 0 ? `${recognized}\u00A0% des mots reconnus · Ouvrir` : "Ouvrir"}
             </AppText>
             <Ionicons name="arrow-forward" size={14} color="#FFFFFFCC" />
           </View>

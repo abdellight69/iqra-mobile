@@ -9,9 +9,9 @@ import { IconButton } from "@/components/IconButton";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
-import { useChapters } from "@/lib/queries";
+import { useChapters, useComprehension } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
-import type { Chapter } from "@/lib/types";
+import type { Chapter, ChapterComprehension } from "@/lib/types";
 
 function normalize(text: string): string {
   return text
@@ -23,7 +23,12 @@ function normalize(text: string): string {
 export default function QuranTab() {
   const colors = useColors();
   const chapters = useChapters();
+  const comprehension = useComprehension();
   const [query, setQuery] = useState("");
+  const comprehensionById = useMemo(
+    () => new Map((comprehension.data ?? []).map((c) => [c.chapterId, c])),
+    [comprehension.data],
+  );
 
   const filtered = useMemo(() => {
     const list = chapters.data ?? [];
@@ -74,14 +79,16 @@ export default function QuranTab() {
               </View>
             </View>
           }
-          renderItem={({ item }) => <ChapterRow chapter={item} />}
+          renderItem={({ item }) => <ChapterRow chapter={item} comprehension={comprehensionById.get(item.id)} />}
         />
       )}
     </SafeAreaView>
   );
 }
 
-function ChapterRow({ chapter }: { chapter: Chapter }) {
+function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehension?: ChapterComprehension }) {
+  const colors = useColors();
+  const known = comprehension && comprehension.totalWords > 0 ? Math.round((comprehension.knownWords / comprehension.totalWords) * 100) : 0;
   return (
     <Pressable
       accessibilityRole="button"
@@ -93,6 +100,11 @@ function ChapterRow({ chapter }: { chapter: Chapter }) {
         <AppText variant="caption" muted>
           {chapter.translatedName} · {chapter.versesCount} versets
         </AppText>
+        {known > 0 ? (
+          <AppText variant="caption" color={colors.primary}>
+            {known} % des mots reconnus
+          </AppText>
+        ) : null}
       </View>
       <View style={styles.right}>
         <ArabicText size={22}>{chapter.nameArabic}</ArabicText>

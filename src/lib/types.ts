@@ -40,6 +40,13 @@ export type Word = {
 /** Le mot du lexique tel qu'il apparaît dans le Coran (occurrence trouvée via le Corpus). */
 export type QuranExample = { verseKey: string; word: Word };
 
+/** Part des mots d'une sourate reconnue grâce aux mots appris dans les leçons. */
+export type ChapterComprehension = { chapterId: number; totalWords: number; knownWords: number; coveredByBook: number };
+
+export type NextWord = { wordId: string; lessonId: string; lessonTitle: string; headword: string; fr: string; gain: number };
+
+export type ChapterComprehensionDetail = ChapterComprehension & { nextWords: NextWord[] };
+
 export type Verse = {
   key: string;
   chapterId: number;

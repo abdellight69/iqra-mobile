@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
+import { ComprehensionCard } from "@/components/ComprehensionCard";
 import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
@@ -261,6 +262,8 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
           )}
         </Card>
       ) : null}
+
+      <ComprehensionCard chapterId={chapterId} />
 
       {showsBasmala(chapterId) ? (
         <View style={[styles.basmala, { borderColor: colors.border }]}>

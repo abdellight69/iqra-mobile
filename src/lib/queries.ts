@@ -5,6 +5,8 @@ import type {
   Bookmark,
   Chapter,
   ChapterAudio,
+  ChapterComprehension,
+  ChapterComprehensionDetail,
   ChapterInfo,
   DueVerse,
   LearningSession,
@@ -43,6 +45,8 @@ export const keys = {
   lessons: ["lessons"] as const,
   lesson: (id: string) => ["lesson", id] as const,
   example: (wordId: string) => ["vocab-example", wordId] as const,
+  comprehension: ["comprehension"] as const,
+  chapterComprehension: (id: number) => ["comprehension", id] as const,
   plans: ["plans"] as const,
   plan: (id: string) => ["plan", id] as const,
   due: ["due-verses"] as const,
@@ -245,6 +249,20 @@ export function useWordExample(wordId: string) {
   });
 }
 
+export function useComprehension() {
+  return useQuery({
+    queryKey: keys.comprehension,
+    queryFn: async () => (await api<{ chapters: ChapterComprehension[] }>("/vocabulary/comprehension")).chapters,
+  });
+}
+
+export function useChapterComprehension(chapterId: number) {
+  return useQuery({
+    queryKey: keys.chapterComprehension(chapterId),
+    queryFn: () => api<ChapterComprehensionDetail>(`/vocabulary/comprehension/${chapterId}`),
+  });
+}
+
 export function useLearningSession(source: { lessonId: string } | { review: true }) {
   const path = "lessonId" in source ? `/vocabulary/lessons/${source.lessonId}/session` : "/vocabulary/review/session";
   return useQuery({
@@ -263,6 +281,7 @@ export function useSubmitSession() {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: keys.lessons });
       void client.invalidateQueries({ queryKey: keys.stats });
+      void client.invalidateQueries({ queryKey: keys.comprehension });
     },
   });
 }
