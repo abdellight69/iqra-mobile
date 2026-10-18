@@ -128,6 +128,10 @@ export type VerseTafsir = {
     paragraphs: string[];
     groupFrom: string | null;
     groupTo: string | null;
+    /** Notes du traducteur (tafsir hébergé). */
+    footnotes?: string | null;
+    /** Tafsir hébergé (QuranEnc) : source à citer, version, date de récupération du texte. */
+    source?: { name: string; url: string; version: string | null; fetchedAt: string };
   } | null;
 };
 export type Recitation = { id: number; reciterName: string; style: string | null; translatedName: string | null };

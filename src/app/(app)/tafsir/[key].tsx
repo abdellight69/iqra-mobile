@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Button } from "@/components/Button";
 import { ErrorState } from "@/components/States";
@@ -39,7 +39,7 @@ export default function TafsirSheet() {
             </AppText>
             <AppText muted>
               {tafsir.data?.frenchAvailable === false
-                ? "Quran.com ne propose pas encore de tafsir en français. Vous pouvez en choisir un dans une autre langue dans les Réglages."
+                ? "Aucun tafsir en français n’est disponible pour le moment. Vous pouvez en choisir un dans une autre langue dans les Réglages."
                 : "Le commentaire choisi ne couvre pas ce verset."}
             </AppText>
           </View>
@@ -62,9 +62,34 @@ export default function TafsirSheet() {
               {paragraph}
             </AppText>
           ))}
-          <AppText variant="caption" faint>
-            Source : {t.name}, via Quran.com (Quran Foundation). Texte reproduit sans modification.
-          </AppText>
+          {t.footnotes ? (
+            <View style={[styles.notes, { borderColor: colors.border }]}>
+              <AppText variant="label" muted>
+                Notes
+              </AppText>
+              <AppText variant="caption">{t.footnotes}</AppText>
+            </View>
+          ) : null}
+          {t.source ? (
+            <>
+              <AppText variant="caption" faint>
+                Source : {t.source.name} — {t.name}.{" "}
+                {t.source.version
+                  ? `Version ${t.source.version}.`
+                  : `Version non numérotée par ${t.source.name} : texte du ${new Date(t.source.fetchedAt).toLocaleDateString("fr-FR")}.`}{" "}
+                Texte reproduit sans modification.
+              </AppText>
+              <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(t.source!.url)} style={styles.link}>
+                <AppText variant="caption" color={colors.primary}>
+                  Signaler une erreur à {t.source.name}
+                </AppText>
+              </Pressable>
+            </>
+          ) : (
+            <AppText variant="caption" faint>
+              Source : {t.name}, via Quran.com (Quran Foundation). Texte reproduit sans modification.
+            </AppText>
+          )}
         </>
       )}
 
@@ -79,4 +104,6 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, marginBottom: spacing.sm },
   notice: { flexDirection: "row", gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
   paragraph: { fontSize: 16, lineHeight: 26 },
+  notes: { gap: 4, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
+  link: { alignSelf: "flex-start" },
 });

@@ -263,7 +263,7 @@ function TafsirOptions({
     <>
       <Option
         label={french[0] ? `Par défaut · ${french[0].name}` : "Par défaut"}
-        detail={french[0] ? "Français" : "Quran.com ne propose pas encore de tafsir en français"}
+        detail={french[0] ? `Français · ${french[0].authorName}` : "Aucun tafsir en français disponible pour le moment"}
         selected={selectedId === null}
         onPress={() => onSelect(null)}
       />
