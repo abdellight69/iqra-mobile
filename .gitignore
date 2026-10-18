@@ -9,7 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native : dossiers générés par `expo prebuild` / `expo run:*` (Continuous Native Generation)
+/ios
+/android
 .kotlin/
 *.orig.*
 *.jks

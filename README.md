@@ -27,6 +27,8 @@ npx expo start              # Expo Go, ou un development build
 
 Le backend (`../backend`) doit tourner et être joignable depuis le téléphone.
 
+`npm run ios` / `npm run android` ouvrent l'app dans **Expo Go**, qui contient déjà tous les modules utilisés (audio, fichiers, notifications locales). Un *development build* (`npx expo run:ios`) n'est utile que pour publier ; avec Expo SDK 58 il exige **Xcode 26** (Swift 6.2). Il génère les dossiers `ios/` et `android/` (ignorés par git) et remplace les scripts `ios` / `android` de `package.json` : ne pas valider ce changement.
+
 ## Qualité
 
 ```bash
