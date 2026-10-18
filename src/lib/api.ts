@@ -1,3 +1,5 @@
+import { fetch as expoFetch } from "expo/fetch";
+import { Platform } from "react-native";
 import { useAuth } from "./auth-store";
 import type { Tokens } from "./types";
 
@@ -15,7 +17,13 @@ export class ApiError extends Error {
   }
 }
 
-type RequestOptions = { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown; auth?: boolean };
+type RequestOptions = {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+  auth?: boolean;
+  /** Corps binaire (enregistrement audio) envoyé tel quel, à la place d'un corps JSON. */
+  raw?: { data: ArrayBuffer | Blob; contentType: string };
+};
 
 function timeZone(): string | undefined {
   try {
@@ -27,15 +35,21 @@ function timeZone(): string | undefined {
 
 async function send(path: string, options: RequestOptions, accessToken?: string): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.raw) headers["Content-Type"] = options.raw.contentType;
+  else if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   const tz = timeZone();
   if (tz) headers["X-Timezone"] = tz;
   try {
+    if (options.raw && Platform.OS !== "web") {
+      // Le fetch de React Native n'envoie pas de corps binaire : celui d'Expo le fait.
+      const response = await expoFetch(`${API_URL}/api/v1${path}`, { method: options.method ?? "POST", headers, body: options.raw.data });
+      return response as unknown as Response;
+    }
     return await fetch(`${API_URL}/api/v1${path}`, {
       method: options.method ?? "GET",
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.raw ? options.raw.data : options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Impossible de joindre le serveur. Vérifiez votre connexion.");

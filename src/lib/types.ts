@@ -247,3 +247,13 @@ export type Stats = {
 
 export type Bookmark = { id: string; chapterId: number; verseNumber: number; note: string | null; createdAt: string };
 export type ReadingPosition = { chapterId: number; verseNumber: number; updatedAt: string } | null;
+
+/** Vérification de la récitation : chaque mot du verset reconnu, oublié ou différent. */
+export type RecitationWordStatus = "ok" | "missed" | "different";
+export type RecitationCheck = {
+  verseKey: string;
+  heard: string;
+  words: { position: number; location: string; textUthmani: string; status: RecitationWordStatus; heard: string | null }[];
+  extras: { afterPosition: number; text: string }[];
+  summary: { total: number; ok: number; missed: number; different: number };
+};

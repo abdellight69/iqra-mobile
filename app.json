@@ -32,8 +32,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "Iqra écoute votre récitation pour repérer les mots oubliés. L’enregistrement est envoyé au serveur pour analyse, puis supprimé.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": true
         }
       ],

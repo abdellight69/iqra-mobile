@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import { queueReview } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
@@ -217,6 +217,22 @@ export function useVerseTafsir(verseKey: string, tafsirId: number | null) {
     queryKey: ["tafsir", verseKey, tafsirId],
     queryFn: () => api<VerseTafsir>(`/quran/verses/${verseKey}/tafsir${tafsirId ? `?tafsirId=${tafsirId}` : ""}`),
     staleTime: DAY,
+  });
+}
+
+/** Le serveur sait-il vérifier une récitation ? (faux sur un serveur sans service de transcription ou plus ancien) */
+export function useRecitationAvailable() {
+  return useQuery({
+    queryKey: ["recitation-status"],
+    queryFn: async () => {
+      try {
+        return (await api<{ available: boolean }>("/recitation/status")).available;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return false;
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

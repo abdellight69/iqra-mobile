@@ -8,10 +8,12 @@ import { AppText } from "@/components/AppText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
+import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/components/RecitationCheck";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useTrackQueue } from "@/lib/audio";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
+import { useRecitationCheck } from "@/lib/recitation";
 import {
   useChapterAudio,
   useDueVerses,
@@ -19,6 +21,7 @@ import {
   useOfflineChapter,
   usePlan,
   useProgramAction,
+  useRecitationAvailable,
   useReviewVerse,
   useVerse,
 } from "@/lib/queries";
@@ -177,6 +180,13 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const rate = usePlayback((p) => p.rate);
   const cycleRate = usePlayback((p) => p.cycleRate);
   const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate });
+  const recitationAvailable = useRecitationAvailable();
+  // Vérification terminée : le verset réapparaît, mots oubliés et différents surlignés.
+  const check = useRecitationCheck(verseKey, () => setStage("grade"));
+  const statusColors = useStatusColors();
+  const result = check.state.phase === "done" ? check.state.result : null;
+  const statusByLocation = useMemo(() => new Map(result?.words.map((w) => [w.location, w.status])), [result]);
+  const busy = check.state.phase === "recording" || check.state.phase === "checking";
 
   if (!verseData && verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
   if (!verseData) return <LoadingState />;
@@ -189,6 +199,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
     const visible = effectiveHide === 0 || revealed.has(word.location);
     const recited = player.currentWord === word.position;
     const text = visible ? word.textUthmani : effectiveHide === 1 ? firstLetter(word.textUthmani) : "";
+    const tone = stage === "grade" ? statusColors(statusByLocation.get(word.location)) : null;
     return (
       <Pressable
         key={word.location}
@@ -199,8 +210,15 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           styles.word,
           !visible && { backgroundColor: colors.surfaceMuted, minWidth: effectiveHide === 2 ? 56 : undefined },
           recited && { backgroundColor: colors.accentSoft },
+          tone && { backgroundColor: tone.background },
         ]}>
-        <AppText style={{ fontFamily: fonts.arabic, fontSize: 30, lineHeight: 56, color: recited && visible ? colors.accent : visible ? colors.arabic : colors.textMuted }}>
+        <AppText
+          style={{
+            fontFamily: fonts.arabic,
+            fontSize: 30,
+            lineHeight: 56,
+            color: tone ? tone.text : recited && visible ? colors.accent : visible ? colors.arabic : colors.textMuted,
+          }}>
           {text || " "}
         </AppText>
       </Pressable>
@@ -312,11 +330,27 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
         ) : null}
 
         {stage === "recite" ? (
-          <Card tone="accent">
-            <AppText variant="bodyStrong">Récitez le verset de mémoire</AppText>
-            <AppText muted>À voix basse ou à voix haute. Touchez un mot pour le révéler si vous bloquez.</AppText>
-          </Card>
+          <>
+            <Card tone="accent">
+              <AppText variant="bodyStrong">Récitez le verset de mémoire</AppText>
+              <AppText muted>À voix basse ou à voix haute. Touchez un mot pour le révéler si vous bloquez.</AppText>
+            </Card>
+            {recitationAvailable.data ? (
+              <RecitationRecorder
+                state={check.state}
+                seconds={check.seconds}
+                onStart={() => {
+                  player.stop();
+                  void check.start();
+                }}
+                onStop={() => void check.stopAndCheck()}
+                onCancel={() => void check.cancel()}
+              />
+            ) : null}
+          </>
         ) : null}
+
+        {stage === "grade" && result ? <RecitationSummary result={result} /> : null}
       </ScrollView>
 
       {stage === "study" ? (
@@ -330,7 +364,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           }}
         />
       ) : stage === "recite" ? (
-        <Button title="Vérifier" icon="eye-outline" onPress={() => setStage("grade")} />
+        busy ? null : <Button title="Vérifier" icon="eye-outline" onPress={() => setStage("grade")} />
       ) : (
         <View style={styles.grades}>
           <AppText variant="headline" center>
