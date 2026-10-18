@@ -31,7 +31,10 @@ const LEVELS: { value: ArabicLevel; title: string; detail: string }[] = [
 const GOALS_XP = [10, 30, 50];
 
 /** Ce qui est proposé à la fin, selon l'objectif et le niveau. */
-function recommendation(goal: Goal, level: ArabicLevel): { title: string; detail: string; programId?: string; route?: "/learn" | "/prayer" } {
+function recommendation(goal: Goal, level: ArabicLevel): { title: string; detail: string; programId?: string; route?: "/learn" | "/prayer" | "/reading" } {
+  if (level === "none") {
+    return { title: "Apprendre à lire l’arabe", detail: "Les lettres, les voyelles, puis Al-Fâtiha et les dernières sourates, avec la récitation de chaque mot.", route: "/reading" };
+  }
   if (goal === "memorize") {
     return level === "fluent"
       ? { title: "Juz’ ‘Amma en 30 jours", detail: "Environ 19 versets par jour, des sourates les plus courtes aux plus longues.", programId: "juz-amma-30" }
@@ -128,7 +131,7 @@ export default function Onboarding() {
             ))}
             {level === "none" ? (
               <AppText variant="caption" muted>
-                Iqra n’enseigne pas encore l’alphabet arabe : chaque verset est accompagné de sa phonétique, et chaque mot de son sens.
+                Iqra vous apprend à lire : les lettres, les voyelles, puis vos premières sourates. En attendant, chaque verset est accompagné de sa phonétique.
               </AppText>
             ) : null}
           </>

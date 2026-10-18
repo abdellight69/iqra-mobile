@@ -11,7 +11,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useLessons, useStats } from "@/lib/queries";
-import { spacing, useColors } from "@/lib/theme";
+import { fonts, spacing, useColors } from "@/lib/theme";
 import type { LessonSummary } from "@/lib/types";
 
 // Décalage horizontal des étapes pour dessiner un chemin sinueux.
@@ -83,6 +83,20 @@ export default function LearnTab() {
                 </AppText>
               )}
             </Card>
+            <Card tone="primary" onPress={() => router.push("/reading")} style={styles.prayer}>
+              <AppText style={styles.readingGlyph} color="#E9D9B0">
+                اقْرَأْ
+              </AppText>
+              <View style={styles.flex}>
+                <AppText variant="bodyStrong" color="#FFFFFF">
+                  Apprendre à lire l’arabe
+                </AppText>
+                <AppText variant="caption" color="#FFFFFFCC">
+                  Les lettres, les voyelles, puis vos premières sourates
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+            </Card>
             <Card tone="accent" onPress={() => router.push("/prayer")} style={styles.prayer}>
               <Ionicons name="moon-outline" size={20} color={colors.accent} />
               <View style={styles.flex}>
@@ -150,6 +164,7 @@ function LessonNode({ lesson, offset }: { lesson: LessonSummary; offset: number 
 
 const styles = StyleSheet.create({
   prayer: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  readingGlyph: { fontFamily: fonts.arabic, fontSize: 26, lineHeight: 48 },
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4, paddingBottom: spacing.xxxl, paddingTop: spacing.lg },
   header: { gap: spacing.xl, marginBottom: spacing.md },

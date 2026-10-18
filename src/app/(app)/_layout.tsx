@@ -49,6 +49,13 @@ export default function AppLayout() {
       <Stack.Screen name="programs/index" options={{ title: "" }} />
       <Stack.Screen name="programs/[id]" options={{ title: "" }} />
       <Stack.Screen name="share/[key]" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="reading/index" options={{ title: "" }} />
+      <Stack.Screen name="reading/alphabet" options={{ title: "L’alphabet" }} />
+      <Stack.Screen
+        name="reading/letter/[id]"
+        options={{ presentation: "formSheet", sheetAllowedDetents: [0.85, 1], sheetGrabberVisible: true, sheetCornerRadius: 24, headerShown: false }}
+      />
+      <Stack.Screen name="reading/session" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
 }

@@ -4,6 +4,7 @@ import { queueReview } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
 import type {
+  AlphabetOverview,
   Bookmark,
   Chapter,
   ChapterAudio,
@@ -18,6 +19,8 @@ import type {
   MemorizationPlanDetail,
   QuranExample,
   ProgramDetail,
+  ReadingResult,
+  ReadingSession,
   ProgramSummary,
   ReadingPosition,
   Recitation,
@@ -61,6 +64,7 @@ export const keys = {
   due: ["due-verses"] as const,
   bookmarks: ["bookmarks"] as const,
   position: ["reading-position"] as const,
+  alphabet: ["alphabet"] as const,
 };
 
 // --- Compte -----------------------------------------------------------------
@@ -459,6 +463,34 @@ export function useProgramAction(id: string) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: keys.programs });
       void client.invalidateQueries({ queryKey: keys.program(id) });
+    },
+  });
+}
+
+// --- Apprendre à lire -----------------------------------------------------------
+
+export function useAlphabet() {
+  return useQuery({ queryKey: keys.alphabet, queryFn: () => api<AlphabetOverview>("/alphabet") });
+}
+
+/** Séance générée à chaque ouverture (exercices tirés au hasard) : jamais réutilisée depuis le cache. */
+export function useReadingSession(lessonId: string) {
+  return useQuery({
+    queryKey: ["reading-session", lessonId],
+    queryFn: () => api<ReadingSession>(`/alphabet/lessons/${lessonId}/session`),
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+export function useCompleteReadingLesson(lessonId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { correct: number; total: number }) =>
+      api<ReadingResult>(`/alphabet/lessons/${lessonId}/complete`, { method: "POST", body: input }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: keys.alphabet });
+      void client.invalidateQueries({ queryKey: keys.stats });
     },
   });
 }

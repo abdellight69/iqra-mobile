@@ -257,3 +257,44 @@ export type RecitationCheck = {
   extras: { afterPosition: number; text: string }[];
   summary: { total: number; ok: number; missed: number; different: number };
 };
+
+/** Apprendre à lire : lettres, parcours et séances (exercices générés par le serveur). */
+export type LetterForms = { isolated: string; initial: string | null; medial: string | null; final: string | null };
+export type AlphabetLetter = {
+  id: string;
+  char: string;
+  name: string;
+  nameArabic: string;
+  translit: string;
+  sound: string;
+  joins: boolean;
+  variants: string[];
+  note: string | null;
+  forms: LetterForms;
+  example: { location: string; text: string; reading: string };
+};
+export type AlphabetLessonSummary = { id: string; title: string; summary: string; kind: string; completed: boolean; bestScore: number | null };
+export type AlphabetOverview = {
+  letters: AlphabetLetter[];
+  units: { id: number; title: string; lessons: AlphabetLessonSummary[] }[];
+  completedCount: number;
+  lessonCount: number;
+  nextLessonId: string | null;
+};
+export type ReadingWord = { location: string; text: string; reading: string; audioUrl: string | null };
+export type ReadingChoice = { id: string; arabic?: string; text?: string };
+export type ReadingStep =
+  | { type: "letter"; letterId: string; example: ReadingWord }
+  | { type: "concept"; title: string; paragraphs: string[]; examples: { arabic: string; reading: string; note?: string }[] }
+  | {
+      type: "choice";
+      question: string;
+      prompt: { arabic?: string; text?: string; detail?: string; highlight?: string[]; word?: ReadingWord; listen?: boolean };
+      choices: ReadingChoice[];
+      answerId: string;
+      reveal?: ReadingWord;
+    }
+  | { type: "match"; question: string; pairs: { id: string; arabic: string; text: string }[] }
+  | { type: "reading"; title: string; verses: { verseKey: string; words: ReadingWord[] }[] };
+export type ReadingSession = { lesson: { id: string; title: string; summary: string; kind: string }; steps: ReadingStep[] };
+export type ReadingResult = { xpGained: number; score: number; firstCompletion: boolean };
