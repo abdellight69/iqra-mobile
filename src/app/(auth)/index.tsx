@@ -5,7 +5,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/Button";
-import { spacing } from "@/lib/theme";
+import { fonts, spacing } from "@/lib/theme";
 
 const FEATURES = [
   { title: "Lire", text: "Verset par verset, avec la traduction et la récitation" },
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   hero: { marginTop: spacing.xxxl, gap: spacing.xl },
   titleBlock: { gap: spacing.xs },
   arabic: { textAlign: "left", lineHeight: 80 },
-  wordmark: { fontFamily: "InstrumentSerif_400Regular", fontSize: 76, lineHeight: 78, letterSpacing: -1.5 },
+  wordmark: { fontFamily: fonts.serifSemibold, fontSize: 64, lineHeight: 72, letterSpacing: -1.5 },
   features: { gap: 0 },
   feature: { flexDirection: "row", gap: spacing.lg, paddingVertical: spacing.md, alignItems: "baseline" },
   featureBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#F5EFE326" },

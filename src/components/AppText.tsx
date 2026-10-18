@@ -4,15 +4,15 @@ import { fonts, useColors } from "@/lib/theme";
 type Variant = "display" | "title" | "headline" | "heading" | "body" | "bodyStrong" | "caption" | "label" | "serifBody";
 
 const variants: Record<Variant, TextStyle> = {
-  display: { fontFamily: fonts.serif, fontSize: 40, lineHeight: 44, letterSpacing: -0.6 },
-  title: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 34, letterSpacing: -0.4 },
-  headline: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 26, letterSpacing: -0.2 },
+  display: { fontFamily: fonts.serifSemibold, fontSize: 32, lineHeight: 38, letterSpacing: -0.6 },
+  title: { fontFamily: fonts.serifSemibold, fontSize: 25, lineHeight: 31, letterSpacing: -0.4 },
+  headline: { fontFamily: fonts.serif, fontSize: 19, lineHeight: 25, letterSpacing: -0.2 },
   heading: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22, letterSpacing: -0.1 },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 23 },
   bodyStrong: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 22 },
   caption: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   label: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, letterSpacing: 1.4, textTransform: "uppercase" },
-  serifBody: { fontFamily: fonts.serif, fontSize: 19, lineHeight: 27 },
+  serifBody: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 25 },
 };
 
 export type AppTextProps = TextProps & { variant?: Variant; muted?: boolean; faint?: boolean; color?: string; center?: boolean; italic?: boolean };

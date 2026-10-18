@@ -61,8 +61,9 @@ export const fonts = {
   medium: "Inter_500Medium",
   semibold: "Inter_600SemiBold",
   bold: "Inter_700Bold",
-  serif: "InstrumentSerif_400Regular",
-  serifItalic: "InstrumentSerif_400Regular_Italic",
+  serif: "Fraunces_500Medium",
+  serifSemibold: "Fraunces_600SemiBold",
+  serifItalic: "Fraunces_400Regular_Italic",
   arabic: "AmiriQuran_400Regular",
 } as const;
 

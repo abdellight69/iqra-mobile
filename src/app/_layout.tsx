@@ -1,6 +1,6 @@
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from "@expo-google-fonts/inter";
-import { InstrumentSerif_400Regular, InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
+import { Fraunces_400Regular_Italic, Fraunces_500Medium, Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setAudioModeAsync } from "expo-audio";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -39,8 +39,9 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
     AmiriQuran_400Regular,
-    InstrumentSerif_400Regular,
-    InstrumentSerif_400Regular_Italic,
+    Fraunces_500Medium,
+    Fraunces_600SemiBold,
+    Fraunces_400Regular_Italic,
   });
 
   useEffect(() => {
