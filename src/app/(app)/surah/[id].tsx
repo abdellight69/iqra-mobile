@@ -206,6 +206,7 @@ export default function SurahReader() {
                 toggleBookmark.mutate({ chapterId, verseNumber: item.verseNumber, existingId: bookmarkByKey.get(item.verseNumber) })
               }
               onMemorize={() => memorizeVerse(item)}
+              onShare={() => router.push({ pathname: "/share/[key]", params: { key: item.key } })}
             />
           )}
         />

@@ -23,6 +23,7 @@ export type VerseCardProps = {
   onPlay: () => void;
   onBookmark: () => void;
   onMemorize: () => void;
+  onShare: () => void;
 };
 
 /** Un verset en pleine largeur : arabe, phonétique, traduction puis actions discrètes. */
@@ -40,6 +41,7 @@ function VerseCardBase({
   onPlay,
   onBookmark,
   onMemorize,
+  onShare,
 }: VerseCardProps) {
   const colors = useColors();
   const words = verse.words.filter((w) => w.type === "word");
@@ -105,6 +107,7 @@ function VerseCardBase({
         <Action icon={active ? "pause" : "play-outline"} label="Écouter le verset" onPress={onPlay} active={active} />
         <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label="Signet" onPress={onBookmark} active={bookmarked} />
         <Action icon="repeat-outline" label="Mémoriser ce verset" onPress={onMemorize} />
+        <Action icon="share-outline" label="Partager ce verset en image" onPress={onShare} />
       </View>
     </View>
   );

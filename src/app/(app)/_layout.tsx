@@ -41,6 +41,7 @@ export default function AppLayout() {
       <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
       <Stack.Screen name="prayer" options={{ title: "" }} />
       <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
+      <Stack.Screen name="share/[key]" options={{ presentation: "modal", headerShown: false }} />
     </Stack>
   );
 }
