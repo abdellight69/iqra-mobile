@@ -50,6 +50,7 @@ export function useCreateProfile() {
       displayName: string;
       avatar: Avatar;
       arabicLevel: "none" | "beginner" | "fluent" | null;
+      isChild?: boolean;
     }) => api<{ id: string }>("/me/profiles", { method: "POST", body: input }),
     onSuccess: invalidate,
   });
@@ -66,6 +67,7 @@ export function useUpdateProfile() {
       id: string;
       displayName?: string;
       avatar?: Avatar;
+      isChild?: boolean;
     }) => api<void>(`/me/profiles/${id}`, { method: "PATCH", body: changes }),
     onSuccess: () => {
       void invalidate();

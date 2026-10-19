@@ -159,6 +159,7 @@ export default function Home() {
         ) : null}
       </Card>
 
+      {me.data?.isChild ? null : (
       <Card tone="accent" onPress={() => router.push("/prayer")} style={styles.resume}>
         <View style={styles.flex}>
           <AppText variant="label" color={colors.accent}>
@@ -171,8 +172,9 @@ export default function Home() {
         </View>
         <Ionicons name="arrow-forward" size={18} color={colors.accent} />
       </Card>
+      )}
 
-{step?.programId && step.programId === activeProgram?.id ? null : (
+{me.data?.isChild || (step?.programId && step.programId === activeProgram?.id) ? null : (
               <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
           <View style={styles.flex}>
             <AppText variant="label" muted>

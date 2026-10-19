@@ -11,7 +11,7 @@ Application React Native (Expo SDK 58, Expo Router, TypeScript) pour Android et 
 | **Mot (au toucher)** | Audio du mot, phonétique, traduction, analyse grammaticale segment par segment (FR + AR), racine et lemme avec nombre d'occurrences, versets de la même racine, lien vers la fiche du lexique |
 | **Mémoriser** | Plans par sourate entière ou plage de versets ; écoute répétée (×1/×3/×5), masquage progressif (texte → premières lettres → masqué), récitation puis auto-évaluation ; révisions espacées (SM-2) |
 | **Vocabulaire** | Parcours façon Duolingo sur les 47 fiches de « 80% des mots du Qour'ân » : présentation des mots, QCM arabe→français et français→arabe, association de paires, erreurs reproposées, XP, révisions espacées |
-| **Profil** | Statistiques, activité de la semaine, réglages (traduction, récitateur, objectif), mot de passe, suppression du compte |
+| **Profil** | Statistiques, activité de la semaine, profils de la famille (jusqu'à 6, code parent, **profil enfant** : sans réglages ni compte, barre d'onglets plus grande, séances courtes), réglages (traduction, récitateur, objectif), mot de passe, suppression du compte |
 
 Également : phonétique des versets et des mots, part de chaque sourate reconnue avec les mots connus surlignés, surlignage du mot récité pendant l'écoute, parcours « Comprendre sa prière », jour de répit hebdomadaire pour la série, rappel quotidien (notifications locales), et **mode hors ligne** : sourates téléchargées (texte, traduction, phonétique, récitation), données du compte gardées sur l'appareil, auto-évaluations de mémorisation envoyées à la reconnexion.
 

@@ -12,6 +12,7 @@ import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/compon
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useTrackQueue } from "@/lib/audio";
+import { KIDS_MAX_DUE_VERSES, useKidsMode } from "@/lib/kids";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
 import { useRecitationCheck } from "@/lib/recitation";
@@ -56,11 +57,13 @@ export default function MemorizationSession() {
   const programAction = useProgramAction(params.programId ?? "");
   const plan = usePlan(params.planId ?? "");
   const due = useDueVerses();
+  const kids = useKidsMode();
 
   const keys = useMemo<string[] | null>(() => {
     // Étape d'un programme guidé : les versets du jour.
     if (params.keys) return params.keys.split(",").filter((k) => /^\d{1,3}:\d{1,3}$/.test(k));
-    if (params.due) return due.data ? due.data.map((v) => v.key) : null;
+    // Enfant : des séances courtes ; le reste des révisions attend la prochaine.
+    if (params.due) return due.data ? due.data.slice(0, kids ? KIDS_MAX_DUE_VERSES : due.data.length).map((v) => v.key) : null;
     if (!plan.data) return null;
     if (params.verse) return [`${plan.data.chapterId}:${params.verse}`];
     const dueKeys = plan.data.verses.filter((v) => v.due).map((v) => v.key);

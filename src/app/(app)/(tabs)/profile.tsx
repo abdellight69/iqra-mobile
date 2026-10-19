@@ -149,18 +149,20 @@ export default function Profile() {
           subtitle="Un profil par membre de la famille"
           onPress={() => router.push("/profiles")}
         />
-        <ListRow
-          icon="options-outline"
-          title="Réglages"
-          subtitle="Traduction, récitateur, objectif, compte"
-          onPress={() => router.push("/settings")}
-        />
+        {me.data?.isChild ? null : (
+          <ListRow
+            icon="options-outline"
+            title="Réglages"
+            subtitle="Traduction, récitateur, objectif, compte"
+            onPress={() => router.push("/settings")}
+          />
+        )}
         <ListRow
           icon="bookmark-outline"
           title="Signets"
           onPress={() => router.push("/bookmarks")}
         />
-        {offlineSupported ? (
+        {offlineSupported && !me.data?.isChild ? (
           <ListRow
             icon="cloud-download-outline"
             title="Téléchargements"

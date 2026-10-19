@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Switch, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -92,7 +92,7 @@ function ProfileCard({ profile, onEdit }: { profile: Profile; onEdit: () => void
         <View style={styles.flex}>
           <AppText variant="headline">{profile.displayName}</AppText>
           <AppText variant="caption" muted>
-            {[profile.isOwner ? "Titulaire du compte" : null, profile.current ? "profil actuel" : null].filter(Boolean).join(" · ") || "Profil de la famille"}
+            {[profile.isOwner ? "Titulaire du compte" : profile.isChild ? "Profil enfant" : null, profile.current ? "profil actuel" : null].filter(Boolean).join(" · ") || "Profil de la famille"}
           </AppText>
         </View>
       </View>
@@ -143,12 +143,13 @@ function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => voi
   const [name, setName] = useState(profile?.displayName ?? "");
   const [avatar, setAvatar] = useState<Avatar>((profile?.avatar as Avatar | null) ?? "blue");
   const [level, setLevel] = useState<ArabicLevel | null>(profile ? (profile.arabicLevel ?? null) : "none");
+  const [isChild, setIsChild] = useState(profile ? profile.isChild === true : true);
   const mutation = profile ? update : create;
 
   function save() {
     const displayName = name.trim();
-    if (profile) update.mutate({ id: profile.id, displayName, avatar }, { onSuccess: onDone });
-    else create.mutate({ displayName, avatar, arabicLevel: level }, { onSuccess: onDone });
+    if (profile) update.mutate({ id: profile.id, displayName, avatar, ...(profile.isOwner ? {} : { isChild }) }, { onSuccess: onDone });
+    else create.mutate({ displayName, avatar, arabicLevel: level, isChild }, { onSuccess: onDone });
   }
 
   return (
@@ -191,6 +192,17 @@ function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => voi
           </View>
         </>
       ) : null}
+      {profile?.isOwner ? null : (
+        <View style={styles.switchRow}>
+          <View style={styles.flex}>
+            <AppText>Profil enfant</AppText>
+            <AppText variant="caption" muted>
+              Sans réglages ni compte, gros boutons, séances courtes.
+            </AppText>
+          </View>
+          <Switch value={isChild} onValueChange={setIsChild} trackColor={{ true: colors.primary }} accessibilityLabel="Profil enfant" />
+        </View>
+      )}
       {mutation.isError ? (
         <AppText variant="caption" color={colors.danger}>
           {errorMessage(mutation.error)}
@@ -264,6 +276,7 @@ function PinSection({ pinSet }: { pinSet: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  switchRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   flex: { flex: 1 },
   card: { gap: spacing.md, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },

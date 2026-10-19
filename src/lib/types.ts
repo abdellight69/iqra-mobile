@@ -9,6 +9,8 @@ export type User = {
   avatar?: string | null;
   /** Titulaire du compte (absent sur un serveur plus ancien : un seul profil, le titulaire). */
   isOwner?: boolean;
+  /** Profil enfant : interface simplifiée, séances plus courtes (absent sur un serveur plus ancien). */
+  isChild?: boolean;
   translationId: number | null;
   recitationId: number | null;
   /** Tafsir choisi (absent sur un serveur plus ancien ; null : français par défaut s'il existe). */
@@ -360,6 +362,7 @@ export type Profile = {
   displayName: string;
   avatar: string | null;
   arabicLevel: ArabicLevel | null;
+  isChild?: boolean;
   isOwner: boolean;
   current: boolean;
   /** Visible du titulaire seulement. */
