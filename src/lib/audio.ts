@@ -46,8 +46,10 @@ export function useTrackQueue(
     nowPlaying?: (track: Track) => AudioMetadata;
   } = {},
 ) {
-  // Mises à jour rapprochées pour suivre la récitation mot par mot.
-  const player = useAudioPlayer(null, { updateInterval: 100 });
+  // Mises à jour rapprochées pour suivre la récitation mot par mot. Session audio gardée active
+  // entre deux versets : sinon iOS la coupe à la fin de chaque piste, l'app perd sa place sur
+  // l'écran verrouillé (et peut être suspendue avant le verset suivant), la musique d'une autre app reprend.
+  const player = useAudioPlayer(null, { updateInterval: 100, keepAudioSessionActive: true });
   const status = useAudioPlayerStatus(player);
   const [index, setIndex] = useState<number | null>(null);
   const [plays, setPlays] = useState(0);
@@ -136,7 +138,8 @@ export function useTrackQueue(
     /** Tour en cours du passage répété. */
     round,
     playing: status.playing,
-    buffering: status.isBuffering,
+    // Sans piste chargée, iOS se dit « en chargement » : on ne l'affiche que pendant une lecture.
+    buffering: index !== null && status.isBuffering,
     playAt,
     playKey: (key: string) => {
       const i = tracks.findIndex((t) => t.key === key);

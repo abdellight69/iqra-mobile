@@ -338,11 +338,18 @@ export function useChapterComprehension(chapterId: number) {
   });
 }
 
+/**
+ * Le cache garde la liste reçue (un Set enregistré en JSON devient `{}`) ; le Set est construit à la
+ * lecture. Une ancienne copie `{}` donne un Set vide le temps du rechargement.
+ */
+const toKnownSet = (data: { known?: string[] }) => new Set(Array.isArray(data.known) ? data.known : []);
+
 /** Positions « verset:mot » des mots reconnus d'une sourate, pour les surligner dans le lecteur. */
 export function useKnownWords(chapterId: number, enabled: boolean) {
   return useQuery({
     queryKey: keys.knownWords(chapterId),
-    queryFn: async () => new Set((await api<{ known: string[] }>(`/vocabulary/comprehension/${chapterId}/words`)).known),
+    queryFn: () => api<{ known: string[] }>(`/vocabulary/comprehension/${chapterId}/words`),
+    select: toKnownSet,
     enabled,
   });
 }

@@ -74,7 +74,7 @@ export default function Profile() {
       <View style={styles.stats}>
         <StatTile
           value={s?.currentStreak ?? 0}
-          label="jours de suite"
+          label={(s?.currentStreak ?? 0) > 1 ? "jours de suite" : "jour de suite"}
           color={colors.accent}
         />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />

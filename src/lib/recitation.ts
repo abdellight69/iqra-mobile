@@ -84,8 +84,12 @@ export function useRecitationCheck(target: RecitationTarget, onResult?: (result:
     clearLimit();
     setState({ phase: "checking" });
     try {
-      await recorder.stop();
-      await setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
+      try {
+        await recorder.stop();
+      } finally {
+        // Même si l'arrêt échoue : sinon le son resterait dans l'écouteur (mode enregistrement).
+        await setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
+      }
       if (!recorder.uri) throw new Error("no recording");
       const raw = await readRecording(recorder.uri);
       const result = await api<RecitationCheck>(`/recitation/check?${query}`, { method: "POST", raw });
@@ -112,12 +116,28 @@ export function useRecitationCheck(target: RecitationTarget, onResult?: (result:
     setState({ phase: "idle" });
   }
 
-  // Écran quitté pendant l'enregistrement : le micro est relâché et le mode lecture rétabli.
+  // Écran quitté pendant l'enregistrement : le micro est relâché, le mode lecture rétabli et
+  // l'enregistrement inachevé supprimé de l'appareil.
   useEffect(
     () => () => {
       clearLimit();
-      if (recording.current) void setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
+      if (!recording.current) return;
+      recording.current = false;
+      void setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
+      // Le recorder peut déjà être libéré : toute erreur est ignorée.
+      void (async () => {
+        try {
+          const uri = recorder.uri;
+          await recorder.stop().catch(() => undefined);
+          if (!uri || Platform.OS === "web") return;
+          const file = new File(uri);
+          if (file.exists) file.delete();
+        } catch {
+          // Rien à nettoyer.
+        }
+      })();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

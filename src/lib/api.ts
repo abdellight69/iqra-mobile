@@ -70,19 +70,25 @@ async function parse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
-// Un seul rafraîchissement à la fois, partagé par toutes les requêtes en échec.
-let refreshing: Promise<Tokens | null> | null = null;
+/**
+ * Résultat d'un rafraîchissement : nouveaux jetons, session refusée par le serveur (jeton révoqué ou
+ * expiré : il faut se reconnecter), ou serveur injoignable (réseau, 5xx, 429 : la session est gardée).
+ */
+type RefreshResult = { tokens: Tokens } | "rejected" | "unavailable";
 
-async function refreshTokens(refreshToken: string): Promise<Tokens | null> {
-  refreshing ??= (async () => {
+// Un seul rafraîchissement à la fois, partagé par toutes les requêtes en échec.
+let refreshing: Promise<RefreshResult> | null = null;
+
+async function refreshTokens(refreshToken: string): Promise<RefreshResult> {
+  refreshing ??= (async (): Promise<RefreshResult> => {
     try {
       const response = await send("/auth/refresh", { method: "POST", body: { refreshToken } });
-      if (!response.ok) return null;
+      if (!response.ok) return response.status >= 400 && response.status < 500 && response.status !== 429 ? "rejected" : "unavailable";
       const tokens = (await response.json()) as Tokens;
       await useAuth.getState().setTokens({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
-      return tokens;
+      return { tokens };
     } catch {
-      return null;
+      return "unavailable";
     } finally {
       refreshing = null;
     }
@@ -96,12 +102,22 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   let response = await send(path, options, tokens?.accessToken);
 
   if (response.status === 401 && useToken && tokens) {
-    const renewed = await refreshTokens(tokens.refreshToken);
-    if (!renewed) {
-      await useAuth.getState().signOut();
-      throw new ApiError(401, "SESSION_EXPIRED", "Votre session a expiré, reconnectez-vous.");
+    // Jetons renouvelés entre-temps par une autre requête : on rejoue avec les nouveaux, sans
+    // présenter l'ancien refresh token (le serveur y verrait une réutilisation et fermerait la session).
+    const current = useAuth.getState().tokens;
+    if (current && current.accessToken !== tokens.accessToken) {
+      response = await send(path, options, current.accessToken);
+    } else {
+      const renewed = await refreshTokens(tokens.refreshToken);
+      if (renewed === "rejected") {
+        await useAuth.getState().signOut();
+        throw new ApiError(401, "SESSION_EXPIRED", "Votre session a expiré, reconnectez-vous.");
+      }
+      if (renewed === "unavailable") {
+        throw new ApiError(0, "NETWORK_ERROR", "Impossible de joindre le serveur. Vérifiez votre connexion.");
+      }
+      response = await send(path, options, renewed.tokens.accessToken);
     }
-    response = await send(path, options, renewed.accessToken);
   }
   return parse<T>(response);
 }

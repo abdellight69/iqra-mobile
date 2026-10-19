@@ -72,7 +72,8 @@ export default function Settings() {
     try {
       await api("/me/password", {
         method: "POST",
-        body: { currentPassword, newPassword },
+        // Le serveur ferme les autres sessions du compte et garde celle de cet appareil.
+        body: { currentPassword, newPassword, refreshToken: useAuth.getState().tokens?.refreshToken },
       });
       setCurrentPassword("");
       setNewPassword("");

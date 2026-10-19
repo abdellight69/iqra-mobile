@@ -37,8 +37,8 @@ function recommendation(goal: Goal, level: ArabicLevel): { title: string; detail
   }
   if (goal === "memorize") {
     return level === "fluent"
-      ? { title: "Juz’ ‘Amma en 30 jours", detail: "Environ 19 versets par jour, des sourates les plus courtes aux plus longues.", programId: "juz-amma-30" }
-      : { title: "Juz’ ‘Amma en 60 jours", detail: "Environ 10 versets par jour, des sourates les plus courtes aux plus longues.", programId: "juz-amma-60" };
+      ? { title: "Juz’ ‘Amma en 30 jours", detail: "Environ 19 versets par jour, d’An-Nâs à An-Naba’ (ordre inverse du Mushaf).", programId: "juz-amma-30" }
+      : { title: "Juz’ ‘Amma en 60 jours", detail: "Environ 10 versets par jour, d’An-Nâs à An-Naba’ (ordre inverse du Mushaf).", programId: "juz-amma-60" };
   }
   if (goal === "read") {
     return level === "fluent"

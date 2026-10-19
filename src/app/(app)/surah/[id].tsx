@@ -119,12 +119,23 @@ export default function SurahReader() {
     }
   }, [targetVerse, list, verses, canLoadMore]);
 
-  // Suit le verset en cours de récitation.
+  // Suit le verset en cours de récitation : une fois par verset (l'effet est rejoué à chaque rendu,
+  // soit toutes les 100 ms pendant la lecture, et ne doit pas ramener l'utilisateur qui fait défiler).
+  const followedKey = useRef<string | null>(null);
   useEffect(() => {
-    if (!queue.currentKey) return;
-    const index = list.findIndex((v) => v.key === queue.currentKey);
-    if (index >= 0) listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.1 });
-    else if (canLoadMore) void verses.fetchNextPage();
+    const key = queue.currentKey;
+    if (!key) {
+      followedKey.current = null;
+      return;
+    }
+    if (followedKey.current === key) return;
+    const index = list.findIndex((v) => v.key === key);
+    if (index >= 0) {
+      followedKey.current = key;
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.1 });
+    } else if (canLoadMore && !verses.isFetchingNextPage) {
+      void verses.fetchNextPage();
+    }
   }, [queue.currentKey, list, verses, canLoadMore]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ListViewToken[] }) => {

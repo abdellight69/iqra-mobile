@@ -10,6 +10,7 @@ import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/components/RecitationCheck";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { errorMessage } from "@/lib/api";
 import { useTrackQueue } from "@/lib/audio";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
@@ -70,6 +71,19 @@ export default function MemorizationSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.due ? due.isSuccess : plan.isSuccess]);
 
+  // Journée du programme : si le serveur ne répond pas (hors ligne), on le dit et on propose de réessayer.
+  const completeDay = (day: number) =>
+    programAction.mutate(
+      { type: "complete", day },
+      {
+        onError: (error) =>
+          Alert.alert("Journée non validée", errorMessage(error), [
+            { text: "Plus tard", style: "cancel" },
+            { text: "Réessayer", onPress: () => completeDay(day) },
+          ]),
+      },
+    );
+
   const source = params.due ? due : plan;
   if (!params.keys && source.isError) return <ErrorState error={source.error} onRetry={() => router.back()} />;
   if (!keys) return <LoadingState label="Préparation de la séance…" />;
@@ -84,7 +98,7 @@ export default function MemorizationSession() {
     <SessionRunner
       keys={keys}
       onFinished={() => {
-        if (params.programId && params.day) programAction.mutate({ type: "complete", day: Number(params.day) });
+        if (params.programId && params.day) completeDay(Number(params.day));
       }}
     />
   );

@@ -81,8 +81,9 @@ function VerseCardBase({
               }}>
               {showTajweed && word.tajweed
                 ? word.tajweed.map((segment, i) => (
-                    // Text natif : hérite de la police et de la taille du mot, seule la couleur change.
-                    <Text key={i} style={{ color: tajweedColor(segment.rule, dark) ?? colors.arabic }}>
+                    // Text natif : hérite de la police, de la taille et de la couleur du mot (récité,
+                    // connu) ; seuls les segments d'une règle de tajwid prennent leur couleur.
+                    <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
                       {segment.text}
                     </Text>
                   ))

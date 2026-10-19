@@ -45,14 +45,19 @@ export function flushReviews(): Promise<number> {
     let sent = 0;
     try {
       for (let pending = read(); pending.length > 0; pending = read()) {
-        const [next, ...rest] = pending as [PendingReview, ...PendingReview[]];
+        const next = pending[0] as PendingReview;
         try {
           await api("/memorization/reviews", { method: "POST", body: next });
         } catch (error) {
           // Refus du serveur (verset retiré, données invalides) : inutile de réessayer.
           if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500 || error.status === 401) break;
         }
-        write(rest);
+        // Relu après l'envoi : une évaluation ajoutée pendant la requête ne doit pas être écrasée.
+        const now = read();
+        const first = now[0];
+        if (first && first.chapterId === next.chapterId && first.verseNumber === next.verseNumber && first.quality === next.quality) {
+          write(now.slice(1));
+        }
         sent++;
       }
     } finally {
