@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./auth-store";
 import { flushReviews, pendingReviewCount } from "./outbox";
+import { rememberProfile } from "./profile-memory";
 import { clearQueryCache } from "./query-persistence";
 import type { AuthResponse, Profiles } from "./types";
 
@@ -122,6 +123,7 @@ export function useSwitchProfile() {
       client.clear();
       clearQueryCache();
       await useAuth.getState().signIn(response);
+      await rememberProfile(id);
       return response.user;
     },
   });

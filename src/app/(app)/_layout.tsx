@@ -3,11 +3,13 @@ import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useOffline } from "@/lib/offline";
+import { loadRememberedProfile } from "@/lib/profile-memory";
 import { useReminderSync, useReminderTaps } from "@/lib/reminders";
 import { fonts, useColors } from "@/lib/theme";
 import type { Profiles } from "@/lib/types";
 
-// « Qui lit ? » une fois par lancement de l'app, quand le compte a plusieurs profils.
+// « Qui lit ? » une fois par lancement de l'app, quand le compte a plusieurs profils et que le
+// profil de la session n'est pas celui choisi la dernière fois (mémorisé jusqu'à la déconnexion).
 let profilePickerShown = false;
 
 function useProfilePickerOnLaunch() {
@@ -19,8 +21,10 @@ function useProfilePickerOnLaunch() {
   useEffect(() => {
     if (profilePickerShown) return;
     profilePickerShown = true;
-    api<Profiles>("/me/profiles")
-      .then((data) => {
+    Promise.all([api<Profiles>("/me/profiles"), loadRememberedProfile()])
+      .then(([data, remembered]) => {
+        const active = data.profiles.find((p) => p.current);
+        if (remembered && active?.id === remembered) return;
         if (data.profiles.length > 1 && !current.current.startsWith("/profiles")) router.push("/profiles");
       })
       // Hors ligne ou serveur plus ancien : on reste sur le profil actuel.

@@ -10,6 +10,7 @@ import { SafeArea } from "@/components/SafeArea";
 import { ErrorState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { errorMessage } from "@/lib/api";
+import { rememberProfile } from "@/lib/profile-memory";
 import { useProfiles, useSwitchProfile } from "@/lib/profiles";
 import { spacing, useColors } from "@/lib/theme";
 import type { Profile } from "@/lib/types";
@@ -30,7 +31,10 @@ export default function ProfilePicker() {
 
   function choose(profile: Profile, code?: string) {
     setError(null);
-    if (profile.current) return close();
+    if (profile.current) {
+      void rememberProfile(profile.id);
+      return close();
+    }
     const data = profiles.data!;
     if (profile.isOwner && data.pinSet && !data.isOwner && !code) {
       setAskPinFor(profile);

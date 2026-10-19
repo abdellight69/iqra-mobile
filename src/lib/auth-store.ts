@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { loadTokens, saveTokens } from "./session-storage";
 import type { AuthResponse, Tokens, User } from "./types";
+import { forgetProfile } from "./profile-memory";
 
 type AuthState = {
   status: "loading" | "signedIn" | "signedOut";
@@ -35,6 +36,7 @@ export const useAuth = create<AuthState>((set) => ({
   },
   async signOut() {
     await saveTokens(null);
+    await forgetProfile();
     set({ tokens: null, user: null, status: "signedOut" });
   },
 }));
