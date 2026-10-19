@@ -1,14 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useColorScheme, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { useOneShot } from "@/lib/audio";
 import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
-import { TAJWEED_RULES, type TajweedRule } from "@/lib/tajweed";
+import { explainLabel, explainSegment, LEMMA_HELP, ROOT_HELP, SEGMENTS_INTRO } from "@/lib/grammar-help";
+import { TAJWEED_GLOSSARY, TAJWEED_RULES, tajweedColor, type TajweedRule } from "@/lib/tajweed";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Label, Segment } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default function WordSheet() {
     text?: string;
     transliteration?: string;
     tajweed?: string;
+    segments?: string;
     translation?: string;
     language?: string;
     audio?: string;
@@ -31,6 +33,11 @@ export default function WordSheet() {
     .split(",")
     .map((code) => TAJWEED_RULES[code])
     .filter((rule): rule is TajweedRule => rule !== undefined);
+  const segments = parseSegments(params.segments);
+  // Termes du glossaire cités par les règles présentes sur ce mot.
+  const tajweedText = tajweedRules.map((r) => `${r.name} ${r.description} ${r.how}`).join(" ").toLowerCase();
+  const glossary = TAJWEED_GLOSSARY.filter((g) => tajweedText.includes(g.term.split(" ")[0]!.toLowerCase()));
+  const [showGlossary, setShowGlossary] = useState(false);
   const details = useWordDetails(params.location);
   const sound = useOneShot();
   const [showOccurrences, setShowOccurrences] = useState(false);
@@ -81,17 +88,59 @@ export default function WordSheet() {
       {tajweedRules.length > 0 ? (
         <Card style={styles.section}>
           <AppText variant="headline">Tajwid</AppText>
+          <AppText variant="caption" muted>
+            {"Les lettres colorées montrent où chaque règle s'applique dans le mot."}
+          </AppText>
+          {segments.length > 0 ? (
+            <ArabicText size={40} center accessibilityLabel={params.text}>
+              {segments.map((segment, i) => (
+                <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
+                  {segment.text}
+                </Text>
+              ))}
+            </ArabicText>
+          ) : null}
           {tajweedRules.map((rule) => (
             <View key={rule.name} style={styles.tajweedRow}>
               <View style={[styles.tajweedDot, { backgroundColor: dark ? rule.dark : rule.light }]} />
               <View style={styles.flex}>
-                <AppText variant="bodyStrong">{rule.name}</AppText>
+                <AppText variant="bodyStrong" color={dark ? rule.dark : rule.light}>
+                  {rule.name}
+                </AppText>
                 <AppText variant="caption" muted>
                   {rule.description}
+                </AppText>
+                <AppText variant="caption">
+                  <AppText variant="caption" muted>
+                    Comment faire :{" "}
+                  </AppText>
+                  {rule.how}
                 </AppText>
               </View>
             </View>
           ))}
+          {glossary.length > 0 ? (
+            <View style={[styles.glossary, { borderColor: colors.border }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showGlossary }}
+                onPress={() => setShowGlossary((s) => !s)}
+                style={styles.glossaryHeader}>
+                <Ionicons name="help-circle-outline" size={16} color={colors.textMuted} />
+                <AppText variant="caption" style={styles.flex}>
+                  Les mots du tajwid : {glossary.map((g) => g.term.split(" ")[0]).join(", ")}
+                </AppText>
+                <Ionicons name={showGlossary ? "chevron-up" : "chevron-down"} size={14} color={colors.textMuted} />
+              </Pressable>
+              {showGlossary
+                ? glossary.map((g) => (
+                    <AppText key={g.term} variant="caption" muted>
+                      <AppText variant="caption">{g.term}</AppText> — {g.definition}
+                    </AppText>
+                  ))
+                : null}
+            </View>
+          ) : null}
         </Card>
       ) : null}
 
@@ -105,6 +154,14 @@ export default function WordSheet() {
         <>
           <Card style={styles.section}>
             <AppText variant="headline">Définition grammaticale</AppText>
+            {morphology.segments.length > 1 ? (
+              <AppText variant="caption" muted>
+                {SEGMENTS_INTRO}
+              </AppText>
+            ) : null}
+            <AppText variant="caption" muted>
+              Touchez une étiquette pour la comprendre.
+            </AppText>
             {morphology.segments.map((segment, i) => (
               <SegmentRow key={i} segment={segment} />
             ))}
@@ -121,6 +178,9 @@ export default function WordSheet() {
                     <AppText variant="caption" muted>
                       {morphology.rootOccurrences} occurrences dans le Coran
                     </AppText>
+                    <AppText variant="caption" faint>
+                      {ROOT_HELP}
+                    </AppText>
                   </View>
                   <ArabicText size="lg">{morphology.root.split("").join(" ")}</ArabicText>
                 </View>
@@ -133,6 +193,9 @@ export default function WordSheet() {
                     </AppText>
                     <AppText variant="caption" muted>
                       {morphology.lemmaOccurrences} occurrences dans le Coran
+                    </AppText>
+                    <AppText variant="caption" faint>
+                      {LEMMA_HELP}
                     </AppText>
                   </View>
                   <ArabicText size="lg">{morphology.lemma}</ArabicText>
@@ -211,10 +274,24 @@ export default function WordSheet() {
   );
 }
 
+/** Découpage tajwid transmis par le lecteur (JSON) ; vide si absent ou illisible. */
+function parseSegments(raw: string | undefined): { text: string; rule: string | null }[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((s): s is { text: string; rule: string | null } => typeof s?.text === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 function SegmentRow({ segment }: { segment: Segment }) {
   const colors = useColors();
   const nature: Label = segment.category ?? segment.partOfSpeech;
   const chips: Label[] = [...(segment.verbForm ? [segment.verbForm] : []), ...segment.features, ...(segment.family ? [segment.family] : [])];
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedChip = chips.find((c) => c.code === selected);
+  const definition = selectedChip ? explainLabel(selectedChip, "feature") : null;
   return (
     <View style={[styles.segment, { borderColor: colors.border }]}>
       <View style={styles.kv}>
@@ -229,16 +306,37 @@ function SegmentRow({ segment }: { segment: Segment }) {
         </View>
         {segment.form ? <ArabicText size="lg">{segment.form}</ArabicText> : null}
       </View>
+      <AppText variant="caption">
+        <AppText variant="caption" muted>
+          En clair :{" "}
+        </AppText>
+        {explainSegment(segment)}
+      </AppText>
       {chips.length > 0 ? (
         <View style={styles.chips}>
-          {chips.map((chip) => (
-            <View key={chip.code} style={[styles.chip, { backgroundColor: colors.primarySoft }]}>
-              <AppText variant="caption" color={colors.primaryStrong}>
-                {chip.fr}
-                {chip.ar ? ` · ${chip.ar}` : ""}
-              </AppText>
-            </View>
-          ))}
+          {chips.map((chip) => {
+            const active = chip.code === selected;
+            return (
+              <Pressable
+                key={chip.code}
+                accessibilityRole="button"
+                accessibilityLabel={chip.fr}
+                accessibilityHint="Affiche une explication simple"
+                accessibilityState={{ selected: active }}
+                onPress={() => setSelected(active ? null : chip.code)}
+                style={[styles.chip, { backgroundColor: active ? colors.primary : colors.primarySoft }]}>
+                <AppText variant="caption" color={active ? colors.onPrimary : colors.primaryStrong}>
+                  {chip.fr}
+                  {chip.ar ? ` · ${chip.ar}` : ""}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+      {selectedChip ? (
+        <View style={[styles.definition, { backgroundColor: colors.surfaceMuted }]}>
+          <AppText variant="caption">{definition ?? `${selectedChip.fr} : pas d'explication détaillée pour cette étiquette.`}</AppText>
         </View>
       ) : null}
     </View>
@@ -258,7 +356,10 @@ const styles = StyleSheet.create({
   kv: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   segment: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md, gap: spacing.sm },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: radius.pill, minHeight: 32, justifyContent: "center" },
+  definition: { padding: spacing.md, borderRadius: radius.md },
+  glossary: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm, gap: spacing.sm },
+  glossaryHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: 36 },
   link: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
   occurrences: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   occurrence: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, paddingHorizontal: spacing.sm, alignItems: "center" },

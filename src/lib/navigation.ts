@@ -13,6 +13,8 @@ export function openWordSheet(word: Word) {
       language: word.translationLanguage ?? "",
       audio: word.audioUrl ?? "",
       tajweed: [...new Set((word.tajweed ?? []).map((s) => s.rule).filter((r): r is string => Boolean(r)))].join(","),
+      // Découpage coloré du mot, pour montrer où chaque règle s'applique.
+      segments: word.tajweed?.length ? JSON.stringify(word.tajweed) : "",
     },
   });
 }
