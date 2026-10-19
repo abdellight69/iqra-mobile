@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
@@ -16,6 +17,7 @@ import type { MemorizationPlan } from "@/lib/types";
 
 export default function MemorizeTab() {
   const colors = useColors();
+  const tabBarHeight = useBottomTabBarHeight();
   const plans = usePlans();
   const due = useDueVerses();
   const dueCount = due.data?.length ?? 0;
@@ -37,7 +39,7 @@ export default function MemorizeTab() {
       <FlatList
         data={plans.data}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + tabBarHeight }]}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={

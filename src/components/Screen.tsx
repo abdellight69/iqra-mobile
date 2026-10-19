@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { BottomTabBarHeightContext } from "expo-router/js-tabs";
+import { useContext, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { spacing, useColors } from "@/lib/theme";
@@ -15,9 +16,11 @@ export type ScreenProps = {
 
 export function Screen({ children, scroll = true, edges = ["top"], contentStyle, keyboard, refreshing, onRefresh }: ScreenProps) {
   const colors = useColors();
+  // Dans un onglet, la barre flottante recouvre le bas de l'écran : on garde sa hauteur en marge.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={[styles.content, contentStyle]}
+      contentContainerStyle={[styles.content, { paddingBottom: spacing.xxxl + tabBarHeight }, contentStyle]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       refreshControl={onRefresh ? <RefreshControl refreshing={Boolean(refreshing)} onRefresh={onRefresh} tintColor={colors.primary} /> : undefined}>

@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,6 +24,7 @@ function normalize(text: string): string {
 
 export default function QuranTab() {
   const colors = useColors();
+  const tabBarHeight = useBottomTabBarHeight();
   const chapters = useChapters();
   const comprehension = useComprehension();
   const memorization = useMemorizationMap();
@@ -57,7 +59,7 @@ export default function QuranTab() {
         <FlatList
           data={filtered}
           keyExtractor={(c) => String(c.id)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: spacing.xxl + tabBarHeight }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}

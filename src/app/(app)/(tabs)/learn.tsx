@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { useMemo } from "react";
 import { Alert, Pressable, RefreshControl, SectionList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,6 +20,7 @@ const OFFSETS = [0, 52, 78, 52, 0, -52, -78, -52];
 
 export default function LearnTab() {
   const colors = useColors();
+  const tabBarHeight = useBottomTabBarHeight();
   const lessons = useLessons();
   const stats = useStats();
 
@@ -42,7 +44,7 @@ export default function LearnTab() {
         keyExtractor={(l) => l.id}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxxl + tabBarHeight }]}
         refreshControl={<RefreshControl refreshing={lessons.isRefetching} onRefresh={() => void lessons.refetch()} tintColor={colors.primary} />}
         ListHeaderComponent={
           <View style={styles.header}>

@@ -1,8 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import type { BottomTabBarProps } from "expo-router/js-tabs";
-import type { ComponentProps } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { BottomTabBarHeightCallbackContext, type BottomTabBarProps } from "expo-router/js-tabs";
+import { useContext, type ComponentProps } from "react";
+import { Platform, Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { useKidsMode } from "@/lib/kids";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
@@ -16,13 +18,44 @@ export const TAB_ICONS: Record<string, [IconName, IconName]> = {
   profile: ["person-outline", "person"],
 };
 
-/** Barre d'onglets flottante : une pastille, l'onglet actif mis en avant avec son libellé. */
+/**
+ * Flou progressif : plusieurs couches de flou, de plus en plus courtes vers le bas, pour que le
+ * contenu passe du net au flou sans bord franc ; un dégradé vers la couleur de fond adoucit le tout.
+ */
+const BLUR_LAYERS = [1, 0.78, 0.56, 0.34] as const;
+
+/**
+ * Barre d'onglets flottante : une pastille, l'onglet actif mis en avant avec son libellé.
+ * Elle se superpose au contenu, qui défile en flou derrière elle ; sa hauteur est publiée aux
+ * écrans (useBottomTabBarHeight / BottomTabBarHeightContext) pour qu'ils gardent la place en bas.
+ */
 export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
   const colors = useColors();
+  const dark = useColorScheme() === "dark";
+  const reportHeight = useContext(BottomTabBarHeightCallbackContext);
   // Mode enfant : chaque onglet garde son libellé, les cibles sont plus grandes.
   const kids = useKidsMode();
   return (
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.md), backgroundColor: colors.background }]}>
+    <View
+      pointerEvents="box-none"
+      onLayout={(e) => reportHeight?.(e.nativeEvent.layout.height)}
+      style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+      {BLUR_LAYERS.map((height) => (
+        <BlurView
+          key={height}
+          pointerEvents="none"
+          intensity={dark ? 14 : 18}
+          tint={dark ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+          blurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
+          style={[styles.blur, { height: `${Math.round(height * 100)}%` }]}
+        />
+      ))}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["transparent", `${colors.background}99`, `${colors.background}E6`]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={[styles.bar, { backgroundColor: colors.surface }, elevation(colors, 2)]}>
         {state.routes.map((route, index) => {
           const focused = index === state.index;
@@ -60,7 +93,8 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  wrap: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.lg, paddingTop: spacing.xl + spacing.sm, overflow: "hidden" },
+  blur: { position: "absolute", left: 0, right: 0, bottom: 0 },
   bar: { flexDirection: "row", borderRadius: radius.pill, padding: 6, gap: 4 },
   item: {
     flexGrow: 1,
