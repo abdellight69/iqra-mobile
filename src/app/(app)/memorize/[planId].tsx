@@ -11,6 +11,7 @@ import { VerseBadge } from "@/components/VerseBadge";
 import { useChapter, useDeletePlan, usePlan, useRecitationAvailable } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { PlanVerse } from "@/lib/types";
+import { closeScreen } from "@/lib/navigation";
 
 const STATUS = { new: "Nouveau", learning: "En cours", solid: "Solide" } as const;
 /** Réussites espacées avant qu'un verset soit « solide » (intervalle SM-2 ≥ 3 semaines : 1 j, 6 j, ~15 j, ~37 j). */
@@ -57,7 +58,7 @@ export default function PlanDetail() {
               onPress={() =>
                 Alert.alert("Supprimer ce plan ?", "Votre historique de révision des versets est conservé.", [
                   { text: "Annuler", style: "cancel" },
-                  { text: "Supprimer", style: "destructive", onPress: () => remove.mutate(p.id, { onSuccess: () => router.back() }) },
+                  { text: "Supprimer", style: "destructive", onPress: () => remove.mutate(p.id, { onSuccess: () => closeScreen("/memorize") }) },
                 ])
               }
             />

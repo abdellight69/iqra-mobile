@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -15,6 +15,7 @@ import { VerbTable } from "@/components/VerbTable";
 import { useLearningSession, useSubmitSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Exercise, SessionResult, VocabWord } from "@/lib/types";
+import { closeScreen } from "@/lib/navigation";
 
 type Answer = { wordId: string; correct: boolean };
 
@@ -28,14 +29,14 @@ export default function LearningSessionScreen() {
   const session = useLearningSession(source);
 
   if (session.isPending) return <LoadingState label="Préparation de la séance…" />;
-  if (session.isError) return <ErrorState error={session.error} onRetry={() => router.back()} />;
+  if (session.isError) return <ErrorState error={session.error} onRetry={() => closeScreen("/learn")} />;
   if (session.data.exercises.length === 0) {
     return (
       <SafeArea style={{ flex: 1 }}>
         {params.chapterId ? (
-          <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message="Vous avez déjà appris tous les mots du livre présents dans cette sourate." action={{ title: "Fermer", onPress: () => router.back() }} />
+          <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message="Vous avez déjà appris tous les mots du livre présents dans cette sourate." action={{ title: "Fermer", onPress: () => closeScreen("/learn") }} />
         ) : (
-          <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => router.back() }} />
+          <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => closeScreen("/learn") }} />
         )}
       </SafeArea>
     );
@@ -92,7 +93,7 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
           onPress={() =>
             Alert.alert("Quitter la séance ?", "Votre progression dans cette séance sera perdue.", [
               { text: "Continuer", style: "cancel" },
-              { text: "Quitter", style: "destructive", onPress: () => router.back() },
+              { text: "Quitter", style: "destructive", onPress: () => closeScreen("/learn") },
             ])
           }>
           <Ionicons name="close" size={28} color={colors.textMuted} />
@@ -357,7 +358,7 @@ function ResultScreen({ result }: { result: SessionResult }) {
           </AppText>
         </Card>
       </View>
-      <Button title="Terminer" onPress={() => router.back()} style={{ alignSelf: "stretch" }} />
+      <Button title="Terminer" onPress={() => closeScreen("/learn")} style={{ alignSelf: "stretch" }} />
     </SafeArea>
   );
 }

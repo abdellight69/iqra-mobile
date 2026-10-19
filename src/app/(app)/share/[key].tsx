@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Sharing from "expo-sharing";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +12,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { verseTransliteration } from "@/lib/quran-text";
 import { useChapter, useMe, useOfflineChapter, useVerse } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
+import { closeScreen } from "@/lib/navigation";
 
 /** Styles de la carte : fond, texte arabe, texte secondaire, ornement. */
 const THEMES = {
@@ -71,7 +72,7 @@ export default function ShareVerse() {
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Fermer" hitSlop={10} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Fermer" hitSlop={10} onPress={() => closeScreen("/")}>
           <Ionicons name="close" size={28} color={colors.textMuted} />
         </Pressable>
         <AppText variant="headline">Partager le verset</AppText>

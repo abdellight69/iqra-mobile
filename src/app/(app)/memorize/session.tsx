@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
+import { closeScreen } from "@/lib/navigation";
 
 const MAX_NEW_VERSES = 5;
 type HideLevel = 0 | 1 | 2;
@@ -90,12 +91,12 @@ export default function MemorizationSession() {
     );
 
   const source = params.due ? due : plan;
-  if (!params.keys && source.isError) return <ErrorState error={source.error} onRetry={() => router.back()} />;
+  if (!params.keys && source.isError) return <ErrorState error={source.error} onRetry={() => closeScreen("/memorize")} />;
   if (!keys) return <LoadingState label="Préparation de la séance…" />;
   if (keys.length === 0) {
     return (
       <SafeArea style={{ flex: 1 }}>
-        <EmptyState icon="checkmark-done" title="Tout est à jour" message="Aucun verset à réviser pour le moment." action={{ title: "Fermer", onPress: () => router.back() }} />
+        <EmptyState icon="checkmark-done" title="Tout est à jour" message="Aucun verset à réviser pour le moment." action={{ title: "Fermer", onPress: () => closeScreen("/memorize") }} />
       </SafeArea>
     );
   }
@@ -133,7 +134,7 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
         <AppText muted center>
           Les prochaines révisions sont planifiées selon votre auto-évaluation : 1 jour, puis 6, puis 2 à 3 semaines. Un verset est « solide » à partir de la 4ᵉ réussite.
         </AppText>
-        <Button title="Terminer" onPress={() => router.back()} style={{ alignSelf: "stretch" }} />
+        <Button title="Terminer" onPress={() => closeScreen("/memorize")} style={{ alignSelf: "stretch" }} />
       </SafeArea>
     );
   }
@@ -148,7 +149,7 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
           onPress={() =>
             Alert.alert("Quitter la séance ?", "Les versets déjà évalués restent enregistrés.", [
               { text: "Continuer", style: "cancel" },
-              { text: "Quitter", style: "destructive", onPress: () => router.back() },
+              { text: "Quitter", style: "destructive", onPress: () => closeScreen("/memorize") },
             ])
           }>
           <Ionicons name="close" size={28} color={colors.textMuted} />

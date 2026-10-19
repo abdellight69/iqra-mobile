@@ -17,6 +17,7 @@ import { useOneShot } from "@/lib/audio";
 import { useAlphabet, useCompleteReadingLesson, useReadingSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { AlphabetLetter, ReadingResult, ReadingStep, ReadingWord } from "@/lib/types";
+import { closeScreen } from "@/lib/navigation";
 
 type ChoiceStep = Extract<ReadingStep, { type: "choice" }>;
 
@@ -101,7 +102,7 @@ function Runner({
           onPress={() =>
             Alert.alert("Quitter la leçon ?", "Votre progression dans cette leçon sera perdue.", [
               { text: "Continuer", style: "cancel" },
-              { text: "Quitter", style: "destructive", onPress: () => router.back() },
+              { text: "Quitter", style: "destructive", onPress: () => closeScreen("/reading") },
             ])
           }>
           <Ionicons name="close" size={28} color={colors.textMuted} />
@@ -633,7 +634,7 @@ function Result({ title, result, nextLesson }: { title: string; result: ReadingR
           style={styles.stretch}
         />
       ) : null}
-      <Button title="Terminer" variant={nextLesson ? "ghost" : "primary"} onPress={() => router.back()} style={styles.stretch} />
+      <Button title="Terminer" variant={nextLesson ? "ghost" : "primary"} onPress={() => closeScreen("/reading")} style={styles.stretch} />
     </SafeArea>
   );
 }
