@@ -16,7 +16,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...config.ios,
       infoPlist: {
         ...config.ios?.infoPlist,
-        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true, NSAllowsLocalNetworking: true },
+        // Seule clé : iOS ignore NSAllowsArbitraryLoads si NSAllowsLocalNetworking (ou une autre
+        // exception « Allows… ») est aussi présente.
+        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true },
       },
     },
   };
