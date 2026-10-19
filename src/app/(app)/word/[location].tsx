@@ -8,6 +8,7 @@ import { Card } from "@/components/Card";
 import { useOneShot } from "@/lib/audio";
 import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
+import { useReaderSettings } from "@/lib/reader-store";
 import { explainLabel, explainSegment, LEMMA_HELP, ROOT_HELP, SEGMENTS_INTRO } from "@/lib/grammar-help";
 import { TAJWEED_GLOSSARY, TAJWEED_RULES, tajweedColor, type TajweedRule } from "@/lib/tajweed";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -38,6 +39,9 @@ export default function WordSheet() {
   const tajweedText = tajweedRules.map((r) => `${r.name} ${r.description} ${r.how}`).join(" ").toLowerCase();
   const glossary = TAJWEED_GLOSSARY.filter((g) => tajweedText.includes(g.term.split(" ")[0]!.toLowerCase()));
   const [showGlossary, setShowGlossary] = useState(false);
+  // Tajwid activé dans le lecteur : le mot de la fiche garde les mêmes couleurs.
+  const tajweedOn = useReaderSettings((r) => r.showTajweed);
+  const colorHero = tajweedOn && segments.length > 0;
   const details = useWordDetails(params.location);
   const sound = useOneShot();
   const [showOccurrences, setShowOccurrences] = useState(false);
@@ -52,8 +56,14 @@ export default function WordSheet() {
         <AppText variant="label" muted center>
           {chapter}:{verse} · mot {position}
         </AppText>
-        <ArabicText size={60} center>
-          {params.text}
+        <ArabicText size={60} center accessibilityLabel={params.text}>
+          {colorHero
+            ? segments.map((segment, i) => (
+                <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
+                  {segment.text}
+                </Text>
+              ))
+            : params.text}
         </ArabicText>
         {params.audio ? (
           <Pressable
@@ -91,7 +101,7 @@ export default function WordSheet() {
           <AppText variant="caption" muted>
             {"Les lettres colorées montrent où chaque règle s'applique dans le mot."}
           </AppText>
-          {segments.length > 0 ? (
+          {segments.length > 0 && !colorHero ? (
             <ArabicText size={40} center accessibilityLabel={params.text}>
               {segments.map((segment, i) => (
                 <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
