@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "Iqra",
-    "slug": "iqra",
+    "name": "Eqra",
+    "slug": "eqra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "iqra",
+    "scheme": "eqra",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "app.iqra.mobile",
+      "bundleIdentifier": "app.eqra.mobile",
       "supportsTablet": true,
       "entitlements": {
         "com.apple.security.application-groups": [
-          "group.app.iqra.mobile"
+          "group.app.eqra.mobile"
         ]
       },
       "appleTeamId": "8TSDHC2926"
     },
     "android": {
-      "package": "app.iqra.mobile",
+      "package": "app.eqra.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#0F5F4D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,7 +38,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Iqra écoute votre récitation pour repérer les mots oubliés. L’enregistrement est envoyé au serveur pour analyse, puis supprimé.",
+          "microphonePermission": "Eqra écoute votre récitation pour repérer les mots oubliés. L’enregistrement est envoyé au serveur pour analyse, puis supprimé.",
           "recordAudioAndroid": true,
           "enableBackgroundPlayback": true
         }
@@ -59,8 +59,8 @@
         {
           "widgets": [
             {
-              "name": "IqraToday",
-              "label": "Iqra · Aujourd’hui",
+              "name": "EqraToday",
+              "label": "Eqra · Aujourd’hui",
               "description": "Objectif du jour, série, révisions et reprise de lecture.",
               "minWidth": "250dp",
               "minHeight": "110dp",

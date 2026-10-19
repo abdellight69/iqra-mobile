@@ -210,7 +210,7 @@ export default function Settings() {
               if (enabled && !(await requestReminderPermission())) {
                 Alert.alert(
                   "Notifications désactivées",
-                  "Autorisez les notifications d’Iqra dans les réglages de votre téléphone.",
+                  "Autorisez les notifications d’Eqra dans les réglages de votre téléphone.",
                 );
                 return;
               }

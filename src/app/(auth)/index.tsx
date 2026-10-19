@@ -29,7 +29,7 @@ export default function Welcome() {
               اقْرَأْ
             </ArabicText>
             <AppText style={styles.wordmark} color={PAPER}>
-              Iqra
+              Eqra
             </AppText>
             <AppText variant="serifBody" italic color="#F5EFE3B3">
               Comprendre, réciter et mémoriser le Coran.

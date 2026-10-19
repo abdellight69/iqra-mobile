@@ -5,8 +5,8 @@
  */
 module.exports = (config) => ({
   type: "widget",
-  name: "IqraWidget",
-  displayName: "Iqra",
+  name: "EqraWidget",
+  displayName: "Eqra",
   icon: "../../assets/images/icon.png",
   deploymentTarget: "17.0",
   bundleIdentifier: ".widget",

@@ -15,7 +15,7 @@ struct Snapshot: Decodable {
   var resumeVerse: Int?
   var updatedAt: String
 
-  static let appGroup = "group.app.iqra.mobile"
+  static let appGroup = "group.app.eqra.mobile"
 
   static func load() -> Snapshot? {
     guard let raw = UserDefaults(suiteName: appGroup)?.string(forKey: "snapshot"),
@@ -30,8 +30,8 @@ struct Snapshot: Decodable {
     return "Commencer une sourate"
   }
   var resumeURL: URL {
-    if let id = resumeChapterId { return URL(string: "iqra://surah/\(id)?verse=\(resumeVerse ?? 1)")! }
-    return URL(string: "iqra://quran")!
+    if let id = resumeChapterId { return URL(string: "eqra://surah/\(id)?verse=\(resumeVerse ?? 1)")! }
+    return URL(string: "eqra://quran")!
   }
 }
 
@@ -42,7 +42,7 @@ struct Entry: TimelineEntry {
 
 struct Provider: TimelineProvider {
   func placeholder(in context: Context) -> Entry {
-    Entry(date: .now, snapshot: Snapshot(displayName: "Iqra", todayXp: 12, goalXp: 30, currentStreak: 3, dueVerses: 2, dueWords: 0, resumeChapterId: 1, resumeChapterName: "Al-Fatihah", resumeVerse: 3, updatedAt: ""))
+    Entry(date: .now, snapshot: Snapshot(displayName: "Eqra", todayXp: 12, goalXp: 30, currentStreak: 3, dueVerses: 2, dueWords: 0, resumeChapterId: 1, resumeChapterName: "Al-Fatihah", resumeVerse: 3, updatedAt: ""))
   }
   func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) {
     completion(Entry(date: .now, snapshot: Snapshot.load() ?? placeholder(in: context).snapshot))
@@ -57,7 +57,7 @@ struct Provider: TimelineProvider {
 private let gold = Color(red: 0.69, green: 0.54, blue: 0.24)
 private let green = Color(red: 0.06, green: 0.31, blue: 0.27)
 
-struct IqraWidgetView: View {
+struct EqraWidgetView: View {
   @Environment(\.widgetFamily) private var family
   let entry: Entry
 
@@ -67,12 +67,12 @@ struct IqraWidgetView: View {
         .containerBackground(Color("$widgetBackground"), for: .widget)
     } else {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Iqra").font(.headline)
+        Text("Eqra").font(.headline)
         Text("Ouvrez l’app pour voir votre journée.").font(.caption).foregroundStyle(.secondary)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
       .containerBackground(Color("$widgetBackground"), for: .widget)
-      .widgetURL(URL(string: "iqra://")!)
+      .widgetURL(URL(string: "eqra://")!)
     }
   }
 
@@ -130,15 +130,15 @@ struct IqraWidgetView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .widgetURL(family == .systemSmall ? s.resumeURL : URL(string: "iqra://")!)
+    .widgetURL(family == .systemSmall ? s.resumeURL : URL(string: "eqra://")!)
   }
 }
 
 @main
-struct IqraWidget: Widget {
+struct EqraWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "IqraWidget", provider: Provider()) { entry in
-      IqraWidgetView(entry: entry)
+    StaticConfiguration(kind: "EqraWidget", provider: Provider()) { entry in
+      EqraWidgetView(entry: entry)
     }
     .configurationDisplayName("Aujourd’hui")
     .description("Objectif du jour, série, révisions et reprise de lecture.")

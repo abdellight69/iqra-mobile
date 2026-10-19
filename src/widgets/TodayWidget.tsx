@@ -17,14 +17,14 @@ export function renderTodayWidget(snapshot: WidgetSnapshot | null) {
   if (!snapshot) {
     return (
       <FlexWidget clickAction="OPEN_APP" style={{ width: "match_parent", height: "match_parent", backgroundColor: PAPER, borderRadius: 20, padding: 16, justifyContent: "center" }}>
-        <TextWidget text="Iqra" style={{ fontSize: 18, fontWeight: "bold", color: INK }} />
+        <TextWidget text="Eqra" style={{ fontSize: 18, fontWeight: "bold", color: INK }} />
         <TextWidget text="Ouvrez l’app pour voir votre journée." style={{ fontSize: 13, color: MUTED, marginTop: 4 }} />
       </FlexWidget>
     );
   }
   const percent = snapshot.goalXp > 0 ? Math.min(100, Math.round((snapshot.todayXp / snapshot.goalXp) * 100)) : 0;
   const resume = snapshot.resumeChapterName ? `${snapshot.resumeChapterName} · verset ${snapshot.resumeVerse ?? 1}` : "Commencer une sourate";
-  const resumeUri = snapshot.resumeChapterId ? `iqra://surah/${snapshot.resumeChapterId}?verse=${snapshot.resumeVerse ?? 1}` : "iqra://quran";
+  const resumeUri = snapshot.resumeChapterId ? `eqra://surah/${snapshot.resumeChapterId}?verse=${snapshot.resumeVerse ?? 1}` : "eqra://quran";
   const due = snapshot.dueVerses + snapshot.dueWords;
   // La barre de progression : deux blocs côte à côte dont les largeurs sont en « flex ».
   const filled = Math.max(2, percent);

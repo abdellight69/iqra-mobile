@@ -10,7 +10,7 @@ import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
 import { spacing, useColors } from "@/lib/theme";
 
-/** Ouvert depuis le lien reçu par e-mail : iqra://reset-password?token=… */
+/** Ouvert depuis le lien reçu par e-mail : eqra://reset-password?token=… */
 export default function ResetPassword() {
   const colors = useColors();
   const { token } = useLocalSearchParams<{ token?: string }>();

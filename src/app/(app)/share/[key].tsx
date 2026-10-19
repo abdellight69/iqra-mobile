@@ -114,7 +114,7 @@ export default function ShareVerse() {
             </AppText>
           ) : null}
           <AppText variant="label" center style={[styles.brand, { color: t.muted }]}>
-            Iqra
+            Eqra
           </AppText>
         </ViewShot>
 

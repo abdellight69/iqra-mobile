@@ -93,7 +93,7 @@ export default function SurahReader() {
     (track: { key: string }) => ({
       title: `${surahName} · verset ${track.key.split(":")[1]}`,
       artist: reciter ? (reciter.translatedName ?? reciter.reciterName) : "Récitation du Coran",
-      albumTitle: "Iqra",
+      albumTitle: "Eqra",
     }),
     [surahName, reciter],
   );

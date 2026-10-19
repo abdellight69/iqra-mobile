@@ -215,7 +215,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const chapter = useChapter(chapterId);
   const surahName = chapter.data?.nameSimple ?? `Sourate ${chapterId}`;
   const nowPlaying = useCallback(
-    () => ({ title: `${surahName} · verset ${verseNumber}`, artist: "Mémorisation", albumTitle: "Iqra" }),
+    () => ({ title: `${surahName} · verset ${verseNumber}`, artist: "Mémorisation", albumTitle: "Eqra" }),
     [surahName, verseNumber],
   );
   const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate, nowPlaying });

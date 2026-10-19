@@ -24,7 +24,7 @@ describe("reminderPath", () => {
   it("transforme un lien profond en chemin de l'app", () => {
     expect(reminderPath(REMINDER_URLS.memorize)).toBe("/memorize");
     expect(reminderPath(REMINDER_URLS.home)).toBe("/");
-    expect(reminderPath("iqra:///memorize")).toBe("/memorize");
+    expect(reminderPath("eqra:///memorize")).toBe("/memorize");
   });
 });
 

@@ -1,4 +1,4 @@
-// Types des réponses de l'API Iqra (voir backend/src).
+// Types des réponses de l'API Eqra (voir backend/src).
 
 export type User = {
   id: string;

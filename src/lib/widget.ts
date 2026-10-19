@@ -6,7 +6,7 @@ import { writeSnapshotCache } from "./widget-cache";
  * Widgets d'écran d'accueil (iOS : WidgetKit, Android : AppWidget). L'app leur laisse un petit
  * instantané à chaque mise à jour des statistiques : XP du jour face à l'objectif, série,
  * révisions dues, position de lecture. Le widget lit cet instantané ; il ne parle jamais au
- * serveur. Un toucher ouvre l'app sur la page correspondante (lien profond `iqra://`).
+ * serveur. Un toucher ouvre l'app sur la page correspondante (lien profond `eqra://`).
  */
 export type WidgetSnapshot = {
   displayName: string;
@@ -22,8 +22,8 @@ export type WidgetSnapshot = {
 };
 
 /** Groupe d'applications iOS partagé entre l'app et le widget (voir targets/widget). */
-export const APP_GROUP = "group.app.iqra.mobile";
-export const ANDROID_WIDGET_NAME = "IqraToday";
+export const APP_GROUP = "group.app.eqra.mobile";
+export const ANDROID_WIDGET_NAME = "EqraToday";
 const KEY = "snapshot";
 
 export function buildSnapshot(input: {

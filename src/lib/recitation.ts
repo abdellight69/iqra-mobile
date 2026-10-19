@@ -64,7 +64,7 @@ export function useRecitationCheck(target: RecitationTarget, onResult?: (result:
     try {
       const permission = await requestRecordingPermissionsAsync();
       if (!permission.granted) {
-        setState({ phase: "error", message: "L’accès au micro est refusé. Autorisez-le dans les réglages du téléphone pour Iqra (ou Expo Go)." });
+        setState({ phase: "error", message: "L’accès au micro est refusé. Autorisez-le dans les réglages du téléphone pour Eqra (ou Expo Go)." });
         return;
       }
       await setAudioModeAsync({ ...PLAYBACK_MODE, allowsRecording: true });

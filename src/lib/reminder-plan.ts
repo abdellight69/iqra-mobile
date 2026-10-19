@@ -15,8 +15,8 @@ export type PlannedReminder = {
   url: string;
 };
 
-/** Liens profonds de l'app (schéma `iqra` dans app.json). */
-export const REMINDER_URLS = { home: "iqra://", memorize: "iqra://memorize" } as const;
+/** Liens profonds de l'app (schéma `eqra` dans app.json). */
+export const REMINDER_URLS = { home: "eqra://", memorize: "eqra://memorize" } as const;
 
 /** Jours couverts par les rappels programmés à l'avance. */
 export const DAYS_AHEAD = 7;
@@ -28,7 +28,7 @@ const MERGE_WINDOW_MS = 60 * 60 * 1000;
 /** iOS limite les notifications en attente (64) ; on reste bien en dessous. */
 const MAX_REMINDERS = 20;
 
-/** Chemin expo-router correspondant à un lien profond de rappel : `iqra://memorize` → `/memorize`. */
+/** Chemin expo-router correspondant à un lien profond de rappel : `eqra://memorize` → `/memorize`. */
 export function reminderPath(url: string): string {
   const path = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "");
   return `/${path.replace(/^\/+/, "")}`;

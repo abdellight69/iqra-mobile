@@ -131,7 +131,7 @@ export default function Onboarding() {
             ))}
             {level === "none" ? (
               <AppText variant="caption" muted>
-                Iqra vous apprend à lire : les lettres, les voyelles, puis vos premières sourates. En attendant, chaque verset est accompagné de sa phonétique.
+                Eqra vous apprend à lire : les lettres, les voyelles, puis vos premières sourates. En attendant, chaque verset est accompagné de sa phonétique.
               </AppText>
             ) : null}
           </>
