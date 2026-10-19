@@ -12,6 +12,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
 import { useLesson, useLessons } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
+import { annotateArabic, transliterate } from "@/lib/transliterate";
 import type { VocabWord } from "@/lib/types";
 
 /**
@@ -55,8 +56,15 @@ export default function LessonDetail() {
             {info.part}
           </AppText>
           <AppText variant="title">{info.title.replace(/^[A-Z] - /, "")}</AppText>
-          {info.titleAr ? <ArabicText size={24}>{info.titleAr}</ArabicText> : null}
-          {info.subtitle ? <AppText muted>{info.subtitle}</AppText> : null}
+          {info.titleAr ? (
+            <View style={styles.titleAr}>
+              <ArabicText size={24}>{info.titleAr}</ArabicText>
+              <AppText variant="caption" italic color={colors.accent}>
+                {transliterate(info.titleAr)}
+              </AppText>
+            </View>
+          ) : null}
+          {info.subtitle ? <AppText muted>{annotateArabic(info.subtitle)}</AppText> : null}
           <AppText variant="caption" faint>
             Fiche p. {info.sourcePage} du livre « 80% des mots du Qour’ân »{info.totalWords ? ` · ${totalLabel(info.totalWords)}` : ""}
           </AppText>
@@ -69,7 +77,14 @@ export default function LessonDetail() {
                 <AppText variant="label" muted style={styles.flex}>
                   {group.titleFr}
                 </AppText>
-                {group.titleAr ? <ArabicText size={20}>{group.titleAr}</ArabicText> : null}
+                {group.titleAr ? (
+                  <View style={styles.groupAr}>
+                    <ArabicText size={20}>{group.titleAr}</ArabicText>
+                    <AppText variant="caption" italic color={colors.accent} numberOfLines={1}>
+                      {transliterate(group.titleAr)}
+                    </AppText>
+                  </View>
+                ) : null}
               </View>
             ) : null}
             <View style={[styles.group, { backgroundColor: colors.surface }, elevation(colors)]}>
@@ -90,7 +105,7 @@ export default function LessonDetail() {
             </AppText>
             {info.remarks.map((r, i) => (
               <AppText key={i} variant="caption">
-                {r}
+                {annotateArabic(r)}
               </AppText>
             ))}
           </Card>
@@ -125,7 +140,7 @@ function WordRow({ word }: { word: VocabWord }) {
             ) : null}
             {word.arNote ? (
               <AppText variant="caption" muted>
-                {word.arNote}
+                {annotateArabic(word.arNote)}
               </AppText>
             ) : null}
             {word.occurrences !== null ? (
@@ -135,7 +150,14 @@ function WordRow({ word }: { word: VocabWord }) {
             ) : null}
           </View>
         </View>
-        {word.ar ? <ArabicText size={30}>{word.ar}</ArabicText> : null}
+        {word.ar ? (
+          <View style={styles.arabic}>
+            <ArabicText size={30}>{word.ar}</ArabicText>
+            <AppText variant="caption" italic color={colors.accent} style={styles.phonetic} accessibilityLabel={`Phonétique : ${transliterate(word.ar)}`}>
+              {transliterate(word.ar)}
+            </AppText>
+          </View>
+        ) : null}
       </View>
       {!word.isPatternRow && word.fr ? <QuranExample wordId={word.id} compact /> : null}
       {word.verb ? <VerbTable verb={word.verb} /> : null}
@@ -155,6 +177,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4, gap: spacing.xl },
   header: { gap: spacing.sm },
+  titleAr: { gap: 2 },
+  groupAr: { alignItems: "flex-end", gap: 2, maxWidth: "55%" },
+  arabic: { alignItems: "flex-end", gap: 2, maxWidth: "50%" },
+  phonetic: { textAlign: "right" },
   groupWrap: { gap: spacing.sm },
   groupTitle: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.xs },
   group: { borderRadius: radius.lg, overflow: "hidden" },

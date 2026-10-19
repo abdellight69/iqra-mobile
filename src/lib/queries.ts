@@ -176,6 +176,7 @@ export function useVerse(key: string, translationId: number | null) {
       return (await api<{ verse: Verse }>(`/quran/verses/${key}${query}`)).verse;
     },
     staleTime: DAY,
+    enabled: Boolean(key),
   });
 }
 

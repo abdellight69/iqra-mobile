@@ -5,16 +5,23 @@ import { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { SafeArea } from "@/components/SafeArea";
-import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuranExample } from "@/components/QuranExample";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
+import { InVerseExercise } from "@/components/exercises/InVerseExercise";
+import { ListenExercise } from "@/components/exercises/ListenExercise";
+import { MatchPairs } from "@/components/exercises/MatchPairs";
+import { MissingLetterExercise } from "@/components/exercises/MissingLetterExercise";
+import { TrueFalseExercise } from "@/components/exercises/TrueFalseExercise";
+import { ArabicChoice, ChoiceButton, exerciseStyles, type ExerciseProps, Feedback, WordSummary } from "@/components/exercises/shared";
+import { planSession, type SessionExercise } from "@/lib/exercises";
 import { useLearningSession, useSubmitSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
-import type { Exercise, SessionResult, VocabWord } from "@/lib/types";
+import { annotateArabic } from "@/lib/transliterate";
+import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
 
 type Answer = { wordId: string; correct: boolean };
@@ -41,13 +48,14 @@ export default function LearningSessionScreen() {
       </SafeArea>
     );
   }
-  return <SessionRunner words={session.data.words} exercises={session.data.exercises} lessonId={params.lessonId} />;
+  return <SessionRunner session={session.data} lessonId={params.lessonId} />;
 }
 
-function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exercises: Exercise[]; lessonId?: string }) {
+function SessionRunner({ session, lessonId }: { session: LearningSession; lessonId?: string }) {
   const colors = useColors();
-  const byId = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
-  const [queue, setQueue] = useState<Exercise[]>(exercises);
+  const byId = useMemo(() => new Map(session.words.map((w) => [w.id, w])), [session.words]);
+  // Les petits jeux sont ajoutés une fois, à l'ouverture de la séance (tirage aléatoire).
+  const [queue, setQueue] = useState<SessionExercise[]>(() => planSession(session));
   const [step, setStep] = useState(0);
   const answers = useRef<Answer[]>([]);
   const retried = useRef(new Set<string>());
@@ -56,7 +64,7 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
 
   const exercise = queue[step];
 
-  function record(wordId: string, correct: boolean, retry: Exercise | null) {
+  function record(wordId: string, correct: boolean, retry: SessionExercise | null) {
     // Seule la première réponse compte ; une question ratée revient une fois en fin de séance.
     if (!retried.current.has(`${wordId}:${exercise?.type}`)) answers.current.push({ wordId, correct });
     if (!correct && retry && !retried.current.has(`${wordId}:${retry.type}`)) {
@@ -110,27 +118,33 @@ function SessionRunner({ words, exercises, lessonId }: { words: VocabWord[]; exe
   );
 }
 
-type ExerciseProps = {
-  exercise: Exercise;
-  byId: Map<string, VocabWord>;
-  onAnswer: (wordId: string, correct: boolean, retry: Exercise | null) => void;
-  onNext: () => void;
-  submitting: boolean;
-};
-
 function ExerciseView(props: ExerciseProps) {
   const { exercise } = props;
-  if (exercise.type === "intro") return <IntroCard {...props} word={props.byId.get(exercise.wordId)} />;
-  if (exercise.type === "match") return <MatchPairs {...props} exercise={exercise} />;
-  return <MultipleChoice {...props} exercise={exercise} />;
+  switch (exercise.type) {
+    case "intro":
+      return <IntroCard {...props} word={props.byId.get(exercise.wordId)} />;
+    case "match":
+      return <MatchPairs {...props} exercise={exercise} />;
+    case "listen":
+    case "listen_ar":
+      return <ListenExercise {...props} exercise={exercise} />;
+    case "missing_letter":
+      return <MissingLetterExercise {...props} exercise={exercise} />;
+    case "true_false":
+      return <TrueFalseExercise {...props} exercise={exercise} />;
+    case "in_verse":
+      return <InVerseExercise {...props} exercise={exercise} />;
+    default:
+      return <MultipleChoice {...props} exercise={exercise} />;
+  }
 }
 
 function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
   const colors = useColors();
   if (!word) return null;
   return (
-    <View style={styles.body}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+    <View style={exerciseStyles.body}>
+      <ScrollView contentContainerStyle={exerciseStyles.scroll}>
         <View style={[styles.newBadge, { backgroundColor: colors.accentSoft }]}>
           <Ionicons name="sparkles" size={14} color={colors.accent} />
           <AppText variant="label" color={colors.primaryStrong}>
@@ -138,17 +152,12 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
           </AppText>
         </View>
         <Card style={styles.introCard}>
-          <ArabicText size={48} center>
-            {word.headword}
-          </ArabicText>
+          <WordSummary word={word} size={48} />
           {word.arNote ? (
             <AppText muted center>
-              {word.arNote}
+              {annotateArabic(word.arNote)}
             </AppText>
           ) : null}
-          <AppText variant="title" center>
-            {word.fr}
-          </AppText>
           {word.occurrences !== null ? (
             <AppText variant="caption" muted center>
               {word.occurrences} occurrences dans le Coran (selon le livre)
@@ -163,8 +172,7 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
   );
 }
 
-function MultipleChoice({ exercise, byId, onAnswer, onNext, submitting }: ExerciseProps & { exercise: Extract<Exercise, { choices: unknown }> }) {
-  const colors = useColors();
+function MultipleChoice({ exercise, byId, onAnswer, onNext, submitting }: ExerciseProps<Extract<Exercise, { choices: unknown }>>) {
   const [picked, setPicked] = useState<string | null>(null);
   const word = byId.get(exercise.wordId);
   const arabicPrompt = exercise.type === "ar_to_fr";
@@ -178,151 +186,40 @@ function MultipleChoice({ exercise, byId, onAnswer, onNext, submitting }: Exerci
     onAnswer(exercise.wordId, ok, ok ? null : { ...exercise, choices: [...exercise.choices].reverse() });
   }
 
+  if (!word) return null;
+
   return (
-    <View style={styles.body}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+    <View style={exerciseStyles.body}>
+      <ScrollView contentContainerStyle={exerciseStyles.scroll}>
         <AppText variant="headline">{arabicPrompt ? "Que signifie ce mot ?" : "Comment dit-on en arabe ?"}</AppText>
-        <Card style={styles.prompt}>
+        <Card style={exerciseStyles.prompt}>
           {arabicPrompt ? (
-            <ArabicText size={44} center>
-              {word?.headword}
-            </ArabicText>
+            <WordSummary word={word} size={44} showMeaning={false} />
           ) : (
             <AppText variant="title" center>
-              {word?.fr}
+              {word.fr}
             </AppText>
           )}
         </Card>
-        <View style={styles.choices}>
+        <View style={exerciseStyles.choices}>
           {exercise.choices.map((choice) => {
             const isAnswer = choice.id === exercise.answerId;
             const state = !picked ? "idle" : isAnswer ? "right" : choice.id === picked ? "wrong" : "idle";
             return (
-              <Pressable
-                key={choice.id}
-                accessibilityRole="button"
-                disabled={Boolean(picked)}
-                onPress={() => pick(choice.id)}
-                style={({ pressed }) => [
-                  styles.choice,
-                  {
-                    backgroundColor: state === "right" ? colors.successSoft : state === "wrong" ? colors.dangerSoft : colors.surface,
-                    borderColor: state === "right" ? colors.success : state === "wrong" ? colors.danger : colors.border,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}>
+              <ChoiceButton key={choice.id} state={state} disabled={Boolean(picked)} onPress={() => pick(choice.id)} label={arabicPrompt ? choice.text : undefined}>
                 {arabicPrompt ? (
                   <AppText variant="bodyStrong" center>
                     {choice.text}
                   </AppText>
                 ) : (
-                  <ArabicText size={28} center>
-                    {choice.text}
-                  </ArabicText>
+                  <ArabicChoice text={choice.text} />
                 )}
-              </Pressable>
+              </ChoiceButton>
             );
           })}
         </View>
       </ScrollView>
-      {picked ? (
-        <Feedback correct={correct} answer={arabicPrompt ? word?.fr : word?.headword} arabic={!arabicPrompt} onNext={onNext} loading={submitting} />
-      ) : null}
-    </View>
-  );
-}
-
-/** Mélange déterministe (pur) : ordre fonction d'un hachage de l'identifiant et d'une graine. */
-function scramble(ids: string[], seed: number): string[] {
-  const hash = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0) + seed) % 1_000_003, seed);
-  return [...ids].sort((a, b) => hash(a) - hash(b));
-}
-
-function MatchPairs({ exercise, byId, onAnswer, onNext, submitting }: ExerciseProps & { exercise: Extract<Exercise, { type: "match" }> }) {
-  const colors = useColors();
-  const left = useMemo(() => scramble(exercise.wordIds, 7), [exercise.wordIds]);
-  const right = useMemo(() => scramble(exercise.wordIds, 13), [exercise.wordIds]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [matched, setMatched] = useState<Set<string>>(new Set());
-  const [wrong, setWrong] = useState<string | null>(null);
-  const [mistakes, setMistakes] = useState<Set<string>>(new Set());
-  const done = matched.size === exercise.wordIds.length;
-
-  function chooseRight(id: string) {
-    if (!selected || matched.has(id)) return;
-    if (id === selected) {
-      void Haptics.selectionAsync();
-      const next = new Set(matched).add(id);
-      setMatched(next);
-      setSelected(null);
-      if (next.size === exercise.wordIds.length) {
-        for (const wordId of exercise.wordIds) onAnswer(wordId, !mistakes.has(wordId), null);
-      }
-    } else {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setMistakes((m) => new Set(m).add(selected));
-      setWrong(id);
-      setTimeout(() => setWrong(null), 500);
-    }
-  }
-
-  const tile = (active: boolean, isMatched: boolean, isWrong: boolean) => [
-    styles.tile,
-    {
-      backgroundColor: isMatched ? colors.surfaceMuted : active ? colors.primarySoft : isWrong ? colors.dangerSoft : colors.surface,
-      borderColor: active ? colors.primary : isWrong ? colors.danger : colors.border,
-      opacity: isMatched ? 0.4 : 1,
-    },
-  ];
-
-  return (
-    <View style={styles.body}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <AppText variant="headline">Associez chaque mot à son sens</AppText>
-        <View style={styles.columns}>
-          <View style={styles.column}>
-            {left.map((id) => (
-              <Pressable key={id} accessibilityRole="button" disabled={matched.has(id)} onPress={() => setSelected(id)} style={tile(selected === id, matched.has(id), false)}>
-                <ArabicText size={26} center>
-                  {byId.get(id)?.headword}
-                </ArabicText>
-              </Pressable>
-            ))}
-          </View>
-          <View style={styles.column}>
-            {right.map((id) => (
-              <Pressable key={id} accessibilityRole="button" disabled={matched.has(id)} onPress={() => chooseRight(id)} style={tile(false, matched.has(id), wrong === id)}>
-                <AppText variant="caption" center numberOfLines={3}>
-                  {byId.get(id)?.fr}
-                </AppText>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-      {done ? <Feedback correct={mistakes.size === 0} onNext={onNext} loading={submitting} /> : null}
-    </View>
-  );
-}
-
-function Feedback({ correct, answer, arabic, onNext, loading }: { correct: boolean; answer?: string | null; arabic?: boolean; onNext: () => void; loading: boolean }) {
-  const colors = useColors();
-  return (
-    <View style={[styles.feedback, { backgroundColor: correct ? colors.successSoft : colors.dangerSoft }]}>
-      <View style={styles.feedbackRow}>
-        <Ionicons name={correct ? "checkmark-circle" : "close-circle"} size={26} color={correct ? colors.success : colors.danger} />
-        <AppText variant="headline" color={correct ? colors.success : colors.danger}>
-          {correct ? "Excellent !" : "Pas tout à fait"}
-        </AppText>
-      </View>
-      {!correct && answer ? (
-        arabic ? (
-          <ArabicText size={28}>{answer}</ArabicText>
-        ) : (
-          <AppText>Bonne réponse : {answer}</AppText>
-        )
-      ) : null}
-      <Button title="Continuer" onPress={onNext} loading={loading} />
+      {picked ? <Feedback correct={correct} word={word} onNext={onNext} loading={submitting} /> : null}
     </View>
   );
 }
@@ -366,18 +263,8 @@ function ResultScreen({ result }: { result: SessionResult }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  body: { flex: 1, padding: spacing.lg, gap: spacing.lg },
-  scroll: { gap: spacing.lg, paddingBottom: spacing.lg },
   newBadge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
   introCard: { gap: spacing.md, paddingVertical: spacing.xxxl },
-  prompt: { paddingVertical: spacing.xl, alignItems: "center" },
-  choices: { gap: spacing.md },
-  choice: { borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, minHeight: 60, justifyContent: "center" },
-  columns: { flexDirection: "row", gap: spacing.md },
-  column: { flex: 1, gap: spacing.md },
-  tile: { borderWidth: 1.5, borderRadius: radius.lg, minHeight: 72, padding: spacing.sm, justifyContent: "center" },
-  feedback: { margin: -spacing.lg, marginTop: 0, padding: spacing.xl, gap: spacing.md, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
-  feedbackRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   result: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
   trophy: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center" },
   resultStats: { flexDirection: "row", gap: spacing.md, alignSelf: "stretch" },

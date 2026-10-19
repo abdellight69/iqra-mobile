@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { radius, spacing, useColors } from "@/lib/theme";
+import { transliterate } from "@/lib/transliterate";
 import type { VerbForms } from "@/lib/types";
 import { AppText } from "./AppText";
 import { ArabicText } from "./ArabicText";
@@ -27,6 +28,9 @@ export function VerbTable({ verb }: { verb: VerbForms }) {
           <ArabicText size="sm" center>
             {verb[column.key]}
           </ArabicText>
+          <AppText variant="caption" italic color={colors.accent} center numberOfLines={1} style={styles.phonetic}>
+            {transliterate(verb[column.key]!)}
+          </AppText>
         </View>
       ))}
     </View>
@@ -37,4 +41,5 @@ const styles = StyleSheet.create({
   table: { flexDirection: "row-reverse", flexWrap: "wrap", gap: 4 },
   cell: { flexGrow: 1, minWidth: "30%", alignItems: "center", paddingVertical: spacing.sm, paddingHorizontal: spacing.xs, borderRadius: radius.sm },
   label: { fontSize: 9, letterSpacing: 1 },
+  phonetic: { fontSize: 11, lineHeight: 15 },
 });
