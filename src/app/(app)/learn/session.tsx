@@ -153,7 +153,7 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
         </View>
         <Card style={styles.introCard}>
           <WordSummary word={word} size={48} />
-          <ListenButton wordId={word.id} text={word.headword ?? word.ar} />
+          <ListenButton wordId={word.id} />
           {word.arNote ? (
             <AppText muted center>
               {annotateArabic(word.arNote)}

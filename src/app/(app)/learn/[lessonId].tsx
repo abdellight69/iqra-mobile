@@ -8,10 +8,9 @@ import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { QuranExample } from "@/components/QuranExample";
-import { ListenButton } from "@/components/exercises/shared";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
-import { useLesson, useLessons, useWordExample } from "@/lib/queries";
+import { useLesson, useLessons } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import { annotateArabic, transliterate } from "@/lib/transliterate";
 import type { VocabWord } from "@/lib/types";
@@ -126,9 +125,6 @@ export default function LessonDetail() {
 
 function WordRow({ word }: { word: VocabWord }) {
   const colors = useColors();
-  // Sans occurrence coranique trouvée, pas d'exemple ni d'audio récité : on propose la voix de synthèse.
-  const example = useWordExample(word.id);
-  const noExample = example.isSuccess && !example.data;
   return (
     <View style={[styles.word, word.isPatternRow && { backgroundColor: colors.surfaceMuted }]}>
       <View style={styles.wordTop}>
@@ -164,7 +160,6 @@ function WordRow({ word }: { word: VocabWord }) {
         ) : null}
       </View>
       {!word.isPatternRow && word.fr ? <QuranExample wordId={word.id} compact /> : null}
-      {!word.isPatternRow && word.fr && noExample ? <ListenButton wordId={word.id} text={word.ar} compact /> : null}
       {word.verb ? <VerbTable verb={word.verb} /> : null}
       {word.sourceUncertain ? (
         <View style={styles.warning}>
