@@ -52,7 +52,9 @@ async function send(path: string, options: RequestOptions, accessToken?: string)
       body: options.raw ? options.raw.data : options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
-    throw new ApiError(0, "NETWORK_ERROR", "Impossible de joindre le serveur. Vérifiez votre connexion.");
+    // En développement, l'adresse appelée est affichée pour repérer une mauvaise EXPO_PUBLIC_API_URL.
+    const where = __DEV__ ? ` (${API_URL})` : "";
+    throw new ApiError(0, "NETWORK_ERROR", `Impossible de joindre le serveur${where}. Vérifiez votre connexion.`);
   }
 }
 
