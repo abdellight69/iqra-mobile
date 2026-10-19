@@ -51,9 +51,9 @@ async function send(path: string, options: RequestOptions, accessToken?: string)
       headers,
       body: options.raw ? options.raw.data : options.body === undefined ? undefined : JSON.stringify(options.body),
     });
-  } catch {
-    // En développement, l'adresse appelée est affichée pour repérer une mauvaise EXPO_PUBLIC_API_URL.
-    const where = __DEV__ ? ` (${API_URL})` : "";
+  } catch (error) {
+    // En développement : adresse appelée et erreur d'origine, pour diagnostiquer.
+    const where = __DEV__ ? ` (${API_URL} : ${error instanceof Error ? error.message : String(error)})` : "";
     throw new ApiError(0, "NETWORK_ERROR", `Impossible de joindre le serveur${where}. Vérifiez votre connexion.`);
   }
 }
