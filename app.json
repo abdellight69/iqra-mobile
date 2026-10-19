@@ -76,7 +76,8 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "extraProguardRules": "# WorkManager (react-native-android-widget) : Room instancie WorkDatabase_Impl par réflexion, R8 ne doit ni le renommer ni le retirer.\n-keep class androidx.work.** { *; }\n-keep class androidx.room.** { *; }\n-keep class * extends androidx.room.RoomDatabase { *; }\n-keep @androidx.room.Database class * { *; }"
           }
         }
       ]
