@@ -13,12 +13,20 @@ import { radius, spacing, useColors } from "@/lib/theme";
 import type { PlanVerse } from "@/lib/types";
 
 const STATUS = { new: "Nouveau", learning: "En cours", solid: "Solide" } as const;
+/** Réussites espacées avant qu'un verset soit « solide » (intervalle SM-2 ≥ 3 semaines : 1 j, 6 j, ~15 j, ~37 j). */
+const SOLID_REPETITIONS = 4;
 
 function formatDue(verse: PlanVerse): string {
   if (verse.status === "new") return "Pas encore étudié";
   if (verse.due) return "À réviser maintenant";
   const days = Math.max(1, Math.round((Date.parse(verse.dueAt ?? "") - Date.now()) / 86_400_000));
   return `Prochaine révision dans ${days} j`;
+}
+
+/** « 2/4 réussites » tant que le verset n'est pas solide. */
+function formatRepetitions(verse: PlanVerse): string | null {
+  if (verse.status !== "learning") return null;
+  return `${Math.min(verse.repetitions, SOLID_REPETITIONS)}/${SOLID_REPETITIONS} réussites`;
 }
 
 export default function PlanDetail() {
@@ -34,6 +42,7 @@ export default function PlanDetail() {
   if (plan.isError) return <ErrorState error={plan.error} onRetry={() => void plan.refetch()} />;
   const p = plan.data;
   const toStudy = p.verses.filter((v) => v.due || v.status === "new").length;
+  const memorized = p.progress.total > 0 && p.progress.solid === p.progress.total;
   const statusColor = (v: PlanVerse) => (v.status === "solid" ? colors.accent : v.status === "learning" ? colors.primary : colors.border);
 
   return (
@@ -72,6 +81,17 @@ export default function PlanDetail() {
             <AppText muted center>
               {p.isWholeChapter ? "Sourate entière" : p.fromVerse === p.toVerse ? `Verset ${p.fromVerse}` : `Versets ${p.fromVerse} à ${p.toVerse}`}
             </AppText>
+            {memorized ? (
+              <View style={[styles.badge, { backgroundColor: colors.accentSoft }]}>
+                <AppText variant="caption" color={colors.accent}>
+                  {p.isWholeChapter ? "Sourate mémorisée" : "Passage mémorisé"} · tous les versets sont solides
+                </AppText>
+              </View>
+            ) : (
+              <AppText variant="caption" muted center>
+                Un verset est solide après {SOLID_REPETITIONS} réussites espacées (environ 3 semaines). {p.isWholeChapter ? "La sourate est mémorisée" : "Le passage est mémorisé"} quand tous le sont.
+              </AppText>
+            )}
             <View style={styles.counts}>
               {[
                 { value: p.progress.solid, label: "solides" },
@@ -95,7 +115,10 @@ export default function PlanDetail() {
             style={({ pressed }) => [styles.verse, { opacity: pressed ? 0.55 : 1 }]}>
             <VerseBadge value={item.verseNumber} />
             <View style={styles.flex}>
-              <AppText variant="bodyStrong">{STATUS[item.status]}</AppText>
+              <AppText variant="bodyStrong">
+                {STATUS[item.status]}
+                {formatRepetitions(item) ? ` · ${formatRepetitions(item)}` : ""}
+              </AppText>
               <AppText variant="caption" color={item.due ? colors.danger : colors.textMuted}>
                 {formatDue(item)}
               </AppText>
@@ -129,6 +152,7 @@ export default function PlanDetail() {
 }
 
 const styles = StyleSheet.create({
+  badge: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, alignSelf: "center" },
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4 },
   summary: { alignItems: "center", gap: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.xl },

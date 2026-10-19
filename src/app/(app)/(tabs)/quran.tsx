@@ -10,7 +10,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
 import { useOffline } from "@/lib/offline";
-import { useChapters, useComprehension } from "@/lib/queries";
+import { useChapters, useComprehension, useMemorizationMap } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Chapter, ChapterComprehension } from "@/lib/types";
 
@@ -25,11 +25,14 @@ export default function QuranTab() {
   const colors = useColors();
   const chapters = useChapters();
   const comprehension = useComprehension();
+  const memorization = useMemorizationMap();
   const [query, setQuery] = useState("");
   const comprehensionById = useMemo(
     () => new Map((comprehension.data ?? []).map((c) => [c.chapterId, c])),
     [comprehension.data],
   );
+  // Versets solides par sourate (carte de mémorisation) : « Mémorisée » quand tous le sont.
+  const solidById = useMemo(() => new Map((memorization.data?.chapters ?? []).map((c) => [c.chapterId, c.solid])), [memorization.data]);
 
   const filtered = useMemo(() => {
     const list = chapters.data ?? [];
@@ -85,14 +88,14 @@ export default function QuranTab() {
               </View>
             </View>
           }
-          renderItem={({ item }) => <ChapterRow chapter={item} comprehension={comprehensionById.get(item.id)} />}
+          renderItem={({ item }) => <ChapterRow chapter={item} comprehension={comprehensionById.get(item.id)} solid={solidById.get(item.id)} />}
         />
       )}
     </SafeAreaView>
   );
 }
 
-function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehension?: ChapterComprehension }) {
+function ChapterRow({ chapter, comprehension, solid }: { chapter: Chapter; comprehension?: ChapterComprehension; solid?: number }) {
   const colors = useColors();
   const downloaded = useOffline((s) => Boolean(s.entries[chapter.id]));
   const known = comprehension && comprehension.totalWords > 0 ? Math.round((comprehension.knownWords / comprehension.totalWords) * 100) : 0;
@@ -118,6 +121,11 @@ function ChapterRow({ chapter, comprehension }: { chapter: Chapter; comprehensio
         {known > 0 ? (
           <AppText variant="caption" color={colors.primary}>
             {known} % des mots reconnus
+          </AppText>
+        ) : null}
+        {solid ? (
+          <AppText variant="caption" color={colors.accent}>
+            {solid === chapter.versesCount ? "Mémorisée" : `${solid}/${chapter.versesCount} versets solides`}
           </AppText>
         ) : null}
       </View>

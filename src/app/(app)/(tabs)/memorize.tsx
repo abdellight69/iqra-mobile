@@ -142,6 +142,13 @@ function PlanCard({ plan }: { plan: MemorizationPlan }) {
               {due} à réviser
             </AppText>
           </View>
+        ) : total > 0 && solid === total ? (
+          <View style={styles.dueRow}>
+            <Ionicons name="checkmark-circle" size={13} color={colors.accent} />
+            <AppText variant="caption" color={colors.accent}>
+              {plan.isWholeChapter ? "Sourate mémorisée" : "Passage mémorisé"}
+            </AppText>
+          </View>
         ) : null}
       </View>
       {chapter ? <ArabicText size={22}>{chapter.nameArabic}</ArabicText> : null}

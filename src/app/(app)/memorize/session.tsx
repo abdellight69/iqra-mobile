@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { SafeArea } from "@/components/SafeArea";
@@ -35,8 +35,9 @@ import type { Word } from "@/lib/types";
 const MAX_NEW_VERSES = 5;
 type HideLevel = 0 | 1 | 2;
 const HIDE_LABELS: Record<HideLevel, string> = { 0: "Texte", 1: "Indices", 2: "Masqué" };
+/** Qualité SM-2 : 1 = oublié (le verset revient en fin de séance), 3 à 5 = réussi. */
 const GRADES = [
-  { quality: 1, label: "À revoir", icon: "refresh" as const },
+  { quality: 1, label: "Oublié", icon: "refresh" as const },
   { quality: 3, label: "Difficile", icon: "alert-circle-outline" as const },
   { quality: 4, label: "Bien", icon: "checkmark" as const },
   { quality: 5, label: "Parfait", icon: "star" as const },
@@ -107,11 +108,14 @@ export default function MemorizationSession() {
   );
 }
 
-function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () => void }) {
+function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFinished: () => void }) {
   const colors = useColors();
+  // Un verset oublié est remis en fin de séance : il est retravaillé avant « Séance terminée ».
+  const [keys, setKeys] = useState(initialKeys);
   const [index, setIndex] = useState(0);
   const [xp, setXp] = useState(0);
   const [finished, setFinished] = useState(false);
+  const retried = useRef(new Set<string>());
 
   if (finished) {
     return (
@@ -123,10 +127,10 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
           Séance terminée
         </AppText>
         <AppText muted center>
-          {keys.length} verset{keys.length > 1 ? "s" : ""} travaillé{keys.length > 1 ? "s" : ""} · +{xp} XP
+          {initialKeys.length} verset{initialKeys.length > 1 ? "s" : ""} travaillé{initialKeys.length > 1 ? "s" : ""} · +{xp} XP
         </AppText>
         <AppText muted center>
-          Les prochaines révisions sont planifiées selon votre auto-évaluation.
+          Les prochaines révisions sont planifiées selon votre auto-évaluation : 1 jour, puis 6, puis 2 à 3 semaines. Un verset est « solide » à partir de la 4ᵉ réussite.
         </AppText>
         <Button title="Terminer" onPress={() => router.back()} style={{ alignSelf: "stretch" }} />
       </SafeArea>
@@ -158,9 +162,17 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
       <VerseDrill
         key={keys[index]}
         verseKey={keys[index]!}
-        onDone={(gained) => {
+        onDone={(gained, forgotten) => {
           setXp((x) => x + gained);
-          if (index + 1 < keys.length) setIndex(index + 1);
+          const key = keys[index]!;
+          let next = keys;
+          // Oublié : une seule reprise par verset, pour que la séance se termine.
+          if (forgotten && !retried.current.has(key)) {
+            retried.current.add(key);
+            next = [...keys, key];
+            setKeys(next);
+          }
+          if (index + 1 < next.length) setIndex(index + 1);
           else {
             setFinished(true);
             onFinished();
@@ -171,7 +183,7 @@ function SessionRunner({ keys, onFinished }: { keys: string[]; onFinished: () =>
   );
 }
 
-function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: number) => void }) {
+function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: number, forgotten: boolean) => void }) {
   const colors = useColors();
   const me = useMe();
   const [chapterId, verseNumber] = verseKey.split(":").map(Number) as [number, number];
@@ -405,6 +417,9 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           <AppText variant="headline" center>
             Comment s’est passée la récitation ?
           </AppText>
+          <AppText variant="caption" muted center>
+            « Oublié » : le verset revient en fin de séance. Réussi : prochaine révision dans 1 jour, puis 6, puis 2 à 3 semaines.
+          </AppText>
           {result?.suggestedQuality ? (
             <AppText variant="caption" muted center>
               Note proposée d’après la vérification : à vous de confirmer.
@@ -424,7 +439,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                         void Haptics.notificationAsync(
                           g.quality >= 3 ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
                         );
-                        onDone(r.xpGained);
+                        onDone(r.xpGained, g.quality < 3);
                       },
                       onError: () => Alert.alert("Enregistrement impossible", "Vérifiez votre connexion puis réessayez."),
                     },
