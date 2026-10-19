@@ -2,8 +2,13 @@
 
 export type User = {
   id: string;
-  email: string;
+  /** Null pour un profil de la famille (seul le titulaire du compte a un e-mail). */
+  email: string | null;
   displayName: string;
+  /** Couleur du profil (absente sur un serveur plus ancien). */
+  avatar?: string | null;
+  /** Titulaire du compte (absent sur un serveur plus ancien : un seul profil, le titulaire). */
+  isOwner?: boolean;
   translationId: number | null;
   recitationId: number | null;
   /** Tafsir choisi (absent sur un serveur plus ancien ; null : français par défaut s'il existe). */
@@ -340,3 +345,24 @@ export type SearchResults = {
   pageSize: number;
   results: { key: string; chapterId: number; verseNumber: number; textUthmani: string; translation: string | null }[];
 };
+
+export type ProfileProgress = {
+  xp: number;
+  currentStreak: number;
+  todayXp: number;
+  goalXp: number;
+  wordsLearned: number;
+  versesMemorized: number;
+  readingLessons: number;
+};
+export type Profile = {
+  id: string;
+  displayName: string;
+  avatar: string | null;
+  arabicLevel: ArabicLevel | null;
+  isOwner: boolean;
+  current: boolean;
+  /** Visible du titulaire seulement. */
+  progress: ProfileProgress | null;
+};
+export type Profiles = { isOwner: boolean; pinSet: boolean; maxProfiles: number; profiles: Profile[] };

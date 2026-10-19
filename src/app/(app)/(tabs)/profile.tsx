@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Alert, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { ListGroup, ListRow } from "@/components/List";
 import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
@@ -40,17 +41,27 @@ export default function Profile() {
   const weekXp = week.reduce((n, w) => n + w.xp, 0);
 
   async function logout() {
-    if (refreshToken) await api("/auth/logout", { method: "POST", body: { refreshToken }, auth: false }).catch(() => undefined);
+    if (refreshToken)
+      await api("/auth/logout", {
+        method: "POST",
+        body: { refreshToken },
+        auth: false,
+      }).catch(() => undefined);
     await signOut();
   }
 
   return (
-    <Screen onRefresh={() => void stats.refetch()} refreshing={stats.isRefetching}>
+    <Screen
+      onRefresh={() => void stats.refetch()}
+      refreshing={stats.isRefetching}
+    >
       <View style={styles.identity}>
-        <View style={[styles.avatar, { backgroundColor: colors.primarySoft }]}>
-          <AppText variant="title" color={colors.primary}>
-            {me.data?.displayName.slice(0, 1).toUpperCase() ?? "?"}
-          </AppText>
+        <View style={styles.avatar}>
+          <ProfileAvatar
+            name={me.data?.displayName ?? "?"}
+            avatar={me.data?.avatar}
+            size={76}
+          />
         </View>
         <AppText variant="display" center>
           {me.data?.displayName ?? ""}
@@ -61,7 +72,11 @@ export default function Profile() {
       </View>
 
       <View style={styles.stats}>
-        <StatTile value={s?.currentStreak ?? 0} label="jours de suite" color={colors.accent} />
+        <StatTile
+          value={s?.currentStreak ?? 0}
+          label="jours de suite"
+          color={colors.accent}
+        />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <StatTile value={s?.longestStreak ?? 0} label="meilleure série" />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -87,17 +102,31 @@ export default function Profile() {
                     styles.bar,
                     {
                       height: `${Math.max(w.xp > 0 ? 6 : 0, (w.xp / maxXp) * 100)}%`,
-                      backgroundColor: w.xp >= goal ? colors.accent : colors.primary,
+                      backgroundColor:
+                        w.xp >= goal ? colors.accent : colors.primary,
                     },
                   ]}
                 />
                 {w.frozen ? (
-                  <Ionicons name="snow" size={14} color={colors.primary} accessibilityLabel="Jour couvert par le répit" />
+                  <Ionicons
+                    name="snow"
+                    size={14}
+                    color={colors.primary}
+                    accessibilityLabel="Jour couvert par le répit"
+                  />
                 ) : w.xp === 0 ? (
-                  <View style={[styles.emptyDot, { backgroundColor: colors.border }]} />
+                  <View
+                    style={[
+                      styles.emptyDot,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
                 ) : null}
               </View>
-              <AppText variant="caption" color={w.isToday ? colors.text : colors.textFaint}>
+              <AppText
+                variant="caption"
+                color={w.isToday ? colors.text : colors.textFaint}
+              >
                 {w.label}
               </AppText>
             </View>
@@ -114,28 +143,55 @@ export default function Profile() {
       </View>
 
       <ListGroup>
-        <ListRow icon="options-outline" title="Réglages" subtitle="Traduction, récitateur, objectif, compte" onPress={() => router.push("/settings")} />
-        <ListRow icon="bookmark-outline" title="Signets" onPress={() => router.push("/bookmarks")} />
-        {offlineSupported ? (
-          <ListRow icon="cloud-download-outline" title="Téléchargements" subtitle="Sourates disponibles hors ligne" onPress={() => router.push("/downloads")} />
-        ) : null}
         <ListRow
-          icon="log-out-outline"
-          title="Se déconnecter"
-          danger
-          chevron={false}
-          onPress={() =>
-            Alert.alert("Se déconnecter ?", undefined, [
-              { text: "Annuler", style: "cancel" },
-              { text: "Déconnexion", style: "destructive", onPress: () => void logout() },
-            ])
-          }
+          icon="people-outline"
+          title="Changer de profil"
+          subtitle="Un profil par membre de la famille"
+          onPress={() => router.push("/profiles")}
         />
+        <ListRow
+          icon="options-outline"
+          title="Réglages"
+          subtitle="Traduction, récitateur, objectif, compte"
+          onPress={() => router.push("/settings")}
+        />
+        <ListRow
+          icon="bookmark-outline"
+          title="Signets"
+          onPress={() => router.push("/bookmarks")}
+        />
+        {offlineSupported ? (
+          <ListRow
+            icon="cloud-download-outline"
+            title="Téléchargements"
+            subtitle="Sourates disponibles hors ligne"
+            onPress={() => router.push("/downloads")}
+          />
+        ) : null}
+        {me.data?.isOwner === false ? null : (
+          <ListRow
+            icon="log-out-outline"
+            title="Se déconnecter"
+            danger
+            chevron={false}
+            onPress={() =>
+              Alert.alert("Se déconnecter ?", undefined, [
+                { text: "Annuler", style: "cancel" },
+                {
+                  text: "Déconnexion",
+                  style: "destructive",
+                  onPress: () => void logout(),
+                },
+              ])
+            }
+          />
+        )}
       </ListGroup>
 
       <AppText variant="caption" faint center>
-        Textes et audio : Quran.com (Quran Foundation){"\n"}Grammaire : Quranic Arabic Corpus{"\n"}Vocabulaire : « 80% des mots du Qour’ân »
-        (Al-Lawh, CC BY-NC-SA)
+        Textes et audio : Quran.com (Quran Foundation){"\n"}Grammaire : Quranic
+        Arabic Corpus{"\n"}Vocabulaire : « 80% des mots du Qour’ân » (Al-Lawh,
+        CC BY-NC-SA)
       </AppText>
     </Screen>
   );
@@ -143,14 +199,28 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   identity: { alignItems: "center", gap: spacing.xs, marginTop: spacing.lg },
-  avatar: { width: 76, height: 76, borderRadius: 38, alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
-  stats: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xs },
+  avatar: { marginBottom: spacing.sm },
+  stats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xs,
+  },
   divider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch" },
   week: { gap: spacing.lg },
-  weekHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+  weekHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+  },
   bars: { flexDirection: "row", justifyContent: "space-between", height: 110 },
   barCol: { alignItems: "center", gap: 6, flex: 1 },
-  barTrack: { flex: 1, width: 10, justifyContent: "flex-end", alignItems: "center" },
+  barTrack: {
+    flex: 1,
+    width: 10,
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
   bar: { width: "100%", borderRadius: radius.pill },
   emptyDot: { width: 4, height: 4, borderRadius: 2 },
 });
