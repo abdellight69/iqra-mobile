@@ -20,10 +20,8 @@ import { buildSnapshot, publishWidgetSnapshot } from "@/lib/widget";
 const VERSE_OF_REFLECTION =
   "إِنَّ هَٰذَا ٱلْقُرْءَانَ يَهْدِى لِلَّتِى هِىَ أَقْوَمُ وَيُبَشِّرُ ٱلْمُؤْمِنِينَ ٱلَّذِينَ يَعْمَلُونَ ٱلصَّٰلِحَٰتِ أَنَّ لَهُمْ أَجْرًا كَبِيرًا";
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  return hour < 5 ? "Bonne nuit" : hour < 18 ? "Bonjour" : "Bonsoir";
-}
+/** Salutation, la même à toute heure, dans la graphie phonétique de l'app. */
+const GREETING = "As-salâmou ʿalaykoum";
 
 function today(): string {
   const label = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
@@ -69,7 +67,7 @@ export default function Home() {
           {today()}
         </AppText>
         <AppText variant="display">
-          {greeting()}
+          {GREETING}
           {userName ? `,\n${userName}` : ""}
         </AppText>
       </View>
