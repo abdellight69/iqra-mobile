@@ -14,7 +14,8 @@
         "com.apple.security.application-groups": [
           "group.app.iqra.mobile"
         ]
-      }
+      },
+      "appleTeamId": "8TSDHC2926"
     },
     "android": {
       "package": "app.iqra.mobile",

@@ -82,24 +82,37 @@ struct IqraWidgetView: View {
       HStack(alignment: .firstTextBaseline) {
         VStack(alignment: .leading, spacing: 2) {
           Text("OBJECTIF DU JOUR").font(.system(size: 9, weight: .semibold)).tracking(1.2).foregroundStyle(.secondary)
-          Text("\(s.todayXp) / \(s.goalXp) XP").font(.system(size: family == .systemSmall ? 20 : 22, weight: .bold, design: .serif))
+          Text("\(s.todayXp) / \(s.goalXp) XP")
+            .font(.system(size: family == .systemSmall ? 20 : 22, weight: .bold, design: .serif))
+            .lineLimit(1).minimumScaleFactor(0.7)
         }
-        Spacer(minLength: 4)
-        Text("\(Int(s.progress * 100)) %")
-          .font(.system(size: 12, weight: .bold))
-          .foregroundStyle(Color("$accent"))
-          .padding(.horizontal, 8).padding(.vertical, 4)
-          .background(Color("$accent").opacity(0.14), in: Capsule())
+        // Petite taille : la pastille du pourcentage prendrait la place des chiffres.
+        if family != .systemSmall {
+          Spacer(minLength: 4)
+          Text("\(Int(s.progress * 100)) %")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Color("$accent"))
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Color("$accent").opacity(0.14), in: Capsule())
+        }
       }
       ProgressView(value: s.progress).tint(gold)
-      HStack(spacing: 6) {
-        Text("\(s.currentStreak) jour\(s.currentStreak > 1 ? "s" : "") de suite").font(.system(size: 11))
-        Text("·").foregroundStyle(.secondary)
-        Text(s.due > 0 ? "\(s.due) à réviser" : "rien à réviser")
-          .font(.system(size: 11))
-          .foregroundStyle(s.due > 0 ? gold : .secondary)
+      if family == .systemSmall {
+        // Deux lignes courtes plutôt qu'une ligne tronquée.
+        Text("\(s.currentStreak) jour\(s.currentStreak > 1 ? "s" : "") de suite").font(.system(size: 11)).lineLimit(1)
+        Text(s.due > 0 ? "\(s.due) à réviser" : "Rien à réviser")
+          .font(.system(size: 11, weight: s.due > 0 ? .semibold : .regular))
+          .foregroundStyle(s.due > 0 ? gold : .secondary).lineLimit(1)
+      } else {
+        HStack(spacing: 6) {
+          Text("\(s.currentStreak) jour\(s.currentStreak > 1 ? "s" : "") de suite").font(.system(size: 11))
+          Text("·").foregroundStyle(.secondary)
+          Text(s.due > 0 ? "\(s.due) à réviser" : "rien à réviser")
+            .font(.system(size: 11))
+            .foregroundStyle(s.due > 0 ? gold : .secondary)
+        }
+        .lineLimit(1)
       }
-      .lineLimit(1)
       if family != .systemSmall {
         Spacer(minLength: 0)
         Link(destination: s.resumeURL) {
