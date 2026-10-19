@@ -15,6 +15,8 @@ Application React Native (Expo SDK 58, Expo Router, TypeScript) pour Android et 
 
 Également : phonétique des versets et des mots, part de chaque sourate reconnue avec les mots connus surlignés, surlignage du mot récité pendant l'écoute, parcours « Comprendre sa prière », jour de répit hebdomadaire pour la série, rappel quotidien (notifications locales), et **mode hors ligne** : sourates téléchargées (texte, traduction, phonétique, récitation), données du compte gardées sur l'appareil, auto-évaluations de mémorisation envoyées à la reconnexion.
 
+**Widgets d'écran d'accueil** (iOS 17+ via WidgetKit, Android via `react-native-android-widget`) : objectif du jour, série, révisions dues et reprise de lecture. L'app écrit un instantané (`src/lib/widget.ts`) à chaque passage sur l'accueil ; le widget ne parle jamais au serveur. iOS : cible SwiftUI dans `targets/widget/` (plugin `@bacons/apple-targets`, groupe d'applications `group.app.iqra.mobile` ; renseigner `ios.appleTeamId` dans `app.json` pour signer sur un appareil). Android : arbre React dans `src/widgets/`, gestionnaire enregistré dans `index.js`. Les widgets exigent une version de développement (pas Expo Go).
+
 Authentification complète : inscription, connexion, mot de passe oublié (lien profond `iqra://reset-password?token=…`), sessions persistées dans le trousseau (expo-secure-store) avec rafraîchissement automatique des jetons.
 
 ## Démarrage

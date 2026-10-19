@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "app.iqra.mobile",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.app.iqra.mobile"
+        ]
+      }
     },
     "android": {
       "package": "app.iqra.mobile",
@@ -46,7 +51,26 @@
         }
       ],
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "IqraToday",
+              "label": "Iqra · Aujourd’hui",
+              "description": "Objectif du jour, série, révisions et reprise de lecture.",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

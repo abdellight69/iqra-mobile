@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
@@ -12,6 +13,7 @@ import { useAuth } from "@/lib/auth-store";
 import { nextStep } from "@/lib/next-step";
 import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
+import { buildSnapshot, publishWidgetSnapshot } from "@/lib/widget";
 
 // Texte uthmani de 17:9 tel que dans Tanzil (vérifié), voir backend/data/README.md.
 const VERSE_OF_REFLECTION =
@@ -41,6 +43,12 @@ export default function Home() {
   const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data });
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
+
+  // Widget d'écran d'accueil : instantané de la journée, mis à jour à chaque passage ici.
+  useEffect(() => {
+    if (!me.data || !stats.data || position.isPending) return;
+    void publishWidgetSnapshot(buildSnapshot({ user: me.data, stats: stats.data, position: position.data, chapterName: lastChapter?.nameSimple ?? null }));
+  }, [me.data, stats.data, position.isPending, position.data, lastChapter?.nameSimple]);
   const goal = s ? s.today.xp / s.today.goalXp : 0;
   const resumeChapter = comprehension.data?.find((c) => c.chapterId === (position.data?.chapterId ?? 1));
   const recognized = resumeChapter?.totalWords ? Math.round((resumeChapter.knownWords / resumeChapter.totalWords) * 100) : 0;

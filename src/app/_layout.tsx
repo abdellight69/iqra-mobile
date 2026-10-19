@@ -14,6 +14,7 @@ import { PLAYBACK_MODE } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
+import { publishWidgetSnapshot } from "@/lib/widget";
 import { darkColors, lightColors } from "@/lib/theme";
 
 void SplashScreen.preventAutoHideAsync();
@@ -68,6 +69,7 @@ export default function RootLayout() {
     queryClient.clear();
     clearQueryCache();
     clearOutbox();
+    void publishWidgetSnapshot(null);
   }, [status, queryClient]);
 
   // Connecté, au démarrage et à chaque retour au premier plan : envoi des évaluations faites hors ligne.
