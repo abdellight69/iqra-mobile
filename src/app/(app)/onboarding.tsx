@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md },
   option: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { minWidth: 72, alignItems: "center", borderWidth: 1.5, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  chip: { minWidth: 72, minHeight: 44, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   rec: { borderRadius: radius.lg, padding: spacing.xl, gap: spacing.sm },
   cta: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.xs },
 });

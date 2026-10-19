@@ -13,6 +13,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
 import { RepeatSheet, type RepeatSettings } from "@/components/RepeatSheet";
+import { useReducedMotion } from "@/lib/a11y";
 import { useTrackQueue } from "@/lib/audio";
 import { openWordSheet } from "@/lib/navigation";
 import { formatRate, usePlayback } from "@/lib/playback-store";
@@ -97,6 +98,7 @@ export default function SurahReader() {
     [surahName, reciter],
   );
   const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1, nowPlaying });
+  const reduceMotion = useReducedMotion();
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
     [bookmarks.data, chapterId],
@@ -132,11 +134,11 @@ export default function SurahReader() {
     const index = list.findIndex((v) => v.key === key);
     if (index >= 0) {
       followedKey.current = key;
-      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.1 });
+      listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewPosition: 0.1 });
     } else if (canLoadMore && !verses.isFetchingNextPage) {
       void verses.fetchNextPage();
     }
-  }, [queue.currentKey, list, verses, canLoadMore]);
+  }, [queue.currentKey, list, verses, canLoadMore, reduceMotion]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     const visible = viewableItems.map((v) => v.item as Verse | undefined).filter((v): v is Verse => Boolean(v));
@@ -261,7 +263,8 @@ export default function SurahReader() {
       {tracks.length > 0 ? (
         <View style={[styles.player, { backgroundColor: colors.text, bottom: insets.bottom + spacing.md }, elevation(colors, 2)]}>
           <View style={styles.flex}>
-            <AppText variant="label" color={`${colors.background}99`}>
+            {/* Lecteur flottant : une ligne par texte, agrandissement limité pour garder une pastille. */}
+            <AppText variant="label" color={`${colors.background}99`} numberOfLines={1} maxFontSizeMultiplier={1.3}>
               {queue.buffering
                 ? "Chargement…"
                 : repeatSettings
@@ -272,7 +275,7 @@ export default function SurahReader() {
                     ? "Récitation"
                     : "Écouter"}
             </AppText>
-            <AppText variant="headline" color={colors.background}>
+            <AppText variant="headline" color={colors.background} numberOfLines={1} maxFontSizeMultiplier={1.3}>
               {queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Toute la sourate"}
             </AppText>
           </View>
@@ -289,9 +292,8 @@ export default function SurahReader() {
             accessibilityRole="button"
             accessibilityLabel={`Vitesse ${formatRate(rate)}, toucher pour changer`}
             onPress={cycleRate}
-            hitSlop={6}
             style={styles.rateButton}>
-            <AppText variant="caption" color={rate === 1 ? `${colors.background}99` : colors.accent}>
+            <AppText variant="caption" color={rate === 1 ? `${colors.background}99` : colors.accent} maxFontSizeMultiplier={1.3}>
               {formatRate(rate)}
             </AppText>
           </Pressable>
@@ -357,7 +359,11 @@ function ChapterHeader({ chapterId }: { chapterId: number }) {
         </AppText>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => setOpen((o) => !o)} style={[styles.infoToggle, { backgroundColor: colors.surfaceMuted }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+        style={[styles.infoToggle, { backgroundColor: colors.surfaceMuted }]}>
         <AppText variant="caption">À propos de la sourate</AppText>
         <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color={colors.textMuted} />
       </Pressable>
@@ -404,11 +410,11 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row" },
   headerBlock: { gap: spacing.lg, paddingHorizontal: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.sm },
   hero: { gap: spacing.xs, alignItems: "center", paddingVertical: spacing.lg },
-  infoToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  infoToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: 44, borderRadius: radius.pill },
   about: { gap: spacing.sm },
   basmala: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.md },
   separator: { height: StyleSheet.hairlineWidth, marginHorizontal: spacing.md },
-  rateButton: { minWidth: 36, alignItems: "center" },
+  rateButton: { minWidth: 40, minHeight: 44, alignItems: "center", justifyContent: "center" },
   player: {
     position: "absolute",
     left: spacing.lg,

@@ -105,5 +105,5 @@ const styles = StyleSheet.create({
   notice: { flexDirection: "row", gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
   paragraph: { fontSize: 16, lineHeight: 26 },
   notes: { gap: 4, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
-  link: { alignSelf: "flex-start" },
+  link: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
 });

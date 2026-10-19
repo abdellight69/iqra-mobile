@@ -5,12 +5,16 @@ const sizes = { sm: 20, md: 26, lg: 32, xl: 40 } as const;
 
 export type ArabicTextProps = TextProps & { size?: keyof typeof sizes | number; color?: string; center?: boolean };
 
+/** Agrandissement maximal du texte arabe avec la taille système : déjà grand, il déborderait au-delà. */
+export const ARABIC_MAX_FONT_SCALE = 1.6;
+
 /** Texte arabe en police Amiri Quran, aligné de droite à gauche, avec un interligne généreux pour les signes. */
 export function ArabicText({ size = "md", color, center, style, ...props }: ArabicTextProps) {
   const colors = useColors();
   const fontSize = typeof size === "number" ? size : sizes[size];
   return (
     <Text
+      maxFontSizeMultiplier={ARABIC_MAX_FONT_SCALE}
       {...props}
       style={[
         {

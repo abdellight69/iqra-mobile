@@ -21,7 +21,13 @@ export function TajweedLegend() {
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surfaceMuted }]}>
-      <Pressable accessibilityRole="button" onPress={() => setOpen((o) => !o)} style={styles.header}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Couleurs du tajwid"
+        accessibilityState={{ expanded: open }}
+        accessibilityHint={open ? "Replie la légende" : "Déplie la légende des couleurs"}
+        onPress={() => setOpen((o) => !o)}
+        style={styles.header}>
         <Ionicons name="color-palette-outline" size={16} color={colors.textMuted} />
         <AppText variant="caption" style={styles.flex}>
           Couleurs du tajwid
@@ -57,7 +63,7 @@ export function TajweedLegend() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   card: { borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
+  header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs, minHeight: 44 },
   list: { gap: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.xs },
   row: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start" },
   dot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },

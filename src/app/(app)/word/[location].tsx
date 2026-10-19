@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   segment: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md, gap: spacing.sm },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
-  link: { alignSelf: "flex-start", paddingVertical: spacing.xs },
+  link: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
   occurrences: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   occurrence: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, paddingHorizontal: spacing.sm, alignItems: "center" },
 });

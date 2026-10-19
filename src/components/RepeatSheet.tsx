@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "@/lib/a11y";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
@@ -28,13 +29,14 @@ export function RepeatSheet({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   const { rate, cycleRate } = usePlayback();
   const [settings, setSettings] = useState(initial);
   const update = (patch: Partial<RepeatSettings>) => setSettings((s) => ({ ...s, ...patch }));
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Fermer" style={styles.backdrop} onPress={onClose} />
+    <Modal visible={visible} transparent animationType={reduceMotion ? "fade" : "slide"} onRequestClose={onClose}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Fermer" style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={[styles.grabber, { backgroundColor: colors.border }]} />
         <AppText variant="title">Répéter un passage</AppText>
@@ -102,11 +104,11 @@ function Stepper({ label, value, min, max, onChange }: { label: string; value: n
         {label}
       </AppText>
       <View style={styles.stepperRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${label} : moins`} hitSlop={8} onPress={() => step(-1)} disabled={value <= min}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${label} : moins`} hitSlop={10} onPress={() => step(-1)} disabled={value <= min}>
           <Ionicons name="remove-circle-outline" size={28} color={value <= min ? colors.border : colors.primary} />
         </Pressable>
         <AppText variant="title">{value}</AppText>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${label} : plus`} hitSlop={8} onPress={() => step(1)} disabled={value >= max}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${label} : plus`} hitSlop={10} onPress={() => step(1)} disabled={value >= max}>
           <Ionicons name="add-circle-outline" size={28} color={value >= max ? colors.border : colors.primary} />
         </Pressable>
       </View>

@@ -79,6 +79,7 @@ export default function QuranTab() {
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Filtrer les sourates"
+                  accessibilityLabel="Filtrer les sourates"
                   placeholderTextColor={colors.textFaint}
                   selectionColor={colors.primary}
                   style={[styles.searchInput, { color: colors.text }]}
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   header: { gap: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.md },
   search: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderRadius: radius.pill, paddingHorizontal: spacing.lg, minHeight: 48 },
   searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15 },
-  everywhere: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: -spacing.md, paddingHorizontal: spacing.xs },
+  everywhere: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: -spacing.md, paddingHorizontal: spacing.xs, minHeight: 44 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingVertical: spacing.md + 2 },
   right: { alignItems: "flex-end" },
   offline: { flexDirection: "row", alignItems: "center", gap: 4 },

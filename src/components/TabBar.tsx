@@ -47,7 +47,7 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
               style={[styles.item, kids && styles.itemKids, focused && { backgroundColor: colors.primarySoft, flexGrow: kids ? 1 : 2.3 }]}>
               <Ionicons name={focused ? activeIcon : icon} size={kids ? 24 : 20} color={focused ? colors.primary : colors.textMuted} />
               {focused || kids ? (
-                <AppText variant="caption" color={focused ? colors.primary : colors.textMuted} numberOfLines={1} style={styles.label}>
+                <AppText variant="caption" color={focused ? colors.primary : colors.textMuted} numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.label}>
                   {label}
                 </AppText>
               ) : null}
@@ -65,13 +65,14 @@ const styles = StyleSheet.create({
   item: {
     flexGrow: 1,
     flexBasis: 0,
-    height: 46,
+    minHeight: 46,
+    paddingVertical: 4,
     borderRadius: radius.pill,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
-  itemKids: { height: 58, flexDirection: "column", gap: 2 },
+  itemKids: { minHeight: 58, flexDirection: "column", gap: 2 },
   label: { fontWeight: "600" },
 });

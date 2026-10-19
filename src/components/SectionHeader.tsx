@@ -8,7 +8,7 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
     <View style={styles.row}>
       <AppText variant="headline">{title}</AppText>
       {action && onAction ? (
-        <Pressable accessibilityRole="button" hitSlop={8} onPress={onAction}>
+        <Pressable accessibilityRole="button" hitSlop={{ top: 14, bottom: 14, left: 12, right: 12 }} onPress={onAction}>
           <AppText variant="caption" color={colors.primary}>
             {action}
           </AppText>

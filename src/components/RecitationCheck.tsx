@@ -49,7 +49,7 @@ export function RecitationRecorder({
           <AppText variant="bodyStrong" style={styles.flex}>
             Enregistrement… {formatSeconds(seconds)}
           </AppText>
-          <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Annuler l’enregistrement" onPress={onCancel} hitSlop={{ top: 14, bottom: 14, left: 12, right: 12 }}>
             <AppText variant="caption" muted>
               Annuler
             </AppText>

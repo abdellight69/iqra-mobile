@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
+import { ARABIC_MAX_FONT_SCALE } from "@/components/ArabicText";
 import { SafeArea } from "@/components/SafeArea";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -255,6 +256,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           fragile && { borderBottomWidth: 3, borderBottomColor: colors.accent },
         ]}>
         <AppText
+          maxFontSizeMultiplier={ARABIC_MAX_FONT_SCALE}
           style={{
             fontFamily: fonts.arabic,
             fontSize: 30,
@@ -299,6 +301,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                 <Pressable
                   key={level}
                   accessibilityRole="button"
+                  accessibilityLabel={HIDE_LABELS[level]}
                   accessibilityState={{ selected: hide === level }}
                   onPress={() => {
                     setHide(level);
@@ -342,6 +345,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                     key={n}
                     accessibilityRole="button"
                     accessibilityLabel={`Répéter ${n} fois`}
+                    accessibilityState={{ selected: repeat === n }}
+                    hitSlop={6}
                     onPress={() => setRepeat(n)}
                     style={[styles.repeat, { borderColor: repeat === n ? colors.primary : colors.border, backgroundColor: repeat === n ? colors.primarySoft : "transparent" }]}>
                     <AppText variant="caption" color={repeat === n ? colors.primary : colors.textMuted}>
@@ -352,6 +357,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Vitesse ${formatRate(rate)}, toucher pour changer`}
+                  hitSlop={6}
                   onPress={cycleRate}
                   style={[styles.repeat, { borderColor: rate === 1 ? colors.border : colors.accent, backgroundColor: rate === 1 ? "transparent" : colors.accentSoft }]}>
                   <AppText variant="caption" color={rate === 1 ? colors.textMuted : colors.accent}>
@@ -471,14 +477,14 @@ const styles = StyleSheet.create({
   word: { borderRadius: radius.sm, paddingHorizontal: 4, alignItems: "center" },
   translation: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
   segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.pill },
+  segment: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: radius.pill },
   audioCard: { gap: spacing.md },
   audioRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   play: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
-  repeat: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  repeat: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, minHeight: 34, justifyContent: "center" },
   transliteration: { fontSize: 15, lineHeight: 23 },
   links: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", columnGap: spacing.lg },
-  link: { alignSelf: "center", padding: spacing.xs },
+  link: { alignSelf: "center", paddingHorizontal: spacing.xs, minHeight: 44, justifyContent: "center" },
   grades: { gap: spacing.md },
   gradeRow: { flexDirection: "row", gap: spacing.sm },
   grade: { flex: 1, alignItems: "center", gap: 6, paddingVertical: spacing.lg, borderRadius: radius.lg, borderWidth: 1 },

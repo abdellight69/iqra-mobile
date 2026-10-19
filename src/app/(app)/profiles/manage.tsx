@@ -286,5 +286,5 @@ const styles = StyleSheet.create({
   accent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 4 },
   colors: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   levels: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  level: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 6 },
+  level: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 6, minHeight: 44, justifyContent: "center" },
 });

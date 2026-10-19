@@ -77,6 +77,6 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   form: { gap: spacing.lg },
-  link: { alignSelf: "center", padding: spacing.sm },
+  link: { alignSelf: "center", paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
   footer: { flexDirection: "row", justifyContent: "center", gap: spacing.xs, marginTop: spacing.xl },
 });

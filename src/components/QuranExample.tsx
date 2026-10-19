@@ -24,7 +24,7 @@ export function QuranExample({ wordId, compact = false }: { wordId: string; comp
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Dans le Coran, verset ${verseKey} : ${word.transliteration ?? word.textUthmani}. Écouter`}
-        hitSlop={4}
+        hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
         onPress={() => (word.audioUrl ? audio.play(word.audioUrl) : openWordSheet(word))}
         onLongPress={() => openWordSheet(word)}
         style={({ pressed }) => [styles.compact, { opacity: pressed ? 0.6 : 1 }]}>

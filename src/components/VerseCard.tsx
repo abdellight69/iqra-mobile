@@ -6,6 +6,7 @@ import { tajweedColor } from "@/lib/tajweed";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 import { AppText } from "./AppText";
+import { ARABIC_MAX_FONT_SCALE } from "./ArabicText";
 import { VerseBadge } from "./VerseBadge";
 
 export type VerseCardProps = {
@@ -73,6 +74,7 @@ function VerseCardBase({
               (pressed || recited) && { backgroundColor: colors.accentSoft },
             ]}>
             <AppText
+              maxFontSizeMultiplier={ARABIC_MAX_FONT_SCALE}
               style={{
                 fontFamily: fonts.arabic,
                 fontSize: arabicSize,
@@ -119,8 +121,8 @@ function VerseCardBase({
       <View style={styles.footer}>
         <VerseBadge value={verse.verseNumber} size={30} />
         <View style={styles.flex} />
-        <Action icon={active ? "pause" : "play-outline"} label="Écouter le verset" onPress={onPlay} active={active} />
-        <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label="Signet" onPress={onBookmark} active={bookmarked} />
+        <Action icon={active ? "pause" : "play-outline"} label={active ? "Mettre en pause" : "Écouter le verset"} onPress={onPlay} active={active} />
+        <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label={bookmarked ? "Retirer le signet" : "Ajouter un signet"} onPress={onBookmark} active={bookmarked} />
         <Action icon="reader-outline" label="Tafsir de ce verset" onPress={onTafsir} />
         <Action icon="repeat-outline" label="Mémoriser ce verset" onPress={onMemorize} />
         <Action icon="share-outline" label="Partager ce verset en image" onPress={onShare} />
@@ -135,7 +137,8 @@ function Action({ icon, label, onPress, active }: { icon: ComponentProps<typeof 
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      hitSlop={6}
+      accessibilityState={active === undefined ? undefined : { selected: active }}
+      hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : 1 }]}>
       <Ionicons name={icon} size={19} color={active ? colors.primary : colors.textMuted} />
@@ -155,6 +158,6 @@ const styles = StyleSheet.create({
   wbwText: { fontSize: 12, lineHeight: 15 },
   transliteration: { fontSize: 15, lineHeight: 23 },
   translation: { fontSize: 16, lineHeight: 26 },
-  footer: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.xs },
-  action: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  footer: { flexDirection: "row", alignItems: "center", gap: 0, marginTop: spacing.xs },
+  action: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
 });

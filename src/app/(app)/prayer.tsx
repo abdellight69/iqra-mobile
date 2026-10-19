@@ -192,5 +192,5 @@ const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: spacing.md, gap: spacing.md, marginBottom: spacing.md },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   actions: { flexDirection: "row", gap: spacing.xs },
-  action: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  action: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: spacing.sm, minHeight: 44, borderRadius: radius.pill },
 });

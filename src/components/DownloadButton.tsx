@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    minHeight: 44,
     borderRadius: radius.pill,
   },
   track: { width: 48, height: 4, borderRadius: radius.pill, overflow: "hidden" },

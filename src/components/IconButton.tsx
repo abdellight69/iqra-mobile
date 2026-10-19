@@ -13,7 +13,7 @@ export type IconButtonProps = {
   style?: ViewStyle;
 };
 
-/** Bouton icône circulaire, avec une zone de toucher d'au moins 40 points. */
+/** Bouton icône circulaire : 40 points visibles, zone de toucher d'au moins 44 points grâce au débord. */
 export function IconButton({ icon, label, onPress, size = 20, tone = "plain", color, style }: IconButtonProps) {
   const colors = useColors();
   const background = tone === "filled" ? colors.surfaceMuted : tone === "primary" ? colors.primary : "transparent";
@@ -23,7 +23,7 @@ export function IconButton({ icon, label, onPress, size = 20, tone = "plain", co
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      hitSlop={6}
+      hitSlop={Math.max(4, (44 - box) / 2 + 2)}
       onPress={onPress}
       style={({ pressed }) => [
         { width: box, height: box, borderRadius: box / 2, alignItems: "center", justifyContent: "center", backgroundColor: background, opacity: pressed ? 0.6 : 1 },

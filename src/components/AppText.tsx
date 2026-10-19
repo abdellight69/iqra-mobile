@@ -15,12 +15,29 @@ const variants: Record<Variant, TextStyle> = {
   serifBody: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 25 },
 };
 
+/**
+ * Plafond d'agrandissement (réglage « Taille du texte » d'iOS / Android) : les grands titres
+ * grossissent moins pour ne pas déborder, le texte courant jusqu'à 2×.
+ */
+const maxScale: Record<Variant, number> = {
+  display: 1.4,
+  title: 1.5,
+  headline: 1.6,
+  heading: 1.8,
+  body: 2,
+  bodyStrong: 2,
+  caption: 2,
+  label: 2,
+  serifBody: 1.8,
+};
+
 export type AppTextProps = TextProps & { variant?: Variant; muted?: boolean; faint?: boolean; color?: string; center?: boolean; italic?: boolean };
 
 export function AppText({ variant = "body", muted, faint, color, center, italic, style, ...props }: AppTextProps) {
   const colors = useColors();
   return (
     <Text
+      maxFontSizeMultiplier={maxScale[variant]}
       {...props}
       style={[
         variants[variant],

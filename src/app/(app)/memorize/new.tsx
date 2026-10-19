@@ -41,6 +41,7 @@ export default function NewPlan() {
             value={query}
             onChangeText={setQuery}
             placeholder="Rechercher une sourate"
+            accessibilityLabel="Rechercher une sourate"
             placeholderTextColor={colors.textMuted}
             style={[styles.search, { color: colors.text, backgroundColor: colors.surfaceMuted }]}
           />
@@ -146,6 +147,6 @@ const styles = StyleSheet.create({
   form: { padding: spacing.lg, gap: spacing.md },
   selected: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.pill },
+  segment: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: radius.pill },
   rangeRow: { flexDirection: "row", gap: spacing.md },
 });

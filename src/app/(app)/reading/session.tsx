@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   verse: { gap: spacing.xs },
   verseWords: { flexDirection: "row-reverse", flexWrap: "wrap", columnGap: spacing.sm },
   verseWord: { borderRadius: radius.sm, paddingHorizontal: 6, alignItems: "center" },
-  link: { alignSelf: "center", padding: spacing.xs },
+  link: { alignSelf: "center", paddingHorizontal: spacing.xs, minHeight: 44, justifyContent: "center" },
   result: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
   trophy: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center" },
   resultStats: { flexDirection: "row", gap: spacing.md, alignSelf: "stretch" },
