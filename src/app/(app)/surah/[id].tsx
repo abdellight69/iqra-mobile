@@ -185,30 +185,35 @@ export default function SurahReader() {
           title,
           headerRight: () => (
             <View style={styles.headerActions}>
-              <IconButton icon="text" label="Taille du texte arabe" onPress={cycleSize} />
+              {/* Cinq boutons côte à côte : 40 pt visibles pour laisser le titre, 48 pt de zone tactile avec le débord. */}
+              <IconButton icon="text" label="Taille du texte arabe" onPress={cycleSize} style={styles.headerAction} />
               <IconButton
                 icon={settings.showTransliteration ? "ear" : "ear-outline"}
                 label="Phonétique"
                 color={settings.showTransliteration ? colors.primary : undefined}
                 onPress={settings.toggleTransliteration}
+                style={styles.headerAction}
               />
               <IconButton
                 icon={settings.showTajweed ? "color-palette" : "color-palette-outline"}
                 label="Tajwid"
                 color={settings.showTajweed ? colors.primary : undefined}
                 onPress={settings.toggleTajweed}
+                style={styles.headerAction}
               />
               <IconButton
                 icon={settings.showWordByWord ? "grid" : "grid-outline"}
                 label="Mot à mot"
                 color={settings.showWordByWord ? colors.primary : undefined}
                 onPress={settings.toggleWordByWord}
+                style={styles.headerAction}
               />
               <IconButton
                 icon={settings.showTranslation ? "language" : "language-outline"}
                 label="Traduction"
                 color={settings.showTranslation ? colors.primary : undefined}
                 onPress={settings.toggleTranslation}
+                style={styles.headerAction}
               />
             </View>
           ),
@@ -275,7 +280,7 @@ export default function SurahReader() {
                     ? "Récitation"
                     : "Écouter"}
             </AppText>
-            <AppText variant="headline" color={colors.background} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+            <AppText variant="headline" color={colors.background} numberOfLines={2} maxFontSizeMultiplier={1.3}>
               {queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Toute la sourate"}
             </AppText>
           </View>
@@ -408,6 +413,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: spacing.md },
   headerActions: { flexDirection: "row" },
+  headerAction: { width: 40, height: 40 },
   headerBlock: { gap: spacing.lg, paddingHorizontal: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.sm },
   hero: { gap: spacing.xs, alignItems: "center", paddingVertical: spacing.lg },
   infoToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: 44, borderRadius: radius.pill },

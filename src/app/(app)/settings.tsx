@@ -607,6 +607,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+    minHeight: 44,
+    justifyContent: "center",
   },
   languageHeader: {
     paddingHorizontal: spacing.lg,
