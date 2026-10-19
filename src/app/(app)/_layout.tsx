@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useOffline } from "@/lib/offline";
-import { useReminderSync } from "@/lib/reminders";
+import { useReminderSync, useReminderTaps } from "@/lib/reminders";
 import { fonts, useColors } from "@/lib/theme";
 import type { Profiles } from "@/lib/types";
 
@@ -37,6 +37,7 @@ export const unstable_settings = { anchor: "(tabs)" };
 export default function AppLayout() {
   const colors = useColors();
   useReminderSync();
+  useReminderTaps();
   useProfilePickerOnLaunch();
   useEffect(() => useOffline.getState().load(), []);
   return (

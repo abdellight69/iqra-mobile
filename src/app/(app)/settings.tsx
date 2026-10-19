@@ -20,6 +20,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
+import { useProfiles } from "@/lib/profiles";
 import {
   formatTime,
   REMINDER_TIMES,
@@ -50,15 +51,17 @@ export default function Settings() {
   const tafsirs = useTafsirs();
   const [showAllTafsirs, setShowAllTafsirs] = useState(false);
   const reminders = useReminders();
+  const user = me.data;
+  // Serveur plus ancien (sans profils) : l'utilisateur est le titulaire.
+  const isOwner = user?.isOwner !== false;
+  const profiles = useProfiles(isOwner);
+  const hasChildProfiles = (profiles.data?.profiles ?? []).some((p) => p.isChild);
   const signOut = useAuth((s) => s.signOut);
   const [name, setName] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
 
-  const user = me.data;
-  // Serveur plus ancien (sans profils) : l'utilisateur est le titulaire.
-  const isOwner = user?.isOwner !== false;
   if (!user)
     return (
       <ActivityIndicator
@@ -188,17 +191,18 @@ export default function Settings() {
         ))}
       </View>
 
-      <SectionHeader title="Rappel quotidien" />
+      <SectionHeader title="Rappels" />
       <Card style={styles.reminder}>
         <View style={styles.reminderRow}>
           <View style={styles.flex}>
             <AppText variant="bodyStrong">Me rappeler de pratiquer</AppText>
             <AppText variant="caption" muted>
-              Seulement les jours où vous n’avez pas encore pratiqué.
+              Chaque jour à l’heure choisie, tant que l’objectif du jour n’est
+              pas atteint, et quand des versets sont à réviser.
             </AppText>
           </View>
           <Switch
-            accessibilityLabel="Rappel quotidien"
+            accessibilityLabel="Rappels"
             disabled={Platform.OS === "web"}
             value={reminders.enabled}
             trackColor={{ true: colors.primary, false: colors.border }}
@@ -227,6 +231,23 @@ export default function Settings() {
                 onPress={() => void reminders.update(time)}
               />
             ))}
+          </View>
+        ) : null}
+        {reminders.enabled && isOwner && hasChildProfiles ? (
+          <View style={styles.reminderRow}>
+            <View style={styles.flex}>
+              <AppText variant="bodyStrong">Aussi pour les profils enfants</AppText>
+              <AppText variant="caption" muted>
+                Sinon, aucun rappel n’est envoyé quand un profil enfant est
+                ouvert sur cet appareil.
+              </AppText>
+            </View>
+            <Switch
+              accessibilityLabel="Rappels pour les profils enfants"
+              value={reminders.kids}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              onValueChange={(kids) => void reminders.update({ kids })}
+            />
           </View>
         ) : null}
       </Card>
