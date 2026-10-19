@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
 import { queueReview } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
@@ -22,6 +22,7 @@ import type {
   ProgramDetail,
   ReadingResult,
   SearchResults,
+  UnifiedSearch,
   ReadingSession,
   ProgramSummary,
   ReadingPosition,
@@ -178,12 +179,19 @@ export function useVerse(key: string, translationId: number | null) {
   });
 }
 
+const chapterAudioQuery = (chapterId: number, recitationId: number | null) => ({
+  queryKey: keys.audio(chapterId, recitationId),
+  queryFn: () => api<ChapterAudio>(`/quran/chapters/${chapterId}/audio${recitationId ? `?recitationId=${recitationId}` : ""}`),
+  staleTime: DAY,
+});
+
 export function useChapterAudio(chapterId: number, recitationId: number | null) {
-  return useQuery({
-    queryKey: keys.audio(chapterId, recitationId),
-    queryFn: () => api<ChapterAudio>(`/quran/chapters/${chapterId}/audio${recitationId ? `?recitationId=${recitationId}` : ""}`),
-    staleTime: DAY,
-  });
+  return useQuery(chapterAudioQuery(chapterId, recitationId));
+}
+
+/** Audio d'une sourate chargé à la demande (bouton ▶ d'un résultat de recherche), via le même cache que `useChapterAudio`. */
+export function fetchChapterAudio(client: QueryClient, chapterId: number, recitationId: number | null) {
+  return client.fetchQuery(chapterAudioQuery(chapterId, recitationId));
 }
 
 export function useWordDetails(location: string) {
@@ -417,6 +425,19 @@ export function useDeletePlan() {
 }
 
 /** Recherche dans le Coran, page après page. */
+/** Recherche partout (référence, sourates, versets, mots, leçons), dès le premier caractère. */
+export function useUnifiedSearch(q: string, translationId: number | null) {
+  const query = q.trim();
+  return useQuery({
+    queryKey: ["unified-search", query, translationId],
+    enabled: query.length >= 1,
+    queryFn: () => api<UnifiedSearch>(`/search?q=${encodeURIComponent(query)}${translationId ? `&translationId=${translationId}` : ""}`),
+    // Court : un résultat vide dû à un fournisseur indisponible ne doit pas rester une heure.
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useQuranSearch(q: string, wholeWord: boolean, translationId: number | null) {
   const query = q.trim();
   return useInfiniteQuery({

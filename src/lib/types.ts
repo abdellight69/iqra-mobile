@@ -348,6 +348,24 @@ export type SearchResults = {
   results: { key: string; chapterId: number; verseNumber: number; textUthmani: string; translation: string | null }[];
 };
 
+/** Recherche unifiée (`/search`) : résultats groupés par type. */
+export type SearchVerse = {
+  key: string;
+  chapterId: number;
+  verseNumber: number;
+  textUthmani: string;
+  transliteration: string | null;
+  translation: string | null;
+  matchedBy: "reference" | "arabic" | "phonetic" | "translation";
+};
+export type UnifiedSearch = {
+  query: string;
+  chapters: { id: number; nameSimple: string; nameArabic: string; translatedName: string; versesCount: number }[];
+  verses: { items: SearchVerse[]; total: number; matchedBy: SearchVerse["matchedBy"] | null };
+  words: { id: string; lessonId: string; lessonTitle: string; sourcePage: number; ar: string | null; fr: string | null }[];
+  lessons: { id: string; unit: number; unitTitle: string; title: string; summary: string; kind: string }[];
+};
+
 export type ProfileProgress = {
   xp: number;
   currentStreak: number;

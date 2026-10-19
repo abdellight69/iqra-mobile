@@ -7,6 +7,7 @@ import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Screen } from "@/components/Screen";
+import { SearchBar } from "@/components/SearchBar";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
@@ -72,6 +73,7 @@ export default function Home() {
           {userName ? `,\n${userName}` : ""}
         </AppText>
       </View>
+      <SearchBar />
 
       {step ? (
         <Card tone="primary" onPress={() => router.push(step.href)} style={styles.resume}>
