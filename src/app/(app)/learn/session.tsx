@@ -16,7 +16,7 @@ import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchPairs } from "@/components/exercises/MatchPairs";
 import { MissingLetterExercise } from "@/components/exercises/MissingLetterExercise";
 import { TrueFalseExercise } from "@/components/exercises/TrueFalseExercise";
-import { ArabicChoice, ChoiceButton, exerciseStyles, type ExerciseProps, Feedback, WordSummary } from "@/components/exercises/shared";
+import { ArabicChoice, ChoiceButton, exerciseStyles, type ExerciseProps, Feedback, ListenButton, WordSummary } from "@/components/exercises/shared";
 import { planSession, type SessionExercise } from "@/lib/exercises";
 import { useLearningSession, useSubmitSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -153,6 +153,7 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
         </View>
         <Card style={styles.introCard}>
           <WordSummary word={word} size={48} />
+          <ListenButton wordId={word.id} text={word.headword ?? word.ar} />
           {word.arNote ? (
             <AppText muted center>
               {annotateArabic(word.arNote)}

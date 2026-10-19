@@ -1,9 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useOneShot } from "@/lib/audio";
 import type { SessionExercise } from "@/lib/exercises";
 import { useWordExample } from "@/lib/queries";
+import { canSpeak, speakArabic, stopSpeaking } from "@/lib/speech";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { transliterate } from "@/lib/transliterate";
 import type { VocabWord } from "@/lib/types";
@@ -178,6 +179,63 @@ export function useWordAudio(wordId: string, autoplay = true) {
   };
 }
 
+/**
+ * Bouton « Écouter » d'une carte mot : le mot récité dans le Coran (Quran.com) s'il existe, sinon
+ * la voix de synthèse arabe du système. Rien si aucune des deux n'est disponible.
+ */
+export function ListenButton({ wordId, text, compact = false }: { wordId: string; text: string | null; compact?: boolean }) {
+  const colors = useColors();
+  const audio = useWordAudio(wordId, false);
+  const [speaking, setSpeaking] = useState(false);
+  useEffect(() => () => stopSpeaking(), []);
+  const synthetic = !audio.url;
+  if (!audio.ready || (synthetic && (!text || !canSpeak()))) return null;
+  const playing = audio.playing || speaking;
+
+  function press() {
+    if (!synthetic) return audio.play();
+    if (speaking) {
+      stopSpeaking();
+      setSpeaking(false);
+      return;
+    }
+    if (speakArabic(text!, () => setSpeaking(false))) setSpeaking(true);
+  }
+
+  if (compact) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={synthetic ? "Écouter la prononciation (voix de synthèse)" : "Écouter le mot"}
+        hitSlop={8}
+        onPress={press}
+        style={({ pressed }) => [styles.listenCompact, { opacity: pressed ? 0.6 : 1 }]}>
+        <Ionicons name={playing ? "volume-high" : "volume-medium-outline"} size={15} color={colors.accent} />
+        <AppText variant="caption" color={colors.accent}>
+          {synthetic ? "Écouter (voix de synthèse)" : "Écouter"}
+        </AppText>
+      </Pressable>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={synthetic ? "Écouter la prononciation (voix de synthèse)" : "Écouter le mot récité"}
+      onPress={press}
+      style={({ pressed }) => [styles.listen, { backgroundColor: playing ? colors.primarySoft : colors.surfaceMuted, opacity: pressed ? 0.7 : 1 }]}>
+      <Ionicons name={playing ? "volume-high" : "play"} size={18} color={colors.primary} />
+      <AppText variant="bodyStrong" color={colors.primary}>
+        Écouter
+      </AppText>
+      {synthetic ? (
+        <AppText variant="caption" muted>
+          voix de synthèse
+        </AppText>
+      ) : null}
+    </Pressable>
+  );
+}
+
 /** Gros bouton rond de lecture, au centre de la carte d'écoute. */
 export function PlayButton({ playing, disabled, onPress }: { playing: boolean; disabled?: boolean; onPress: () => void }) {
   const colors = useColors();
@@ -210,4 +268,6 @@ const styles = StyleSheet.create({
   feedbackWord: { alignItems: "flex-start" },
   reveal: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1, minHeight: 32 },
   play: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
+  listen: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: 44, borderRadius: radius.pill },
+  listenCompact: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", minHeight: 32 },
 });
