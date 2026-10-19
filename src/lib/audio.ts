@@ -1,6 +1,6 @@
 import { useEventListener } from "expo";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import { useCallback, useEffect, useState } from "react";
+import { useAudioPlayer, useAudioPlayerStatus, type AudioMetadata } from "expo-audio";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { WordTiming } from "./types";
 
 export type Track = { key: string; url: string; words?: WordTiming[] };
@@ -20,13 +20,31 @@ export type LoopRange = { start: number; end: number; rounds: number };
 export const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
 
 /**
+ * Mode audio de l'app : lecture en mode silencieux et en arrière-plan. `doNotMix` (les autres apps
+ * se mettent en pause) est exigé par le système pour afficher la lecture sur l'écran verrouillé.
+ */
+export const PLAYBACK_MODE = {
+  playsInSilentMode: true,
+  shouldPlayInBackground: true,
+  allowsRecording: false,
+  interruptionMode: "doNotMix",
+} as const;
+
+/**
  * Lecture d'une suite de pistes (versets) avec un seul lecteur : enchaînement automatique,
  * répétition de chaque piste (`repeat`), d'un passage entier (`loop`) et vitesse (`rate`,
- * sans changer la hauteur de la voix).
+ * sans changer la hauteur de la voix). Avec `nowPlaying`, la piste en cours s'affiche sur
+ * l'écran verrouillé et dans le centre de contrôle (lecture et pause depuis le système).
  */
 export function useTrackQueue(
   tracks: Track[],
-  options: { repeat?: number; autoAdvance?: boolean; rate?: number; loop?: LoopRange | null } = {},
+  options: {
+    repeat?: number;
+    autoAdvance?: boolean;
+    rate?: number;
+    loop?: LoopRange | null;
+    nowPlaying?: (track: Track) => AudioMetadata;
+  } = {},
 ) {
   // Mises à jour rapprochées pour suivre la récitation mot par mot.
   const player = useAudioPlayer(null, { updateInterval: 100 });
@@ -38,6 +56,23 @@ export function useTrackQueue(
   const autoAdvance = options.autoAdvance ?? true;
   const rate = options.rate ?? 1;
   const loop = options.loop ?? null;
+  const nowPlaying = options.nowPlaying;
+  const lockScreen = useRef(false);
+
+  const showOnLockScreen = useCallback(
+    (track: Track) => {
+      if (!nowPlaying) return;
+      const metadata = nowPlaying(track);
+      try {
+        if (lockScreen.current) player.updateLockScreenMetadata(metadata);
+        else player.setActiveForLockScreen(true, metadata, { showSeekBackward: false, showSeekForward: false });
+        lockScreen.current = true;
+      } catch {
+        // Affichage système indisponible (navigateur sans Media Session…) : la lecture continue.
+      }
+    },
+    [player, nowPlaying],
+  );
 
   const playAt = useCallback(
     (i: number, nextRound = 1) => {
@@ -46,11 +81,12 @@ export function useTrackQueue(
       player.replace({ uri: track.url });
       player.setPlaybackRate(rate, "high");
       player.play();
+      showOnLockScreen(track);
       setIndex(i);
       setPlays(1);
       setRound(nextRound);
     },
-    [player, tracks, rate],
+    [player, tracks, rate, showOnLockScreen],
   );
 
   // Vitesse modifiée pendant la lecture.
@@ -61,6 +97,14 @@ export function useTrackQueue(
 
   const stop = useCallback(() => {
     player.pause();
+    if (lockScreen.current) {
+      lockScreen.current = false;
+      try {
+        player.clearLockScreenControls();
+      } catch {
+        // Lecteur déjà libéré.
+      }
+    }
     setIndex(null);
     setPlays(0);
     setRound(1);

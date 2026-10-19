@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { SafeArea } from "@/components/SafeArea";
@@ -15,6 +15,7 @@ import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
 import { useRecitationCheck } from "@/lib/recitation";
 import {
+  useChapter,
   useChapterAudio,
   useDueVerses,
   useMe,
@@ -180,7 +181,13 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const tracks = useMemo(() => (url ? [{ key: verseKey, url, words: timings }] : []), [url, verseKey, timings]);
   const rate = usePlayback((p) => p.rate);
   const cycleRate = usePlayback((p) => p.cycleRate);
-  const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate });
+  const chapter = useChapter(chapterId);
+  const surahName = chapter.data?.nameSimple ?? `Sourate ${chapterId}`;
+  const nowPlaying = useCallback(
+    () => ({ title: `${surahName} · verset ${verseNumber}`, artist: "Mémorisation", albumTitle: "Iqra" }),
+    [surahName, verseNumber],
+  );
+  const player = useTrackQueue(tracks, { repeat, autoAdvance: false, rate, nowPlaying });
   const recitationAvailable = useRecitationAvailable();
   // Vérification terminée : le verset réapparaît, mots oubliés et différents surlignés.
   const check = useRecitationCheck({ verseKey }, () => setStage("grade"));

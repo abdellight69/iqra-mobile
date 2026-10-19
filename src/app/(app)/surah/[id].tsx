@@ -26,6 +26,7 @@ import {
   useKnownWords,
   useOfflineChapter,
   useMe,
+  useRecitations,
   useRecordReading,
   useSaveReadingPosition,
   useToggleBookmark,
@@ -83,7 +84,19 @@ export default function SurahReader() {
     repeatSettings && trackIndex(repeatSettings.fromVerse) >= 0 && trackIndex(repeatSettings.toVerse) >= 0
       ? { start: trackIndex(repeatSettings.fromVerse), end: trackIndex(repeatSettings.toVerse), rounds: repeatSettings.rounds }
       : null;
-  const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1 });
+  const recitations = useRecitations();
+  const recitationId = offlineAudio ? offline.data?.recitationId : audio.data?.recitationId;
+  const reciter = recitations.data?.find((r) => r.id === recitationId);
+  const surahName = chapter.data?.nameSimple ?? `Sourate ${chapterId}`;
+  const nowPlaying = useCallback(
+    (track: { key: string }) => ({
+      title: `${surahName} · verset ${track.key.split(":")[1]}`,
+      artist: reciter ? (reciter.translatedName ?? reciter.reciterName) : "Récitation du Coran",
+      albumTitle: "Iqra",
+    }),
+    [surahName, reciter],
+  );
+  const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1, nowPlaying });
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
     [bookmarks.data, chapterId],

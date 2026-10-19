@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { AppState, Platform, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ApiError } from "@/lib/api";
+import { PLAYBACK_MODE } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
@@ -55,8 +56,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     void bootstrap();
-    // La récitation continue écran verrouillé et en mode silencieux (iOS).
-    void setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => undefined);
+    // La récitation continue écran verrouillé et en mode silencieux, et s'affiche sur l'écran verrouillé.
+    void setAudioModeAsync(PLAYBACK_MODE).catch(() => undefined);
   }, [bootstrap]);
 
   useEffect(() => persistQueryCache(queryClient), [queryClient]);

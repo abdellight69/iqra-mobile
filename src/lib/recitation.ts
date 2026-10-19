@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { api, errorMessage } from "./api";
+import { PLAYBACK_MODE } from "./audio";
 import type { RecitationCheck } from "./types";
 
 /** Le serveur accepte 3 Mo : 5 minutes en AAC mono 64 kbit/s en font environ 2,4. */
@@ -18,7 +19,6 @@ export const MAX_RECORDING_SECONDS = 120;
 export const MAX_PASSAGE_SECONDS = 300;
 const RECORDING: RecordingOptions = { ...RecordingPresets.HIGH_QUALITY, numberOfChannels: 1, bitRate: 64000 };
 /** Réglage audio de l'application (voir app/_layout.tsx), rétabli après l'enregistrement. */
-const PLAYBACK_MODE = { playsInSilentMode: true, shouldPlayInBackground: true, allowsRecording: false };
 
 export type RecitationState =
   | { phase: "idle" }
