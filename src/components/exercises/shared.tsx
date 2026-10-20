@@ -18,6 +18,8 @@ export type ExerciseProps<E extends SessionExercise = SessionExercise> = {
   onAnswer: (wordId: string, correct: boolean, retry: SessionExercise | null) => void;
   onNext: () => void;
   submitting: boolean;
+  /** Séance sur une sourate : position (sourate:verset:mot) de chaque mot, pour le montrer dans son verset. */
+  verseByWord?: Record<string, string>;
 };
 
 /** Phonétique d'un texte arabe, en italique doré, comme la translittération du lecteur. */

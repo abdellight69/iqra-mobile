@@ -11,6 +11,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { QuranExample } from "@/components/QuranExample";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
+import { SessionStart, VerseContext, VerseReview } from "@/components/exercises/ChapterSession";
 import { InVerseExercise } from "@/components/exercises/InVerseExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchPairs } from "@/components/exercises/MatchPairs";
@@ -61,6 +62,8 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
   const retried = useRef(new Set<string>());
   const submit = useSubmitSession();
   const [result, setResult] = useState<SessionResult | null>(null);
+  // Séance sur une sourate : un écran de départ annonce les mots et les versets visés.
+  const [started, setStarted] = useState(!session.chapterId);
 
   const exercise = queue[step];
 
@@ -87,7 +90,8 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
     );
   }
 
-  if (result) return <ResultScreen result={result} />;
+  if (result) return session.chapterId ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : <ResultScreen result={result} />;
+  if (!started) return <SessionStart session={session} onStart={() => setStarted(true)} />;
 
   const progress = step / Math.max(queue.length, 1);
 
@@ -112,7 +116,7 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
       </View>
 
       {exercise ? (
-        <ExerciseView key={step} exercise={exercise} byId={byId} onAnswer={record} onNext={next} submitting={submit.isPending} />
+        <ExerciseView key={step} exercise={exercise} byId={byId} onAnswer={record} onNext={next} submitting={submit.isPending} verseByWord={session.verseByWord} />
       ) : null}
     </SafeArea>
   );
@@ -139,9 +143,10 @@ function ExerciseView(props: ExerciseProps) {
   }
 }
 
-function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
+function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: VocabWord }) {
   const colors = useColors();
   if (!word) return null;
+  const location = verseByWord?.[word.id];
   return (
     <View style={exerciseStyles.body}>
       <ScrollView contentContainerStyle={exerciseStyles.scroll}>
@@ -165,7 +170,7 @@ function IntroCard({ word, onNext }: ExerciseProps & { word?: VocabWord }) {
             </AppText>
           ) : null}
         </Card>
-        <QuranExample wordId={word.id} />
+        {location ? <VerseContext location={location} /> : <QuranExample wordId={word.id} />}
         {word.verb ? <VerbTable verb={word.verb} /> : null}
       </ScrollView>
       <Button title="Continuer" onPress={onNext} />

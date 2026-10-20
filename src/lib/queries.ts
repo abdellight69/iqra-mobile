@@ -11,6 +11,7 @@ import type {
   ChapterComprehension,
   ChapterComprehensionDetail,
   ChapterInfo,
+  CourseChapter,
   DueVerse,
   LearningSession,
   LessonDetail,
@@ -59,6 +60,7 @@ export const keys = {
   lesson: (id: string) => ["lesson", id] as const,
   example: (wordId: string) => ["vocab-example", wordId] as const,
   comprehension: ["comprehension"] as const,
+  course: ["course"] as const,
   programs: ["programs"] as const,
   program: (id: string) => ["program", id] as const,
   chapterComprehension: (id: number) => ["comprehension", id] as const,
@@ -340,6 +342,15 @@ export function useComprehension() {
   });
 }
 
+/** Le parcours « Comprendre une sourate » : sourates dans l'ordre, part reconnue, mots manquants. */
+export function useCourse(enabled = true) {
+  return useQuery({
+    queryKey: keys.course,
+    queryFn: async () => (await api<{ chapters: CourseChapter[] }>("/vocabulary/course")).chapters,
+    enabled,
+  });
+}
+
 export function useChapterComprehension(chapterId: number) {
   return useQuery({
     queryKey: keys.chapterComprehension(chapterId),
@@ -363,12 +374,12 @@ export function useKnownWords(chapterId: number, enabled: boolean) {
   });
 }
 
-export function useLearningSession(source: { lessonId: string } | { chapterId: number } | { review: true }) {
+export function useLearningSession(source: { lessonId: string } | { chapterId: number; size?: number } | { review: true }) {
   const path =
     "lessonId" in source
       ? `/vocabulary/lessons/${source.lessonId}/session`
       : "chapterId" in source
-        ? `/vocabulary/comprehension/${source.chapterId}/session`
+        ? `/vocabulary/comprehension/${source.chapterId}/session?size=${source.size ?? 6}`
         : "/vocabulary/review/session";
   return useQuery({
     queryKey: ["session", path],
@@ -387,6 +398,7 @@ export function useSubmitSession() {
       void client.invalidateQueries({ queryKey: keys.lessons });
       void client.invalidateQueries({ queryKey: keys.stats });
       void client.invalidateQueries({ queryKey: keys.comprehension });
+      void client.invalidateQueries({ queryKey: keys.course });
     },
   });
 }

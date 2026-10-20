@@ -65,6 +65,16 @@ export type NextWord = { wordId: string; lessonId: string; lessonTitle: string; 
 
 export type ChapterComprehensionDetail = ChapterComprehension & { nextWords: NextWord[] };
 
+/** Sourate du parcours « Comprendre une sourate ». */
+export type CourseChapter = ChapterComprehension & {
+  /** Entrées du livre encore à apprendre pour cette sourate. */
+  missingWords: number;
+  /** Premier verset contenant un mot du livre non appris (null : sourate comprise). */
+  nextVerse: number | null;
+  unlocked: boolean;
+  done: boolean;
+};
+
 export type Verse = {
   key: string;
   chapterId: number;
@@ -202,7 +212,18 @@ export type Exercise =
   | { type: "intro"; wordId: string }
   | { type: "ar_to_fr" | "fr_to_ar"; wordId: string; choices: Choice[]; answerId: string }
   | { type: "match"; wordIds: string[] };
-export type LearningSession = { kind: "lesson" | "review" | "words"; lessonId: string | null; words: VocabWord[]; exercises: Exercise[] };
+export type LearningSession = {
+  kind: "lesson" | "review" | "words";
+  lessonId: string | null;
+  words: VocabWord[];
+  exercises: Exercise[];
+  /** Séance planifiée sur une sourate (absent pour une leçon ou une révision). */
+  chapterId?: number;
+  /** Position (sourate:verset:mot) de la première apparition de chaque mot dans la sourate. */
+  verseByWord?: Record<string, string>;
+  verses?: { from: number; to: number } | null;
+  coverage?: ChapterComprehension;
+};
 export type SessionResult = { xpGained: number; score: number; correctAnswers: number; totalAnswers: number };
 
 export type PlanProgress = { total: number; started: number; solid: number; due: number };

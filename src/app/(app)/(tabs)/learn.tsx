@@ -11,9 +11,9 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
-import { useLessons, useStats } from "@/lib/queries";
-import { fonts, spacing, useColors } from "@/lib/theme";
-import type { LessonSummary } from "@/lib/types";
+import { useChapters, useCourse, useLessons, useStats } from "@/lib/queries";
+import { fonts, radius, spacing, useColors } from "@/lib/theme";
+import type { CourseChapter, LessonSummary } from "@/lib/types";
 
 // Décalage horizontal des étapes pour dessiner un chemin sinueux.
 const OFFSETS = [0, 52, 78, 52, 0, -52, -78, -52];
@@ -85,6 +85,7 @@ export default function LearnTab() {
                 </AppText>
               )}
             </Card>
+            <CourseSection />
             <Card tone="primary" onPress={() => router.push("/reading")} style={styles.prayer}>
               <AppText style={styles.readingGlyph} color="#E9D9B0">
                 اقْرَأْ
@@ -112,17 +113,93 @@ export default function LearnTab() {
           </View>
         }
         renderSectionHeader={({ section }) => (
-          <View style={styles.partHeader}>
-            <View style={[styles.rule, { backgroundColor: colors.border }]} />
-            <AppText variant="label" color={colors.accent}>
-              {section.title}
-            </AppText>
-            <View style={[styles.rule, { backgroundColor: colors.border }]} />
+          <View>
+            {sections[0] === section ? (
+              <View style={styles.bookHeader}>
+                <AppText variant="headline">Les fiches du livre</AppText>
+                <AppText variant="caption" muted>
+                  Les 47 fiches de « 80% des mots du Qour’ân », consultables dans n’importe quel ordre.
+                </AppText>
+              </View>
+            ) : null}
+            <View style={styles.partHeader}>
+              <View style={[styles.rule, { backgroundColor: colors.border }]} />
+              <AppText variant="label" color={colors.accent}>
+                {section.title}
+              </AppText>
+              <View style={[styles.rule, { backgroundColor: colors.border }]} />
+            </View>
           </View>
         )}
         renderItem={({ item, index }) => <LessonNode lesson={item} offset={OFFSETS[index % OFFSETS.length] ?? 0} />}
       />
     </SafeAreaView>
+  );
+}
+
+/** Le parcours « Comprendre une sourate » : les sourates ouvertes et la prochaine à débloquer. */
+function CourseSection() {
+  const colors = useColors();
+  const course = useCourse();
+  const chapters = useChapters();
+  if (!course.data) return null;
+  const firstLocked = course.data.findIndex((c) => !c.unlocked);
+  const shown = course.data.slice(0, firstLocked === -1 ? course.data.length : firstLocked + 1);
+  return (
+    <View style={styles.course}>
+      <View>
+        <AppText variant="headline">Votre parcours</AppText>
+        <AppText variant="caption" muted>
+          Comprendre une sourate après l’autre, en commençant par celles que l’on récite.
+        </AppText>
+      </View>
+      {shown.map((chapter) => (
+        <CourseRow key={chapter.chapterId} chapter={chapter} name={chapters.data?.find((c) => c.id === chapter.chapterId)} colors={colors} />
+      ))}
+    </View>
+  );
+}
+
+function CourseRow({ chapter, name, colors }: { chapter: CourseChapter; name?: { nameSimple: string; nameArabic: string }; colors: ReturnType<typeof useColors> }) {
+  const ratio = chapter.totalWords ? chapter.knownWords / chapter.totalWords : 0;
+  const words = Math.min(chapter.missingWords, 6);
+  const detail = chapter.done
+    ? "Sourate comprise"
+    : chapter.unlocked
+      ? `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""}${chapter.nextVerse ? ` · verset ${chapter.nextVerse}` : ""}`
+      : "Se débloque avec la sourate précédente";
+  return (
+    <Card
+      padded={false}
+      onPress={() =>
+        chapter.unlocked
+          ? router.push({ pathname: "/learn/session", params: { chapterId: String(chapter.chapterId) } })
+          : Alert.alert("Sourate verrouillée", "Comprenez d’abord 80 % de la sourate précédente.")
+      }
+      style={[styles.courseRow, !chapter.unlocked && { opacity: 0.6 }]}>
+      <ProgressRing value={ratio} size={56} stroke={4} color={chapter.done ? colors.success : colors.accent} track={colors.surfaceMuted}>
+        {chapter.done ? <Ionicons name="checkmark" size={20} color={colors.success} /> : <AppText variant="caption">{Math.round(ratio * 100)}%</AppText>}
+      </ProgressRing>
+      <View style={styles.flex}>
+        <AppText variant="bodyStrong">{name?.nameSimple ?? `Sourate ${chapter.chapterId}`}</AppText>
+        <AppText variant="caption" muted>
+          {detail}
+        </AppText>
+      </View>
+      {chapter.unlocked && !chapter.done ? (
+        <View style={[styles.courseAction, { backgroundColor: colors.primary }]}>
+          <AppText variant="caption" color={colors.onPrimary}>
+            {words} mot{words > 1 ? "s" : ""}
+          </AppText>
+        </View>
+      ) : name?.nameArabic ? (
+        <AppText style={styles.courseArabic} color={colors.textMuted}>
+          {name.nameArabic}
+        </AppText>
+      ) : (
+        <Ionicons name={chapter.unlocked ? "chevron-forward" : "lock-closed"} size={16} color={colors.textFaint} />
+      )}
+    </Card>
   );
 }
 
@@ -166,6 +243,11 @@ function LessonNode({ lesson, offset }: { lesson: LessonSummary; offset: number 
 
 const styles = StyleSheet.create({
   prayer: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  course: { gap: spacing.md },
+  courseRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md },
+  courseAction: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  courseArabic: { fontFamily: fonts.arabic, fontSize: 20, lineHeight: 34 },
+  bookHeader: { gap: 4, marginTop: spacing.xl },
   readingGlyph: { fontFamily: fonts.arabic, fontSize: 26, lineHeight: 48 },
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl - 4, paddingBottom: spacing.xxxl, paddingTop: spacing.lg },

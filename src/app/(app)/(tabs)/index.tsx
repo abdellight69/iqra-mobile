@@ -12,7 +12,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
 import { nextStep } from "@/lib/next-step";
-import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats } from "@/lib/queries";
+import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats, useCourse } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 import { buildSnapshot, publishWidgetSnapshot } from "@/lib/widget";
 
@@ -39,7 +39,8 @@ export default function Home() {
   const programs = usePrograms();
   const activeProgram = programs.data?.find((p) => p.progress && !p.progress.finished);
   const lessons = useLessons();
-  const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data });
+  const course = useCourse(me.data?.goal === "understand");
+  const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data, course: course.data, chapters: chapters.data });
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
 

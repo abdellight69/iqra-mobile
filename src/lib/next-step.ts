@@ -1,12 +1,12 @@
 import type { Href } from "expo-router";
-import type { Goal, LessonSummary, ProgramSummary, Stats } from "./types";
+import type { Chapter, CourseChapter, Goal, LessonSummary, ProgramSummary, Stats } from "./types";
 
 /** Prochaine action conseillée selon l'objectif choisi au premier lancement. */
 export type NextStep = { eyebrow: string; title: string; detail: string; href: Href; programId?: string };
 
 export function nextStep(
   goal: Goal | null | undefined,
-  data: { programs?: ProgramSummary[]; lessons?: LessonSummary[]; stats?: Stats },
+  data: { programs?: ProgramSummary[]; lessons?: LessonSummary[]; stats?: Stats; course?: CourseChapter[]; chapters?: Chapter[] },
 ): NextStep | null {
   const active = (kind: ProgramSummary["kind"]) => data.programs?.find((p) => p.kind === kind && p.progress && !p.progress.finished);
   const programStep = (p: ProgramSummary): NextStep => ({
@@ -25,6 +25,18 @@ export function nextStep(
     return { eyebrow: "Pour commencer", title: "Juz’ ‘Amma en 60 jours", detail: "Environ 10 versets par jour", href: { pathname: "/programs/[id]", params: { id: "juz-amma-60" } } };
   }
   if (goal === "understand") {
+    // Parcours par sourate : la première sourate ouverte et pas encore comprise.
+    const chapter = data.course?.find((c) => c.unlocked && !c.done && c.missingWords > 0);
+    if (chapter) {
+      const name = data.chapters?.find((c) => c.id === chapter.chapterId)?.nameSimple ?? `Sourate ${chapter.chapterId}`;
+      const words = Math.min(chapter.missingWords, 6);
+      return {
+        eyebrow: "Prochain verset à comprendre",
+        title: `${name}${chapter.nextVerse ? ` · verset ${chapter.nextVerse}` : ""}`,
+        detail: `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""} · apprendre ${words} mot${words > 1 ? "s" : ""}`,
+        href: { pathname: "/learn/session", params: { chapterId: String(chapter.chapterId) } },
+      };
+    }
     const lesson = data.lessons?.find((l) => l.unlocked && !l.completed);
     if (lesson) return { eyebrow: "Vocabulaire", title: lesson.title.replace(/^[A-Z] - /, ""), detail: `${lesson.learnedCount}/${lesson.wordCount} mots appris`, href: { pathname: "/learn/[lessonId]", params: { lessonId: lesson.id } } };
     return { eyebrow: "Comprendre", title: "Comprendre sa prière", detail: "Al-Fâtiha et les dix dernières sourates", href: "/prayer" };
