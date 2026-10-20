@@ -29,12 +29,14 @@ import { closeScreen } from "@/lib/navigation";
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; size?: string; review?: string }>();
+  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; themeId?: string; size?: string; review?: string }>();
   const source = params.lessonId
     ? { lessonId: params.lessonId, size: params.size === "all" ? ("all" as const) : params.size ? Number(params.size) : undefined }
     : params.chapterId
       ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined }
-      : ({ review: true } as const);
+      : params.themeId
+        ? { themeId: params.themeId, size: params.size ? Number(params.size) : undefined }
+        : ({ review: true } as const);
   const session = useLearningSession(source);
 
   if (session.isPending) return <LoadingState label="Préparation de la séance…" />;

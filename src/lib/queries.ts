@@ -13,6 +13,8 @@ import type {
   ChapterInfo,
   CourseChapter,
   WordContext,
+  ThemeSummary,
+  ThemeDetail,
   DueVerse,
   LearningSession,
   LessonDetail,
@@ -59,6 +61,8 @@ export const keys = {
   recitations: ["recitations"] as const,
   lessons: ["lessons"] as const,
   lesson: (id: string) => ["lesson", id] as const,
+  themes: ["themes"] as const,
+  theme: (id: string) => ["theme", id] as const,
   example: (wordId: string) => ["vocab-example", wordId] as const,
   wordContext: (wordId: string) => ["vocab-context", wordId] as const,
   comprehension: ["comprehension"] as const,
@@ -325,6 +329,14 @@ export function useLessons() {
   });
 }
 
+export function useThemes() {
+  return useQuery({ queryKey: keys.themes, queryFn: async () => (await api<{ themes: ThemeSummary[] }>("/vocabulary/themes")).themes });
+}
+
+export function useTheme(id: string) {
+  return useQuery({ queryKey: keys.theme(id), queryFn: () => api<ThemeDetail>(`/vocabulary/themes/${id}`), enabled: Boolean(id) });
+}
+
 export function useLesson(id: string) {
   return useQuery({ queryKey: keys.lesson(id), queryFn: () => api<LessonDetail>(`/vocabulary/lessons/${id}`), staleTime: DAY });
 }
@@ -385,10 +397,14 @@ export function useKnownWords(chapterId: number, enabled: boolean) {
   });
 }
 
-export function useLearningSession(source: { lessonId: string; size?: number | "all" } | { chapterId: number; size?: number } | { review: true }) {
+export function useLearningSession(
+  source: { lessonId: string; size?: number | "all" } | { chapterId: number; size?: number } | { themeId: string; size?: number } | { review: true },
+) {
   const path =
     "lessonId" in source
       ? `/vocabulary/lessons/${source.lessonId}/session${source.size ? `?size=${source.size}` : ""}`
+      : "themeId" in source
+        ? `/vocabulary/themes/${source.themeId}/session?size=${source.size ?? 6}`
       : "chapterId" in source
         ? `/vocabulary/comprehension/${source.chapterId}/session?size=${source.size ?? 6}`
         : "/vocabulary/review/session";
@@ -410,6 +426,8 @@ export function useSubmitSession() {
       void client.invalidateQueries({ queryKey: keys.stats });
       void client.invalidateQueries({ queryKey: keys.comprehension });
       void client.invalidateQueries({ queryKey: keys.course });
+      void client.invalidateQueries({ queryKey: keys.themes });
+      void client.invalidateQueries({ queryKey: ["theme"] });
     },
   });
 }

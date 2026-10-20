@@ -82,6 +82,7 @@ export default function AppLayout() {
         }}
       />
       <Stack.Screen name="learn/[lessonId]" options={{ title: "Fiche" }} />
+      <Stack.Screen name="learn/theme/[themeId]" options={{ title: "Thème" }} />
       <Stack.Screen
         name="learn/session"
         options={{

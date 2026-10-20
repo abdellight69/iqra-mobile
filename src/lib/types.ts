@@ -201,6 +201,10 @@ export type LessonSummary = {
   completed: boolean;
 };
 
+/** Thème de vocabulaire coranique (nombres, corps humain…). */
+export type ThemeSummary = { id: string; title: string; titleAr: string | null; intro: string | null; icon: string | null; wordCount: number; learnedCount: number };
+export type ThemeDetail = { theme: Omit<ThemeSummary, "wordCount" | "learnedCount">; words: VocabWord[]; learned: string[] };
+
 export type LessonDetail = {
   lesson: {
     id: string;
@@ -229,6 +233,8 @@ export type LearningSession = {
   exercises: Exercise[];
   /** Séance planifiée sur une sourate (absent pour une leçon ou une révision). */
   chapterId?: number;
+  /** Séance sur un thème. */
+  themeId?: string;
   /** Position (sourate:verset:mot) de la première apparition de chaque mot dans la sourate. */
   verseByWord?: Record<string, string>;
   verses?: { from: number; to: number } | null;

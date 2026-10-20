@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import { Alert, Pressable, RefreshControl, SectionList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
@@ -11,9 +11,9 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
-import { useChapters, useCourse, useLessons, useStats } from "@/lib/queries";
+import { useChapters, useCourse, useLessons, useStats, useThemes } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
-import type { CourseChapter, LessonSummary } from "@/lib/types";
+import type { CourseChapter, LessonSummary, ThemeSummary } from "@/lib/types";
 
 // Décalage horizontal des étapes pour dessiner un chemin sinueux.
 const OFFSETS = [0, 52, 78, 52, 0, -52, -78, -52];
@@ -86,6 +86,7 @@ export default function LearnTab() {
               )}
             </Card>
             <CourseSection />
+            <ThemesSection />
             <Card tone="primary" onPress={() => router.push("/reading")} style={styles.prayer}>
               <AppText style={styles.readingGlyph} color="#E9D9B0">
                 اقْرَأْ
@@ -157,6 +158,47 @@ function CourseSection() {
         <CourseRow key={chapter.chapterId} chapter={chapter} name={chapters.data?.find((c) => c.id === chapter.chapterId)} colors={colors} />
       ))}
     </View>
+  );
+}
+
+/** Les thèmes : une grille de cartes (nombres, corps humain…), chacune avec sa progression. */
+function ThemesSection() {
+  const colors = useColors();
+  const themes = useThemes();
+  if (!themes.data?.length) return null;
+  return (
+    <View style={styles.course}>
+      <View>
+        <AppText variant="headline">Par thème</AppText>
+        <AppText variant="caption" muted>
+          Les mots du Coran regroupés par sujet, avec leurs versets.
+        </AppText>
+      </View>
+      <View style={styles.themeGrid}>
+        {themes.data.map((theme) => (
+          <ThemeCard key={theme.id} theme={theme} colors={colors} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ThemeCard({ theme, colors }: { theme: ThemeSummary; colors: ReturnType<typeof useColors> }) {
+  const ratio = theme.wordCount ? theme.learnedCount / theme.wordCount : 0;
+  const done = theme.wordCount > 0 && theme.learnedCount >= theme.wordCount;
+  return (
+    <Card onPress={() => router.push({ pathname: "/learn/theme/[themeId]", params: { themeId: theme.id } })} style={styles.themeCard}>
+      <View style={[styles.themeIcon, { backgroundColor: done ? colors.successSoft : colors.accentSoft }]}>
+        <Ionicons name={(theme.icon ?? "pricetag-outline") as ComponentProps<typeof Ionicons>["name"]} size={22} color={done ? colors.success : colors.accent} />
+      </View>
+      <AppText variant="bodyStrong" numberOfLines={2}>
+        {theme.title}
+      </AppText>
+      <AppText variant="caption" muted>
+        {theme.learnedCount}/{theme.wordCount} mots
+      </AppText>
+      <ProgressBar value={ratio} height={4} color={done ? colors.success : colors.accent} />
+    </Card>
   );
 }
 
@@ -244,6 +286,9 @@ function LessonNode({ lesson, offset }: { lesson: LessonSummary; offset: number 
 const styles = StyleSheet.create({
   prayer: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   course: { gap: spacing.md },
+  themeGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  themeCard: { width: "47%", flexGrow: 1, gap: spacing.xs },
+  themeIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
   courseRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md },
   courseAction: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   courseArabic: { fontFamily: fonts.arabic, fontSize: 20, lineHeight: 34 },
