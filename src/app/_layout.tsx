@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth-store";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
 import { publishWidgetSnapshot } from "@/lib/widget";
+import "@/lib/appearance-store";
 import { darkColors, lightColors } from "@/lib/theme";
 
 void SplashScreen.preventAutoHideAsync();

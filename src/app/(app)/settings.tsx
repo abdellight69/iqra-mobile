@@ -17,6 +17,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
+import { type AppearanceMode, useAppearance } from "@/lib/appearance-store";
 import { useAuth } from "@/lib/auth-store";
 import { router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
@@ -39,9 +40,16 @@ import { radius, spacing, useColors } from "@/lib/theme";
 import type { TafsirResource } from "@/lib/types";
 
 const GOALS = [10, 30, 50, 100];
+const APPEARANCES: { mode: AppearanceMode; label: string }[] = [
+  { mode: "system", label: "Comme le téléphone" },
+  { mode: "light", label: "Clair" },
+  { mode: "dark", label: "Sombre" },
+];
 
 export default function Settings() {
   const colors = useColors();
+  const appearance = useAppearance((s) => s.mode);
+  const setAppearance = useAppearance((s) => s.setMode);
   const me = useMe();
   const update = useUpdateMe();
   const translations = useTranslations();
@@ -178,6 +186,13 @@ export default function Settings() {
           }
         />
       </Card>
+
+      <SectionHeader title="Apparence" />
+      <View style={styles.chips}>
+        {APPEARANCES.map((a) => (
+          <Choice key={a.mode} label={a.label} selected={appearance === a.mode} onPress={() => setAppearance(a.mode)} />
+        ))}
+      </View>
 
       <SectionHeader title="Objectif quotidien" />
       <View style={styles.chips}>
