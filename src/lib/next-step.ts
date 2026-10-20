@@ -29,12 +29,15 @@ export function nextStep(
     const chapter = data.course?.find((c) => c.unlocked && !c.done && c.missingWords > 0);
     if (chapter) {
       const name = data.chapters?.find((c) => c.id === chapter.chapterId)?.nameSimple ?? `Sourate ${chapter.chapterId}`;
-      const words = Math.min(chapter.missingWords, 6);
+      const due = data.stats?.vocabulary.due ?? 0;
       return {
-        eyebrow: "Prochain verset à comprendre",
+        eyebrow: due > 0 ? "Séance du jour" : "Prochain verset à comprendre",
         title: `${name}${chapter.nextVerse ? ` · verset ${chapter.nextVerse}` : ""}`,
-        detail: `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""} · apprendre ${words} mot${words > 1 ? "s" : ""}`,
-        href: { pathname: "/learn/session", params: { chapterId: String(chapter.chapterId), size: String(words) } },
+        detail:
+          due > 0
+            ? `${due} mot${due > 1 ? "s" : ""} à réviser · ${Math.min(chapter.missingWords, 3)} nouveau${Math.min(chapter.missingWords, 3) > 1 ? "x" : ""}`
+            : `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""} · séance du jour`,
+        href: { pathname: "/learn/session", params: { daily: "1" } },
       };
     }
     const lesson = data.lessons?.find((l) => l.unlocked && !l.completed);

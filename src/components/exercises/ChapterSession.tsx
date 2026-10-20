@@ -35,19 +35,38 @@ export function SessionStart({ session, onStart, onClose }: { session: LearningS
         <Ionicons name="close" size={28} color={colors.textMuted} />
       </Pressable>
       <View style={[styles.badge, { backgroundColor: colors.accentSoft }]}>
-        <Ionicons name="book-outline" size={14} color={colors.accent} />
+        <Ionicons name={session.daily ? "sunny-outline" : "book-outline"} size={14} color={colors.accent} />
         <AppText variant="label" color={colors.primaryStrong}>
-          Comprendre une sourate
+          {session.daily ? "Séance du jour" : "Comprendre une sourate"}
         </AppText>
       </View>
       <AppText variant="display" center>
-        {chapterName(chapters.data, session.chapterId ?? 0)}
+        {session.daily ? "Votre routine" : chapterName(chapters.data, session.chapterId ?? 0)}
       </AppText>
-      <AppText muted center>
-        {count} mot{count > 1 ? "s" : ""} · environ {minutes} min
-        {verses ? ` · ${verses.from === verses.to ? `verset ${verses.from}` : `versets ${verses.from} à ${verses.to}`}` : ""}
-      </AppText>
-      {session.coverage ? (
+      {session.daily ? (
+        <View style={styles.dailyList}>
+          {session.daily.fresh > 0 ? (
+            <AppText center>
+              {session.daily.fresh} mot{session.daily.fresh > 1 ? "s" : ""} nouveau{session.daily.fresh > 1 ? "x" : ""} de {chapterName(chapters.data, session.chapterId ?? 0)}
+              {verses ? ` (${verses.from === verses.to ? `verset ${verses.from}` : `versets ${verses.from} à ${verses.to}`})` : ""}
+            </AppText>
+          ) : null}
+          {session.daily.review > 0 ? (
+            <AppText center>
+              {session.daily.review} mot{session.daily.review > 1 ? "s" : ""} à réviser
+            </AppText>
+          ) : null}
+          <AppText muted center>
+            environ {minutes} min{session.chapterId ? " · puis vous relirez le verset" : ""}
+          </AppText>
+        </View>
+      ) : (
+        <AppText muted center>
+          {count} mot{count > 1 ? "s" : ""} · environ {minutes} min
+          {verses ? ` · ${verses.from === verses.to ? `verset ${verses.from}` : `versets ${verses.from} à ${verses.to}`}` : ""}
+        </AppText>
+      )}
+      {session.coverage && !session.daily ? (
         <View style={styles.coverageRow}>
           <ProgressRing value={percent(session.coverage) / 100} size={72} stroke={5} color={colors.accent}>
             <AppText variant="bodyStrong">{percent(session.coverage)} %</AppText>
@@ -226,6 +245,7 @@ const styles = StyleSheet.create({
   start: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
   close: { position: "absolute", top: spacing.xxxl + spacing.md, left: spacing.lg, minWidth: 44, minHeight: 44, justifyContent: "center" },
   badge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
+  dailyList: { gap: spacing.xs },
   coverageRow: { flexDirection: "row", alignItems: "center", gap: spacing.lg, alignSelf: "stretch" },
   context: { gap: spacing.sm },
   review: { flex: 1, padding: spacing.xl, gap: spacing.lg },

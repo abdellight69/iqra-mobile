@@ -75,16 +75,23 @@ export default function LearnTab() {
                 </View>
               </View>
               <ProgressBar value={total ? learned / total : 0} color={colors.accent} />
+              <Button
+                title="Séance du jour"
+                icon="sunny-outline"
+                size="md"
+                onPress={() => router.push({ pathname: "/learn/session", params: { daily: "1" } })}
+              />
               {due > 0 ? (
                 <Button
-                  title={`Réviser ${due} mot${due > 1 ? "s" : ""}`}
+                  title={`Réviser seulement ${due} mot${due > 1 ? "s" : ""}`}
                   icon="refresh"
                   size="md"
+                  variant="secondary"
                   onPress={() => router.push({ pathname: "/learn/session", params: { review: "1" } })}
                 />
               ) : (
                 <AppText variant="caption" faint>
-                  Aucune révision en attente : continuez le parcours.
+                  Aucune révision en attente : la séance du jour vous propose de nouveaux mots.
                 </AppText>
               )}
             </Card>

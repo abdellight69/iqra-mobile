@@ -29,14 +29,16 @@ import { closeScreen } from "@/lib/navigation";
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; verse?: string; themeId?: string; size?: string; review?: string }>();
+  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; verse?: string; themeId?: string; size?: string; review?: string; daily?: string }>();
   const source = params.lessonId
     ? { lessonId: params.lessonId, size: params.size === "all" ? ("all" as const) : params.size ? Number(params.size) : undefined }
     : params.chapterId
       ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined, verse: params.verse ? Number(params.verse) : undefined }
       : params.themeId
         ? { themeId: params.themeId, size: params.size ? Number(params.size) : undefined }
-        : ({ review: true } as const);
+        : params.daily
+          ? ({ daily: true } as const)
+          : ({ review: true } as const);
   const session = useLearningSession(source);
 
   if (session.isPending) return <LoadingState label="Préparation de la séance…" />;
@@ -66,7 +68,7 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
   const submit = useSubmitSession();
   const [result, setResult] = useState<SessionResult | null>(null);
   // Séance sur une sourate : un écran de départ annonce les mots et les versets visés.
-  const [started, setStarted] = useState(!session.chapterId);
+  const [started, setStarted] = useState(!session.chapterId && !session.daily);
 
   const exercise = queue[step];
 
@@ -93,7 +95,7 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
     );
   }
 
-  if (result) return session.chapterId ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : <ResultScreen result={result} />;
+  if (result) return session.chapterId && !result.queued ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : <ResultScreen result={result} />;
   if (!started) return <SessionStart session={session} onStart={() => setStarted(true)} onClose={() => closeScreen("/learn")} />;
 
   const progress = step / Math.max(queue.length, 1);

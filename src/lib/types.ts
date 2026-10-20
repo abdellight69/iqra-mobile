@@ -235,6 +235,8 @@ export type LearningSession = {
   chapterId?: number;
   /** Séance sur un thème. */
   themeId?: string;
+  /** Séance du jour : mots nouveaux du parcours et mots à réviser. */
+  daily?: { fresh: number; review: number };
   /** Position (sourate:verset:mot) de la première apparition de chaque mot dans la sourate. */
   verseByWord?: Record<string, string>;
   verses?: { from: number; to: number } | null;
