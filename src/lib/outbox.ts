@@ -3,71 +3,102 @@ import { Platform } from "react-native";
 import { api, ApiError } from "./api";
 
 /**
- * Auto-évaluations de mémorisation faites sans réseau : gardées sur l'appareil et envoyées
- * dans l'ordre dès que le serveur répond.
+ * Activités faites sans réseau, gardées sur l'appareil et envoyées dans l'ordre dès que le serveur
+ * répond : auto-évaluations de mémorisation et séances de vocabulaire. Chacune porte sa date
+ * (`playedAt`) pour compter le jour où elle a été faite (XP du jour, série).
  */
-export type PendingReview = { chapterId: number; verseNumber: number; quality: number };
+export type PendingReview = { chapterId: number; verseNumber: number; quality: number; playedAt?: string };
+export type PendingSession = { lessonId?: string; answers: { wordId: string; correct: boolean }[]; playedAt: string };
 
 const supported = Platform.OS !== "web";
-const outboxFile = () => new File(Paths.document, "pending-reviews.json");
 
-function read(): PendingReview[] {
-  if (!supported) return [];
-  try {
-    const file = outboxFile();
-    return file.exists ? (JSON.parse(file.textSync()) as PendingReview[]) : [];
-  } catch {
-    return [];
-  }
+/** Une file persistée dans un fichier JSON (un tableau), lue et réécrite à chaque opération. */
+function fileQueue<T>(name: string) {
+  const file = () => new File(Paths.document, name);
+  const read = (): T[] => {
+    if (!supported) return [];
+    try {
+      const f = file();
+      return f.exists ? (JSON.parse(f.textSync()) as T[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  const write = (items: T[]) => {
+    if (!supported) return;
+    const f = file();
+    if (items.length === 0) {
+      if (f.exists) f.delete();
+    } else f.write(JSON.stringify(items));
+  };
+  return { read, write };
 }
 
-function write(reviews: PendingReview[]) {
-  if (!supported) return;
-  const file = outboxFile();
-  if (reviews.length === 0) {
-    if (file.exists) file.delete();
-  } else file.write(JSON.stringify(reviews));
-}
+type Queue<T> = ReturnType<typeof fileQueue<T>>;
+
+const reviews = fileQueue<PendingReview>("pending-reviews.json");
+const sessions = fileQueue<PendingSession>("pending-sessions.json");
 
 export function queueReview(review: PendingReview) {
-  write([...read(), review]);
+  reviews.write([...reviews.read(), { ...review, playedAt: review.playedAt ?? new Date().toISOString() }]);
 }
 
+export function queueSession(session: Omit<PendingSession, "playedAt"> & { playedAt?: string }) {
+  sessions.write([...sessions.read(), { ...session, playedAt: session.playedAt ?? new Date().toISOString() }]);
+}
+
+/** Activités en attente d'envoi (évaluations et séances). */
 export function pendingReviewCount(): number {
-  return read().length;
+  return reviews.read().length + sessions.read().length;
+}
+
+export function pendingSessionCount(): number {
+  return sessions.read().length;
+}
+
+/** Erreur après laquelle on garde l'activité pour plus tard (réseau, serveur en panne, session expirée). */
+const retryLater = (error: unknown) => !(error instanceof ApiError) || error.status === 0 || error.status >= 500 || error.status === 401;
+
+/**
+ * Envoie une file dans l'ordre ; s'arrête à la première panne. Une activité refusée par le serveur
+ * (4xx : mot ou verset retiré, données invalides) est abandonnée : inutile de réessayer.
+ */
+async function flushQueue<T>(queue: Queue<T>, send: (item: T) => Promise<unknown>): Promise<{ sent: number; blocked: boolean }> {
+  let sent = 0;
+  for (let pending = queue.read(); pending.length > 0; pending = queue.read()) {
+    const next = pending[0] as T;
+    try {
+      await send(next);
+    } catch (error) {
+      if (retryLater(error)) return { sent, blocked: true };
+    }
+    // Relu après l'envoi : une activité ajoutée pendant la requête ne doit pas être écrasée.
+    const now = queue.read();
+    if (now.length > 0 && JSON.stringify(now[0]) === JSON.stringify(next)) queue.write(now.slice(1));
+    sent++;
+  }
+  return { sent, blocked: false };
 }
 
 let flushing: Promise<number> | null = null;
 
-/** Envoie les évaluations en attente ; renvoie le nombre envoyé. S'arrête au premier échec réseau. */
+/** Envoie les évaluations puis les séances en attente ; renvoie le nombre envoyé. */
 export function flushReviews(): Promise<number> {
   flushing ??= (async () => {
-    let sent = 0;
     try {
-      for (let pending = read(); pending.length > 0; pending = read()) {
-        const next = pending[0] as PendingReview;
-        try {
-          await api("/memorization/reviews", { method: "POST", body: next });
-        } catch (error) {
-          // Refus du serveur (verset retiré, données invalides) : inutile de réessayer.
-          if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500 || error.status === 401) break;
-        }
-        // Relu après l'envoi : une évaluation ajoutée pendant la requête ne doit pas être écrasée.
-        const now = read();
-        const first = now[0];
-        if (first && first.chapterId === next.chapterId && first.verseNumber === next.verseNumber && first.quality === next.quality) {
-          write(now.slice(1));
-        }
-        sent++;
-      }
+      const first = await flushQueue(reviews, (body) => api("/memorization/reviews", { method: "POST", body }));
+      // Serveur injoignable : inutile d'essayer la seconde file.
+      if (first.blocked) return first.sent;
+      const second = await flushQueue(sessions, (body) => api("/vocabulary/sessions", { method: "POST", body }));
+      return first.sent + second.sent;
     } finally {
       flushing = null;
     }
-    return sent;
   })();
   return flushing;
 }
 
 export function clearOutbox() {
-  write([]);
+  reviews.write([]);
+  sessions.write([]);
 }

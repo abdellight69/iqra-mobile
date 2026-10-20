@@ -135,11 +135,15 @@ export function VerseReview({ session, result, onDone }: { session: LearningSess
         <View style={[styles.badge, { backgroundColor: colors.successSoft }]}>
           <Ionicons name="checkmark-circle" size={14} color={colors.success} />
           <AppText variant="label" color={colors.success}>
-            +{result.xpGained} XP · {result.score} %
+            {result.queued ? `Hors ligne · ${result.score} %` : `+${result.xpGained} XP · ${result.score} %`}
           </AppText>
         </View>
         <AppText variant="display">Lisez le verset</AppText>
-        <AppText muted>Les mots en couleur sont ceux que vous reconnaissez maintenant.</AppText>
+        <AppText muted>
+          {result.queued
+            ? "Séance gardée sur le téléphone : la part comprise sera mise à jour au retour du réseau."
+            : "Les mots en couleur sont ceux que vous reconnaissez maintenant."}
+        </AppText>
         {keys.map((key) => (
           <ReviewVerse key={key} verseKey={key} known={known.data} recited={player.currentKey === key ? player.currentWord : null} />
         ))}

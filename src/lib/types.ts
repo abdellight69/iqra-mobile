@@ -240,7 +240,14 @@ export type LearningSession = {
   verses?: { from: number; to: number } | null;
   coverage?: ChapterComprehension;
 };
-export type SessionResult = { xpGained: number; score: number; correctAnswers: number; totalAnswers: number };
+export type SessionResult = {
+  xpGained: number;
+  score: number;
+  correctAnswers: number;
+  totalAnswers: number;
+  /** Séance faite hors ligne : gardée sur l'appareil, envoyée (XP compris) au retour du réseau. */
+  queued?: boolean;
+};
 
 export type PlanProgress = { total: number; started: number; solid: number; due: number };
 export type MemorizationPlan = {

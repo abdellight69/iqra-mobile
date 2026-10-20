@@ -1,6 +1,6 @@
 import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
-import { queueReview } from "./outbox";
+import { queueReview, queueSession } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
 import type {
@@ -419,8 +419,18 @@ export function useLearningSession(
 export function useSubmitSession() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: { lessonId?: string; answers: { wordId: string; correct: boolean }[] }) =>
-      api<SessionResult>("/vocabulary/sessions", { method: "POST", body: input }),
+    mutationFn: async (input: { lessonId?: string; answers: { wordId: string; correct: boolean }[] }): Promise<SessionResult> => {
+      try {
+        return await api<SessionResult>("/vocabulary/sessions", { method: "POST", body: input });
+      } catch (error) {
+        if (!isNetworkError(error)) throw error;
+        // Sans réseau : la séance est gardée et sera envoyée à la reconnexion, avec sa date.
+        queueSession(input);
+        const correctAnswers = input.answers.filter((a) => a.correct).length;
+        const totalAnswers = input.answers.length;
+        return { xpGained: 0, score: totalAnswers ? Math.round((correctAnswers / totalAnswers) * 100) : 0, correctAnswers, totalAnswers, queued: true };
+      }
+    },
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: keys.lessons });
       void client.invalidateQueries({ queryKey: keys.stats });

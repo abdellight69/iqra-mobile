@@ -246,7 +246,9 @@ function ResultScreen({ result }: { result: SessionResult }) {
         Séance terminée
       </AppText>
       <AppText muted center>
-        Bâraka Allâhou fîk ! Vos mots reviendront en révision au bon moment.
+        {result.queued
+          ? "Séance enregistrée sur le téléphone : elle sera envoyée, avec ses XP, dès le retour du réseau."
+          : "Bâraka Allâhou fîk ! Vos mots reviendront en révision au bon moment."}
       </AppText>
       <View style={styles.resultStats}>
         <Card style={styles.flex}>
@@ -254,7 +256,7 @@ function ResultScreen({ result }: { result: SessionResult }) {
             XP gagnés
           </AppText>
           <AppText variant="title" color={colors.accent}>
-            +{result.xpGained}
+            {result.queued ? "à venir" : `+${result.xpGained}`}
           </AppText>
         </Card>
         <Card style={styles.flex}>
