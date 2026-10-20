@@ -583,7 +583,10 @@ function CourseRow({
   );
 }
 
-/** Les thèmes : des cartes sur deux colonnes, chacune avec son titre arabe et sa progression. */
+/**
+ * Les thèmes en bandeaux calligraphiques, un par ligne : le thème commencé en vert profond,
+ * les thèmes terminés en or.
+ */
 function ThemesPanel({
   themes,
   loading,
@@ -595,60 +598,75 @@ function ThemesPanel({
 }) {
   const colors = useColors();
   if (!themes) return <PanelState loading={loading} onRetry={onRetry} />;
+  const current = themes.find(
+    (t) => t.learnedCount > 0 && t.learnedCount < t.wordCount,
+  )?.id;
   return (
     <View style={styles.panel}>
       <PanelIntro
         title="Par thème"
         text="Les mots du Coran regroupés par sujet, avec leurs versets."
       />
-      <View style={styles.themeGrid}>
-        {themes.map((theme, i) => (
-          <ThemeCard
-            key={theme.id}
-            theme={theme}
-            tint={i % 2 === 0 ? "primary" : "accent"}
-            colors={colors}
-          />
-        ))}
-      </View>
+      {themes.map((theme) => (
+        <ThemeBand
+          key={theme.id}
+          theme={theme}
+          state={
+            theme.wordCount > 0 && theme.learnedCount >= theme.wordCount
+              ? "done"
+              : theme.id === current
+                ? "current"
+                : "idle"
+          }
+          colors={colors}
+        />
+      ))}
     </View>
   );
 }
 
-function ThemeCard({
+function ThemeBand({
   theme,
-  tint,
+  state,
   colors,
 }: {
   theme: ThemeSummary;
-  tint: "primary" | "accent";
+  state: "idle" | "current" | "done";
   colors: Colors;
 }) {
   const ratio = theme.wordCount ? theme.learnedCount / theme.wordCount : 0;
-  const done = theme.wordCount > 0 && theme.learnedCount >= theme.wordCount;
-  const soft = done
-    ? colors.successSoft
-    : tint === "primary"
-      ? colors.primarySoft
-      : colors.accentSoft;
-  const strong = done
-    ? colors.success
-    : tint === "primary"
-      ? colors.primary
-      : colors.accent;
+  const current = state === "current";
+  const done = state === "done";
+  const text = current ? "#FFFFFF" : colors.text;
+  const muted = current ? "#FFFFFFB3" : colors.textMuted;
+  const status = done
+    ? `Terminé · ${theme.wordCount} mots`
+    : `${current ? "En cours · " : ""}${theme.learnedCount}/${theme.wordCount} mots`;
   return (
     <Card
+      tone={current ? "primary" : done ? "accent" : "default"}
       onPress={() =>
         router.push({
           pathname: "/learn/theme/[themeId]",
           params: { themeId: theme.id },
         })
       }
-      style={styles.themeCard}
-      accessibilityLabel={`${theme.title}, ${theme.learnedCount} mots appris sur ${theme.wordCount}`}
+      style={[styles.band, done && { borderWidth: 1, borderColor: GOLD }]}
+      accessibilityLabel={`${theme.title}, ${done ? "terminé" : `${theme.learnedCount} mots appris sur ${theme.wordCount}`}`}
     >
-      <View style={styles.themeTop}>
-        <View style={[styles.themeIcon, { backgroundColor: soft }]}>
+      <View style={styles.bandRow}>
+        <View
+          style={[
+            styles.bandIcon,
+            {
+              backgroundColor: current
+                ? "#FFFFFF1F"
+                : done
+                  ? GOLD
+                  : colors.primarySoft,
+            },
+          ]}
+        >
           <Ionicons
             name={
               (done
@@ -658,29 +676,37 @@ function ThemeCard({
               >["name"]
             }
             size={20}
-            color={strong}
+            color={current ? GOLD : done ? "#3A2E0C" : colors.primary}
           />
         </View>
-        <AppText variant="caption" color={strong}>
-          {Math.round(ratio * 100)} %
-        </AppText>
+        <View style={styles.flex}>
+          <AppText variant="bodyStrong" color={text} numberOfLines={2}>
+            {theme.title}
+          </AppText>
+          <AppText variant="caption" color={muted}>
+            {status}
+          </AppText>
+        </View>
+        {theme.titleAr ? (
+          <AppText
+            style={styles.bandArabic}
+            color={current ? GOLD : done ? colors.accent : colors.arabic}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {theme.titleAr}
+          </AppText>
+        ) : null}
       </View>
-      {theme.titleAr ? (
-        <AppText
-          style={styles.themeArabic}
-          color={colors.arabic}
-          numberOfLines={1}
-        >
-          {theme.titleAr}
-        </AppText>
-      ) : null}
-      <AppText variant="bodyStrong" numberOfLines={2}>
-        {theme.title}
-      </AppText>
-      <AppText variant="caption" muted>
-        {theme.learnedCount}/{theme.wordCount} mots
-      </AppText>
-      <ProgressBar value={ratio} height={4} color={strong} />
+      {done ? null : (
+        <ProgressBar
+          value={ratio}
+          height={4}
+          color={current ? GOLD : colors.primary}
+          track={current ? "#FFFFFF26" : undefined}
+        />
+      )}
     </Card>
   );
 }
@@ -885,25 +911,20 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   courseArabic: { fontFamily: fonts.arabic, fontSize: 20, lineHeight: 34 },
-  themeGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  themeCard: { width: "47%", flexGrow: 1, gap: 4 },
-  themeTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.xs,
-  },
-  themeIcon: {
+  band: { gap: spacing.md, paddingVertical: spacing.lg },
+  bandRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  bandIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  themeArabic: {
+  bandArabic: {
     fontFamily: fonts.arabic,
-    fontSize: 22,
-    lineHeight: 42,
+    fontSize: 26,
+    lineHeight: 50,
+    maxWidth: "42%",
     textAlign: "right",
   },
   partBand: {
