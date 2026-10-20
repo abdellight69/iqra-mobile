@@ -109,7 +109,7 @@ function Phrase({ phrase }: { phrase: NonNullable<WordContext["phrase"]> }) {
       </AppText>
       <View style={styles.phraseWords}>
         {phrase.words.map((w) => {
-          const target = w.position === phrase.position;
+          const target = w.position >= phrase.position && w.position < phrase.position + (phrase.length ?? 1);
           return (
             <Pressable key={w.location} accessibilityRole="button" accessibilityLabel={`${w.textUthmani}, ${w.transliteration ?? transliterate(w.textUthmani)}`} onPress={() => openWordSheet(w)} style={styles.phraseWord}>
               <ArabicText size={target ? 26 : 22} center color={target ? colors.accent : undefined}>

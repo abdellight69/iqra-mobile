@@ -171,7 +171,7 @@ function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: Vocab
           ) : null}
           {word.occurrences !== null ? (
             <AppText variant="caption" muted center>
-              {word.occurrences} occurrences dans le Coran (selon le livre)
+              {word.occurrences} occurrence{word.occurrences > 1 ? "s" : ""} dans le Coran{/^p\d{2}-/.test(word.id) ? " (selon le livre)" : ""}
             </AppText>
           ) : null}
         </Card>

@@ -62,7 +62,7 @@ export type QuranExample = { verseKey: string; word: Word };
 export type WordContext = {
   example: QuranExample | null;
   /** Fenêtre de mots autour du mot dans le premier verset qui le contient (si pas d'occurrence sûre). */
-  phrase: { verseKey: string; position: number; words: Word[] } | null;
+  phrase: { verseKey: string; position: number; /** Mots surlignés à partir de `position` (absent : 1). */ length?: number; words: Word[] } | null;
   family: { root: string | null; known: { wordId: string; headword: string; fr: string }[] };
 };
 
