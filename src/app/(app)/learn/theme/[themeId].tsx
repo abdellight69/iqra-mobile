@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuranExample } from "@/components/QuranExample";
 import { ErrorState, LoadingState } from "@/components/States";
+import { useKidsMode } from "@/lib/kids";
 import { useTheme } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import { annotateArabic, transliterate } from "@/lib/transliterate";
@@ -20,6 +21,8 @@ export default function ThemeDetail() {
   const insets = useSafeAreaInsets();
   const { themeId } = useLocalSearchParams<{ themeId: string }>();
   const theme = useTheme(themeId);
+  // Profil enfant : séances plus courtes.
+  const kids = useKidsMode();
 
   if (theme.isPending) return <LoadingState />;
   if (theme.isError) return <ErrorState error={theme.error} onRetry={() => void theme.refetch()} />;
@@ -27,7 +30,7 @@ export default function ThemeDetail() {
   const learnedSet = new Set(learned);
   const remaining = words.length - learned.length;
   const done = remaining === 0;
-  const next = Math.min(6, Math.max(1, remaining));
+  const next = Math.min(kids ? 4 : 6, Math.max(1, remaining));
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>

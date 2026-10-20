@@ -29,6 +29,8 @@ export type VerseCardProps = {
   onMemorize: () => void;
   onShare: () => void;
   onTafsir: () => void;
+  /** Séance sur les mots du livre présents dans ce verset (absent : pas de bouton). */
+  onLearn?: () => void;
 };
 
 /** Un verset en pleine largeur : arabe, phonétique, traduction puis actions discrètes. */
@@ -49,6 +51,7 @@ function VerseCardBase({
   onMemorize,
   onShare,
   onTafsir,
+  onLearn,
 }: VerseCardProps) {
   const colors = useColors();
   const dark = useColorScheme() === "dark";
@@ -124,6 +127,7 @@ function VerseCardBase({
         <Action icon={active ? "pause" : "play-outline"} label={active ? "Mettre en pause" : "Écouter le verset"} onPress={onPlay} active={active} />
         <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label={bookmarked ? "Retirer le signet" : "Ajouter un signet"} onPress={onBookmark} active={bookmarked} />
         <Action icon="reader-outline" label="Tafsir de ce verset" onPress={onTafsir} />
+        {onLearn ? <Action icon="sparkles-outline" label="Apprendre les mots de ce verset" onPress={onLearn} /> : null}
         <Action icon="repeat-outline" label="Mémoriser ce verset" onPress={onMemorize} />
         <Action icon="share-outline" label="Partager ce verset en image" onPress={onShare} />
       </View>

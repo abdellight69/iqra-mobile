@@ -29,11 +29,11 @@ import { closeScreen } from "@/lib/navigation";
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; themeId?: string; size?: string; review?: string }>();
+  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; verse?: string; themeId?: string; size?: string; review?: string }>();
   const source = params.lessonId
     ? { lessonId: params.lessonId, size: params.size === "all" ? ("all" as const) : params.size ? Number(params.size) : undefined }
     : params.chapterId
-      ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined }
+      ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined, verse: params.verse ? Number(params.verse) : undefined }
       : params.themeId
         ? { themeId: params.themeId, size: params.size ? Number(params.size) : undefined }
         : ({ review: true } as const);
@@ -45,7 +45,7 @@ export default function LearningSessionScreen() {
     return (
       <SafeArea style={{ flex: 1 }}>
         {params.chapterId ? (
-          <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message="Vous avez déjà appris tous les mots du livre présents dans cette sourate." action={{ title: "Fermer", onPress: () => closeScreen("/learn") }} />
+          <EmptyState icon="checkmark-done" title="Rien de nouveau ici" message={params.verse ? "Vous connaissez déjà tous les mots du livre présents dans ce verset." : "Vous avez déjà appris tous les mots du livre présents dans cette sourate."} action={{ title: "Fermer", onPress: () => closeScreen("/learn") }} />
         ) : (
           <EmptyState icon="checkmark-done" title="Rien à réviser" message="Revenez plus tard : vos mots reviendront au bon moment." action={{ title: "Fermer", onPress: () => closeScreen("/learn") }} />
         )}

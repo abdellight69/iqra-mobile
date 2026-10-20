@@ -11,6 +11,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
+import { useKidsMode } from "@/lib/kids";
 import { useChapters, useCourse, useLessons, useStats, useThemes } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { CourseChapter, LessonSummary, ThemeSummary } from "@/lib/types";
@@ -20,6 +21,8 @@ const OFFSETS = [0, 52, 78, 52, 0, -52, -78, -52];
 
 export default function LearnTab() {
   const colors = useColors();
+  // Profil enfant : les thèmes (nombres, animaux…) passent avant le parcours par sourate.
+  const kids = useKidsMode();
   const tabBarHeight = useBottomTabBarHeight();
   const lessons = useLessons();
   const stats = useStats();
@@ -85,8 +88,8 @@ export default function LearnTab() {
                 </AppText>
               )}
             </Card>
-            <CourseSection />
-            <ThemesSection />
+            {kids ? <ThemesSection /> : <CourseSection />}
+            {kids ? <CourseSection /> : <ThemesSection />}
             <Card tone="primary" onPress={() => router.push("/reading")} style={styles.prayer}>
               <AppText style={styles.readingGlyph} color="#E9D9B0">
                 اقْرَأْ

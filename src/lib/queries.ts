@@ -398,7 +398,7 @@ export function useKnownWords(chapterId: number, enabled: boolean) {
 }
 
 export function useLearningSession(
-  source: { lessonId: string; size?: number | "all" } | { chapterId: number; size?: number } | { themeId: string; size?: number } | { review: true },
+  source: { lessonId: string; size?: number | "all" } | { chapterId: number; size?: number; verse?: number } | { themeId: string; size?: number } | { review: true },
 ) {
   const path =
     "lessonId" in source
@@ -406,7 +406,7 @@ export function useLearningSession(
       : "themeId" in source
         ? `/vocabulary/themes/${source.themeId}/session?size=${source.size ?? 6}`
       : "chapterId" in source
-        ? `/vocabulary/comprehension/${source.chapterId}/session?size=${source.size ?? 6}`
+        ? `/vocabulary/comprehension/${source.chapterId}/session?size=${source.size ?? 6}${source.verse ? `&verse=${source.verse}` : ""}`
         : "/vocabulary/review/session";
   return useQuery({
     queryKey: ["session", path],
