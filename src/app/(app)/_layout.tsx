@@ -1,9 +1,11 @@
 import { router, Stack, usePathname } from "expo-router";
+import { AppState } from "react-native";
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useOffline } from "@/lib/offline";
 import { loadRememberedProfile } from "@/lib/profile-memory";
+import { refreshDailyReserve } from "@/lib/queries";
 import { useReminderSync, useReminderTaps } from "@/lib/reminders";
 import { fonts, useColors } from "@/lib/theme";
 import type { Profiles } from "@/lib/types";
@@ -36,11 +38,22 @@ function useProfilePickerOnLaunch() {
   }, []);
 }
 
+/** Prépare la séance du jour hors ligne, au lancement et à chaque retour au premier plan. */
+function useDailyReserve() {
+  const translationId = useAuth((s) => s.user?.translationId ?? null);
+  useEffect(() => {
+    void refreshDailyReserve(translationId);
+    const subscription = AppState.addEventListener("change", (state) => state === "active" && void refreshDailyReserve(translationId));
+    return () => subscription.remove();
+  }, [translationId]);
+}
+
 export const unstable_settings = { anchor: "(tabs)" };
 
 export default function AppLayout() {
   const colors = useColors();
   useReminderSync();
+  useDailyReserve();
   useReminderTaps();
   useProfilePickerOnLaunch();
   useEffect(() => useOffline.getState().load(), []);

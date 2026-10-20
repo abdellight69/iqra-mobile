@@ -1,5 +1,6 @@
 import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
+import { consumeDailyReserve, loadDailyReserve, reserveNeedsRefresh, reserveVerseKeys, saveDailyReserve } from "./daily-reserve";
 import { queueReview, queueSession } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
@@ -410,12 +411,50 @@ export function useLearningSession(
         : "daily" in source
           ? "/vocabulary/daily/session"
           : "/vocabulary/review/session";
+  const client = useQueryClient();
+  const daily = "daily" in source;
   return useQuery({
     queryKey: ["session", path],
-    queryFn: () => api<LearningSession>(path),
+    queryFn: async () => {
+      try {
+        return await api<LearningSession>(path);
+      } catch (error) {
+        // Séance du jour sans réseau : celle préparée à l'avance, avec ses versets et contextes.
+        const reserve = daily && isNetworkError(error) ? loadDailyReserve() : null;
+        if (!reserve) throw error;
+        for (const [key, verse] of Object.entries(reserve.verses)) client.setQueryData(keys.verse(key, reserve.translationId), verse);
+        for (const [wordId, context] of Object.entries(reserve.contexts)) client.setQueryData(keys.wordContext(wordId), context);
+        return { ...reserve.session, offline: true };
+      }
+    },
     staleTime: Infinity,
     gcTime: 0,
   });
+}
+
+/**
+ * Prépare la séance du jour pour la faire sans réseau : séance, versets de ses mots nouveaux et
+ * contexte de ces mots, gardés sur l'appareil. Au lancement et au retour au premier plan, au plus
+ * toutes les 6 heures ; sans effet hors ligne.
+ */
+export async function refreshDailyReserve(translationId: number | null): Promise<void> {
+  if (!reserveNeedsRefresh()) return;
+  try {
+    const session = await api<LearningSession>("/vocabulary/daily/session");
+    if (session.exercises.length === 0) return;
+    const query = translationId ? `?translationId=${translationId}` : "";
+    const verses = await Promise.all(reserveVerseKeys(session).map(async (key) => [key, (await api<{ verse: Verse }>(`/quran/verses/${key}${query}`)).verse] as const));
+    const fresh = Object.keys(session.verseByWord ?? {});
+    const contexts = await Promise.all(fresh.map(async (id) => [id, await api<WordContext>(`/vocabulary/words/${id}/context`)] as const));
+    saveDailyReserve({ savedAt: Date.now(), translationId, session, verses: Object.fromEntries(verses), contexts: Object.fromEntries(contexts) });
+  } catch {
+    // Pas de réseau ou serveur indisponible : on garde l'ancienne réserve.
+  }
+}
+
+/** La séance du jour est faite : la réserve sera reconstituée au prochain passage en ligne. */
+export function markDailyDone() {
+  consumeDailyReserve();
 }
 
 export function useSubmitSession() {

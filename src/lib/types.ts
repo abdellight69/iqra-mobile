@@ -237,6 +237,8 @@ export type LearningSession = {
   themeId?: string;
   /** Séance du jour : mots nouveaux du parcours et mots à réviser. */
   daily?: { fresh: number; review: number };
+  /** Séance tirée de la réserve hors ligne (préparée à l'avance). */
+  offline?: boolean;
   /** Position (sourate:verset:mot) de la première apparition de chaque mot dans la sourate. */
   verseByWord?: Record<string, string>;
   verses?: { from: number; to: number } | null;

@@ -20,7 +20,7 @@ import { MissingLetterExercise } from "@/components/exercises/MissingLetterExerc
 import { TrueFalseExercise } from "@/components/exercises/TrueFalseExercise";
 import { ArabicChoice, ChoiceButton, exerciseStyles, type ExerciseProps, Feedback, ListenButton, WordSummary } from "@/components/exercises/shared";
 import { planSession, type SessionExercise } from "@/lib/exercises";
-import { useLearningSession, useSubmitSession } from "@/lib/queries";
+import { markDailyDone, useLearningSession, useSubmitSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { annotateArabic } from "@/lib/transliterate";
 import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/types";
@@ -88,6 +88,8 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
       {
         onSuccess: (r) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // Séance du jour faite (en ligne ou non) : la réserve hors ligne ne doit pas être rejouée.
+          if (session.daily) markDailyDone();
           setResult(r);
         },
         onError: () => Alert.alert("Envoi impossible", "Vérifiez votre connexion puis réessayez.", [{ text: "Réessayer", onPress: next }]),
