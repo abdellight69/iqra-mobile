@@ -35,7 +35,7 @@ export function nextStep(
         title: `${name}${chapter.nextVerse ? ` · verset ${chapter.nextVerse}` : ""}`,
         detail:
           due > 0
-            ? `${due} mot${due > 1 ? "s" : ""} à réviser · ${Math.min(chapter.missingWords, 3)} nouveau${Math.min(chapter.missingWords, 3) > 1 ? "x" : ""}`
+            ? `Révisions · ${Math.min(chapter.missingWords, 3)} mot${Math.min(chapter.missingWords, 3) > 1 ? "s" : ""} nouveau${Math.min(chapter.missingWords, 3) > 1 ? "x" : ""}`
             : `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""} · séance du jour`,
         href: { pathname: "/learn/session", params: { daily: "1" } },
       };
