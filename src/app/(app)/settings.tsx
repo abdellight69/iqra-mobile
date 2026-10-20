@@ -15,6 +15,7 @@ import { Card } from "@/components/Card";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
+import { EmptyState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
 import { type AppearanceMode, useAppearance } from "@/lib/appearance-store";
@@ -63,7 +64,9 @@ export default function Settings() {
   // Serveur plus ancien (sans profils) : l'utilisateur est le titulaire.
   const isOwner = user?.isOwner !== false;
   const profiles = useProfiles(isOwner);
-  const hasChildProfiles = (profiles.data?.profiles ?? []).some((p) => p.isChild);
+  const hasChildProfiles = (profiles.data?.profiles ?? []).some(
+    (p) => p.isChild,
+  );
   const signOut = useAuth((s) => s.signOut);
   const [name, setName] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -77,6 +80,18 @@ export default function Settings() {
         color={colors.primary}
       />
     );
+  // Un profil enfant n'a pas accès aux réglages (traduction, rappels, compte) : c'est au parent de les régler.
+  if (user.isChild)
+    return (
+      <Screen>
+        <EmptyState
+          icon="lock-closed-outline"
+          title="Réglages réservés aux parents"
+          message="Demande à un parent de changer de profil pour modifier les réglages."
+          action={{ title: "Retour", onPress: () => router.back() }}
+        />
+      </Screen>
+    );
 
   async function changePassword() {
     setPasswordStatus(null);
@@ -84,7 +99,11 @@ export default function Settings() {
       await api("/me/password", {
         method: "POST",
         // Le serveur ferme les autres sessions du compte et garde celle de cet appareil.
-        body: { currentPassword, newPassword, refreshToken: useAuth.getState().tokens?.refreshToken },
+        body: {
+          currentPassword,
+          newPassword,
+          refreshToken: useAuth.getState().tokens?.refreshToken,
+        },
       });
       setCurrentPassword("");
       setNewPassword("");
@@ -190,7 +209,12 @@ export default function Settings() {
       <SectionHeader title="Apparence" />
       <View style={styles.chips}>
         {APPEARANCES.map((a) => (
-          <Choice key={a.mode} label={a.label} selected={appearance === a.mode} onPress={() => setAppearance(a.mode)} />
+          <Choice
+            key={a.mode}
+            label={a.label}
+            selected={appearance === a.mode}
+            onPress={() => setAppearance(a.mode)}
+          />
         ))}
       </View>
 
@@ -251,7 +275,9 @@ export default function Settings() {
         {reminders.enabled && isOwner && hasChildProfiles ? (
           <View style={styles.reminderRow}>
             <View style={styles.flex}>
-              <AppText variant="bodyStrong">Aussi pour les profils enfants</AppText>
+              <AppText variant="bodyStrong">
+                Aussi pour les profils enfants
+              </AppText>
               <AppText variant="caption" muted>
                 Sinon, aucun rappel n’est envoyé quand un profil enfant est
                 ouvert sur cet appareil.
