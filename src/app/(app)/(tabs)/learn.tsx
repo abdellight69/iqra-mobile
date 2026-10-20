@@ -584,8 +584,8 @@ function CourseRow({
 }
 
 /**
- * Les thèmes en bandeaux calligraphiques, un par ligne : le thème commencé en vert profond,
- * les thèmes terminés en or.
+ * Les thèmes en bandeaux calligraphiques, un par ligne et par groupe : le thème pratiqué en
+ * dernier (et pas fini) en vert profond, les thèmes terminés en or.
  */
 function ThemesPanel({
   themes,
@@ -598,28 +598,46 @@ function ThemesPanel({
 }) {
   const colors = useColors();
   if (!themes) return <PanelState loading={loading} onRetry={onRetry} />;
-  const current = themes.find(
-    (t) => t.learnedCount > 0 && t.learnedCount < t.wordCount,
-  )?.id;
+  const current = themes
+    .filter((t) => t.learnedCount > 0 && t.learnedCount < t.wordCount)
+    .sort((a, b) =>
+      (b.lastPracticedAt ?? "").localeCompare(a.lastPracticedAt ?? ""),
+    )[0]?.id;
+  const groups = [...new Set(themes.map((t) => t.group))];
   return (
     <View style={styles.panel}>
       <PanelIntro
         title="Par thème"
         text="Les mots du Coran regroupés par sujet, avec leurs versets."
       />
-      {themes.map((theme) => (
-        <ThemeBand
-          key={theme.id}
-          theme={theme}
-          state={
-            theme.wordCount > 0 && theme.learnedCount >= theme.wordCount
-              ? "done"
-              : theme.id === current
-                ? "current"
-                : "idle"
-          }
-          colors={colors}
-        />
+      {groups.map((group) => (
+        <View key={group ?? ""} style={styles.themeGroup}>
+          {group ? (
+            <AppText
+              variant="label"
+              color={colors.textMuted}
+              style={styles.themeGroupTitle}
+            >
+              {group}
+            </AppText>
+          ) : null}
+          {themes
+            .filter((t) => t.group === group)
+            .map((theme) => (
+              <ThemeBand
+                key={theme.id}
+                theme={theme}
+                state={
+                  theme.wordCount > 0 && theme.learnedCount >= theme.wordCount
+                    ? "done"
+                    : theme.id === current
+                      ? "current"
+                      : "idle"
+                }
+                colors={colors}
+              />
+            ))}
+        </View>
       ))}
     </View>
   );
@@ -911,6 +929,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   courseArabic: { fontFamily: fonts.arabic, fontSize: 20, lineHeight: 34 },
+  themeGroup: { gap: spacing.md },
+  themeGroupTitle: { marginTop: spacing.sm, marginLeft: spacing.xs },
   band: { gap: spacing.md, paddingVertical: spacing.lg },
   bandRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   bandIcon: {

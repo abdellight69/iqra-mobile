@@ -26,7 +26,12 @@ export type User = {
 export type Goal = "understand" | "memorize" | "read";
 export type ArabicLevel = "none" | "beginner" | "fluent";
 
-export type AuthResponse = { user: User; accessToken: string; refreshToken: string; expiresIn: number };
+export type AuthResponse = {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+};
 export type Tokens = { accessToken: string; refreshToken: string };
 
 export type Chapter = {
@@ -62,16 +67,38 @@ export type QuranExample = { verseKey: string; word: Word };
 export type WordContext = {
   example: QuranExample | null;
   /** Fenêtre de mots autour du mot dans le premier verset qui le contient (si pas d'occurrence sûre). */
-  phrase: { verseKey: string; position: number; /** Mots surlignés à partir de `position` (absent : 1). */ length?: number; words: Word[] } | null;
-  family: { root: string | null; known: { wordId: string; headword: string; fr: string }[] };
+  phrase: {
+    verseKey: string;
+    position: number;
+    /** Mots surlignés à partir de `position` (absent : 1). */ length?: number;
+    words: Word[];
+  } | null;
+  family: {
+    root: string | null;
+    known: { wordId: string; headword: string; fr: string }[];
+  };
 };
 
 /** Part des mots d'une sourate reconnue grâce aux mots appris dans les leçons. */
-export type ChapterComprehension = { chapterId: number; totalWords: number; knownWords: number; coveredByBook: number };
+export type ChapterComprehension = {
+  chapterId: number;
+  totalWords: number;
+  knownWords: number;
+  coveredByBook: number;
+};
 
-export type NextWord = { wordId: string; lessonId: string; lessonTitle: string; headword: string; fr: string; gain: number };
+export type NextWord = {
+  wordId: string;
+  lessonId: string;
+  lessonTitle: string;
+  headword: string;
+  fr: string;
+  gain: number;
+};
 
-export type ChapterComprehensionDetail = ChapterComprehension & { nextWords: NextWord[] };
+export type ChapterComprehensionDetail = ChapterComprehension & {
+  nextWords: NextWord[];
+};
 
 /** Sourate du parcours « Comprendre une sourate ». */
 export type CourseChapter = ChapterComprehension & {
@@ -92,7 +119,11 @@ export type Verse = {
   hizbNumber: number;
   pageNumber: number;
   words: Word[];
-  translation: { resourceId: number; resourceName: string | null; text: string } | null;
+  translation: {
+    resourceId: number;
+    resourceName: string | null;
+    text: string;
+  } | null;
   /** Translittération du verset entier fournie par Quran.com. */
   transliteration: { resourceId: number; text: string } | null;
 };
@@ -100,13 +131,28 @@ export type Verse = {
 export type VersePage = {
   chapter: Chapter;
   verses: Verse[];
-  pagination: { page: number; perPage: number; totalPages: number; totalVerses: number };
+  pagination: {
+    page: number;
+    perPage: number;
+    totalPages: number;
+    totalVerses: number;
+  };
 };
 
-export type ChapterInfo = { chapterId: number; paragraphs: string[]; shortText: string; source: string; languageName: string | null };
+export type ChapterInfo = {
+  chapterId: number;
+  paragraphs: string[];
+  shortText: string;
+  source: string;
+  languageName: string | null;
+};
 /** Moment où un mot est récité dans l'audio du verset (position du mot à partir de 1). */
 export type WordTiming = { position: number; startMs: number; endMs: number };
-export type ChapterAudio = { chapterId: number; recitationId: number; files: { verseKey: string; url: string; words: WordTiming[] }[] };
+export type ChapterAudio = {
+  chapterId: number;
+  recitationId: number;
+  files: { verseKey: string; url: string; words: WordTiming[] }[];
+};
 
 export type Label = { code: string; ar: string; fr: string };
 export type Segment = {
@@ -130,18 +176,40 @@ export type WordDetails = {
     rootOccurrences: number | null;
     lemmaOccurrences: number | null;
   } | null;
-  vocabulary: { wordId: string; lessonId: string; lessonTitle: string; ar: string | null; fr: string | null; sourcePage: number }[];
+  vocabulary: {
+    wordId: string;
+    lessonId: string;
+    lessonTitle: string;
+    ar: string | null;
+    fr: string | null;
+    sourcePage: number;
+  }[];
 };
 export type RootOccurrences = {
   root: string;
   total: number;
   page: number;
   perPage: number;
-  occurrences: { location: string; verseKey: string; form: string; lemma: string | null }[];
+  occurrences: {
+    location: string;
+    verseKey: string;
+    form: string;
+    lemma: string | null;
+  }[];
 };
 
-export type Translation = { id: number; name: string; authorName: string; languageName: string };
-export type TafsirResource = { id: number; name: string; authorName: string; languageName: string };
+export type Translation = {
+  id: number;
+  name: string;
+  authorName: string;
+  languageName: string;
+};
+export type TafsirResource = {
+  id: number;
+  name: string;
+  authorName: string;
+  languageName: string;
+};
 export type VerseTafsir = {
   verseKey: string;
   frenchAvailable: boolean;
@@ -156,10 +224,20 @@ export type VerseTafsir = {
     /** Notes du traducteur (tafsir hébergé). */
     footnotes?: string | null;
     /** Tafsir hébergé (QuranEnc) : source à citer, version, date de récupération du texte. */
-    source?: { name: string; url: string; version: string | null; fetchedAt: string };
+    source?: {
+      name: string;
+      url: string;
+      version: string | null;
+      fetchedAt: string;
+    };
   } | null;
 };
-export type Recitation = { id: number; reciterName: string; style: string | null; translatedName: string | null };
+export type Recitation = {
+  id: number;
+  reciterName: string;
+  style: string | null;
+  translatedName: string | null;
+};
 
 export type VerbForms = {
   past: string | null;
@@ -202,8 +280,27 @@ export type LessonSummary = {
 };
 
 /** Thème de vocabulaire coranique (nombres, corps humain…). */
-export type ThemeSummary = { id: string; title: string; titleAr: string | null; intro: string | null; icon: string | null; wordCount: number; learnedCount: number };
-export type ThemeDetail = { theme: Omit<ThemeSummary, "wordCount" | "learnedCount">; words: VocabWord[]; learned: string[] };
+export type ThemeSummary = {
+  id: string;
+  title: string;
+  titleAr: string | null;
+  intro: string | null;
+  icon: string | null;
+  /** Groupe affiché en tête de liste (« La vie quotidienne », « La foi et le Coran »). */
+  group: string | null;
+  wordCount: number;
+  learnedCount: number;
+  /** Dernière révision d'un mot du thème (ISO), ou null. */
+  lastPracticedAt: string | null;
+};
+export type ThemeDetail = {
+  theme: Omit<
+    ThemeSummary,
+    "group" | "wordCount" | "learnedCount" | "lastPracticedAt"
+  >;
+  words: VocabWord[];
+  learned: string[];
+};
 
 export type LessonDetail = {
   lesson: {
@@ -222,7 +319,12 @@ export type LessonDetail = {
 export type Choice = { id: string; text: string };
 export type Exercise =
   | { type: "intro"; wordId: string }
-  | { type: "ar_to_fr" | "fr_to_ar"; wordId: string; choices: Choice[]; answerId: string }
+  | {
+      type: "ar_to_fr" | "fr_to_ar";
+      wordId: string;
+      choices: Choice[];
+      answerId: string;
+    }
   | { type: "match"; wordIds: string[] }
   /** Deux mots qui se ressemblent, tous deux connus : lequel a ce sens ? (noté sur `wordId`). */
   | { type: "contrast"; wordId: string; otherId: string };
@@ -253,7 +355,12 @@ export type SessionResult = {
   queued?: boolean;
 };
 
-export type PlanProgress = { total: number; started: number; solid: number; due: number };
+export type PlanProgress = {
+  total: number;
+  started: number;
+  solid: number;
+  due: number;
+};
 export type MemorizationPlan = {
   id: string;
   chapterId: number;
@@ -273,13 +380,35 @@ export type PlanVerse = {
   intervalDays: number;
 };
 export type MemorizationPlanDetail = MemorizationPlan & { verses: PlanVerse[] };
-export type ReviewResult = { key: string; status: PlanVerse["status"]; dueAt: string; intervalDays: number; xpGained: number };
-export type DueVerse = { key: string; chapterId: number; verseNumber: number; dueAt: string; status: PlanVerse["status"] };
+export type ReviewResult = {
+  key: string;
+  status: PlanVerse["status"];
+  dueAt: string;
+  intervalDays: number;
+  xpGained: number;
+};
+export type DueVerse = {
+  key: string;
+  chapterId: number;
+  verseNumber: number;
+  dueAt: string;
+  status: PlanVerse["status"];
+};
 
 /** Programmes guidés : étapes quotidiennes de mémorisation ou de lecture. */
-export type VerseRange = { chapterId: number; fromVerse: number; toVerse: number };
+export type VerseRange = {
+  chapterId: number;
+  fromVerse: number;
+  toVerse: number;
+};
 export type ProgramDay = { day: number; ranges: VerseRange[]; verses: number };
-export type ProgramProgress = { startedOn: string; completedDays: number[]; nextDay: number | null; scheduledDay: number; finished: boolean };
+export type ProgramProgress = {
+  startedOn: string;
+  completedDays: number[];
+  nextDay: number | null;
+  scheduledDay: number;
+  finished: boolean;
+};
 export type ProgramSummary = {
   id: string;
   kind: "memorize" | "read";
@@ -295,7 +424,14 @@ export type Stats = {
   xp: number;
   currentStreak: number;
   longestStreak: number;
-  today: { day: string; xp: number; goalXp: number; wordsReviewed: number; versesReviewed: number; versesRead: number };
+  today: {
+    day: string;
+    xp: number;
+    goalXp: number;
+    wordsReviewed: number;
+    versesReviewed: number;
+    versesRead: number;
+  };
   lastDays: { day: string; xp: number }[];
   /** Un jour manqué par semaine ne casse pas la série. */
   /** Absent si le serveur n'est pas à jour. */
@@ -304,18 +440,40 @@ export type Stats = {
   memorization: { verses: number; solid: number; due: number };
 };
 
-export type Bookmark = { id: string; chapterId: number; verseNumber: number; note: string | null; createdAt: string };
-export type ReadingPosition = { chapterId: number; verseNumber: number; updatedAt: string } | null;
+export type Bookmark = {
+  id: string;
+  chapterId: number;
+  verseNumber: number;
+  note: string | null;
+  createdAt: string;
+};
+export type ReadingPosition = {
+  chapterId: number;
+  verseNumber: number;
+  updatedAt: string;
+} | null;
 
 /** Vérification de la récitation : chaque mot du verset reconnu, oublié ou différent. */
 export type RecitationWordStatus = "ok" | "missed" | "different";
-type RecitationCounts = { total: number; ok: number; missed: number; different: number };
+type RecitationCounts = {
+  total: number;
+  ok: number;
+  missed: number;
+  different: number;
+};
 export type RecitationCheck = {
   verseKey: string;
   /** Absents d'un serveur plus ancien (un seul verset vérifié). */
   verseKeys?: string[];
   heard: string;
-  words: { position: number; verseKey?: string; location: string; textUthmani: string; status: RecitationWordStatus; heard: string | null }[];
+  words: {
+    position: number;
+    verseKey?: string;
+    location: string;
+    textUthmani: string;
+    status: RecitationWordStatus;
+    heard: string | null;
+  }[];
   extras: { afterLocation?: string | null; text: string }[];
   summary: RecitationCounts;
   verses?: (RecitationCounts & { verseKey: string })[];
@@ -323,10 +481,21 @@ export type RecitationCheck = {
   suggestedQuality?: 1 | 3 | 4 | 5;
 };
 /** Mot souvent oublié à la vérification vocale. */
-export type WeakWord = { location: string; verseKey: string; misses: number; hits: number; lastMissedAt: string | null };
+export type WeakWord = {
+  location: string;
+  verseKey: string;
+  misses: number;
+  hits: number;
+  lastMissedAt: string | null;
+};
 
 /** Apprendre à lire : lettres, parcours et séances (exercices générés par le serveur). */
-export type LetterForms = { isolated: string; initial: string | null; medial: string | null; final: string | null };
+export type LetterForms = {
+  isolated: string;
+  initial: string | null;
+  medial: string | null;
+  final: string | null;
+};
 export type AlphabetLetter = {
   id: string;
   char: string;
@@ -340,7 +509,14 @@ export type AlphabetLetter = {
   forms: LetterForms;
   example: { location: string; text: string; reading: string };
 };
-export type AlphabetLessonSummary = { id: string; title: string; summary: string; kind: string; completed: boolean; bestScore: number | null };
+export type AlphabetLessonSummary = {
+  id: string;
+  title: string;
+  summary: string;
+  kind: string;
+  completed: boolean;
+  bestScore: number | null;
+};
 export type AlphabetOverview = {
   letters: AlphabetLetter[];
   units: { id: number; title: string; lessons: AlphabetLessonSummary[] }[];
@@ -348,31 +524,70 @@ export type AlphabetOverview = {
   lessonCount: number;
   nextLessonId: string | null;
 };
-export type ReadingWord = { location: string; text: string; reading: string; audioUrl: string | null };
+export type ReadingWord = {
+  location: string;
+  text: string;
+  reading: string;
+  audioUrl: string | null;
+};
 export type ReadingChoice = { id: string; arabic?: string; text?: string };
 export type ReadingStep =
   | { type: "letter"; letterId: string; example: ReadingWord }
-  | { type: "concept"; title: string; paragraphs: string[]; examples: { arabic: string; reading: string; note?: string }[] }
+  | {
+      type: "concept";
+      title: string;
+      paragraphs: string[];
+      examples: { arabic: string; reading: string; note?: string }[];
+    }
   | {
       type: "choice";
       question: string;
-      prompt: { arabic?: string; text?: string; detail?: string; highlight?: string[]; marks?: number[]; word?: ReadingWord; listen?: boolean };
+      prompt: {
+        arabic?: string;
+        text?: string;
+        detail?: string;
+        highlight?: string[];
+        marks?: number[];
+        word?: ReadingWord;
+        listen?: boolean;
+      };
       choices: ReadingChoice[];
       answerId: string;
       reveal?: ReadingWord;
       /** Règle ou précision affichée après la réponse. */
       explain?: string;
     }
-  | { type: "match"; question: string; pairs: { id: string; arabic: string; text: string }[] }
-  | { type: "reading"; title: string; verses: { verseKey: string; words: ReadingWord[] }[] }
+  | {
+      type: "match";
+      question: string;
+      pairs: { id: string; arabic: string; text: string }[];
+    }
+  | {
+      type: "reading";
+      title: string;
+      verses: { verseKey: string; words: ReadingWord[] }[];
+    }
   | { type: "trace"; letterId: string }
   | { type: "spell"; word: ReadingWord; answer: string[]; tiles: string[] };
-export type ReadingSession = { lesson: { id: string; title: string; summary: string; kind: string }; steps: ReadingStep[] };
-export type ReadingResult = { xpGained: number; score: number; firstCompletion: boolean };
+export type ReadingSession = {
+  lesson: { id: string; title: string; summary: string; kind: string };
+  steps: ReadingStep[];
+};
+export type ReadingResult = {
+  xpGained: number;
+  score: number;
+  firstCompletion: boolean;
+};
 
 /** Carte de la mémorisation : sourates, juz' et totaux (pages du Mushaf de Médine). */
 export type MemorizationMap = {
-  chapters: { chapterId: number; versesCount: number; tracked: number; solid: number; due: number }[];
+  chapters: {
+    chapterId: number;
+    versesCount: number;
+    tracked: number;
+    solid: number;
+    due: number;
+  }[];
   juzs: { juz: number; verses: number; tracked: number; solid: number }[];
   totals: {
     verses: number;
@@ -393,7 +608,13 @@ export type SearchResults = {
   total: number;
   page: number;
   pageSize: number;
-  results: { key: string; chapterId: number; verseNumber: number; textUthmani: string; translation: string | null }[];
+  results: {
+    key: string;
+    chapterId: number;
+    verseNumber: number;
+    textUthmani: string;
+    translation: string | null;
+  }[];
 };
 
 /** Recherche unifiée (`/search`) : résultats groupés par type. */
@@ -408,10 +629,34 @@ export type SearchVerse = {
 };
 export type UnifiedSearch = {
   query: string;
-  chapters: { id: number; nameSimple: string; nameArabic: string; translatedName: string; versesCount: number }[];
-  verses: { items: SearchVerse[]; total: number; matchedBy: SearchVerse["matchedBy"] | null };
-  words: { id: string; lessonId: string; lessonTitle: string; sourcePage: number; ar: string | null; fr: string | null }[];
-  lessons: { id: string; unit: number; unitTitle: string; title: string; summary: string; kind: string }[];
+  chapters: {
+    id: number;
+    nameSimple: string;
+    nameArabic: string;
+    translatedName: string;
+    versesCount: number;
+  }[];
+  verses: {
+    items: SearchVerse[];
+    total: number;
+    matchedBy: SearchVerse["matchedBy"] | null;
+  };
+  words: {
+    id: string;
+    lessonId: string;
+    lessonTitle: string;
+    sourcePage: number;
+    ar: string | null;
+    fr: string | null;
+  }[];
+  lessons: {
+    id: string;
+    unit: number;
+    unitTitle: string;
+    title: string;
+    summary: string;
+    kind: string;
+  }[];
 };
 
 export type ProfileProgress = {
@@ -434,7 +679,12 @@ export type Profile = {
   /** Visible du titulaire seulement. */
   progress: ProfileProgress | null;
 };
-export type Profiles = { isOwner: boolean; pinSet: boolean; maxProfiles: number; profiles: Profile[] };
+export type Profiles = {
+  isOwner: boolean;
+  pinSet: boolean;
+  maxProfiles: number;
+  profiles: Profile[];
+};
 
 // ---------------------------------------------------------------------------
 // Familles (backend : docs/familles-v1.md)
@@ -442,11 +692,19 @@ export type Profiles = { isOwner: boolean; pinSet: boolean; maxProfiles: number;
 
 export type FamilySharing = "none" | "goals" | "all";
 export type FamilyRole = "admin" | "member";
-export type GoalMetric = "verses_read" | "words_learned" | "verses_learned" | "reviews" | "active_days" | "xp";
+export type GoalMetric =
+  | "verses_read"
+  | "words_learned"
+  | "verses_learned"
+  | "reviews"
+  | "active_days"
+  | "xp";
 export type GoalPeriod = "week" | "month";
 export type GoalScope = "each" | "shared" | "assigned";
-export type GoalParticipantStatus = "pending" | "accepted" | "declined" | "left";
-export type EncouragementKind = "barakallah" | "almost" | "mashallah" | "count_on_you";
+export type GoalParticipantStatus =
+  "pending" | "accepted" | "declined" | "left";
+export type EncouragementKind =
+  "barakallah" | "almost" | "mashallah" | "count_on_you";
 
 export type FamilySummary = {
   id: string;
@@ -523,8 +781,19 @@ export type FamilyDetail = {
   unseenEncouragements: number;
 };
 
-export type FamilyInvitation = { id: string; email: string; createdAt: string; expiresAt: string };
-export type FamilyJoinPreview = { familyId: string; familyName: string; inviterName: string | null; membersCount: number; alreadyMember: boolean };
+export type FamilyInvitation = {
+  id: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+};
+export type FamilyJoinPreview = {
+  familyId: string;
+  familyName: string;
+  inviterName: string | null;
+  membersCount: number;
+  alreadyMember: boolean;
+};
 export type FamilyMemberStats = {
   userId: string;
   displayName: string;
@@ -537,4 +806,10 @@ export type FamilyMemberStats = {
   weeks: { weekStart: string; activeDays: number }[];
 };
 /** Invitation adressée à l'e-mail de mon compte, visible sans ouvrir l'e-mail. */
-export type FamilyReceivedInvitation = { id: string; familyId: string; familyName: string; inviterName: string | null; expiresAt: string };
+export type FamilyReceivedInvitation = {
+  id: string;
+  familyId: string;
+  familyName: string;
+  inviterName: string | null;
+  expiresAt: string;
+};
