@@ -23,7 +23,7 @@ export function chapterName(chapters: { id: number; nameSimple: string }[] | und
 const percent = (c: ChapterComprehension | undefined) => (c && c.totalWords > 0 ? Math.round((c.knownWords / c.totalWords) * 100) : 0);
 
 /** Écran de départ d'une séance sur une sourate : ce qu'on va apprendre, pour quels versets. */
-export function SessionStart({ session, onStart }: { session: LearningSession; onStart: () => void }) {
+export function SessionStart({ session, onStart, onClose }: { session: LearningSession; onStart: () => void; onClose: () => void }) {
   const colors = useColors();
   const chapters = useChapters();
   const count = session.words.length;
@@ -31,6 +31,9 @@ export function SessionStart({ session, onStart }: { session: LearningSession; o
   const verses = session.verses;
   return (
     <SafeArea style={[styles.flex, styles.start, { backgroundColor: colors.background }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Fermer" hitSlop={10} onPress={onClose} style={styles.close}>
+        <Ionicons name="close" size={28} color={colors.textMuted} />
+      </Pressable>
       <View style={[styles.badge, { backgroundColor: colors.accentSoft }]}>
         <Ionicons name="book-outline" size={14} color={colors.accent} />
         <AppText variant="label" color={colors.primaryStrong}>
@@ -197,7 +200,7 @@ function ReviewVerse({ verseKey, known, recited }: { verseKey: string; known: Se
           const isKnown = known?.has(`${verseNumber}:${w.position}`);
           const isRecited = recited === w.position;
           return (
-            <Text key={w.location} style={{ color: isRecited ? colors.accent : isKnown ? colors.primary : colors.arabic }}>
+            <Text key={w.location} style={{ color: isKnown ? colors.accent : colors.arabic, backgroundColor: isRecited ? colors.primarySoft : undefined }}>
               {w.textUthmani}
               {i < words.length - 1 ? " " : ""}
             </Text>
@@ -217,6 +220,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   stretch: { alignSelf: "stretch" },
   start: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
+  close: { position: "absolute", top: spacing.xxxl + spacing.md, left: spacing.lg, minWidth: 44, minHeight: 44, justifyContent: "center" },
   badge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
   coverageRow: { flexDirection: "row", alignItems: "center", gap: spacing.lg, alignSelf: "stretch" },
   context: { gap: spacing.sm },

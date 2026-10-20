@@ -28,11 +28,11 @@ import { closeScreen } from "@/lib/navigation";
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; review?: string }>();
+  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; size?: string; review?: string }>();
   const source = params.lessonId
     ? { lessonId: params.lessonId }
     : params.chapterId
-      ? { chapterId: Number(params.chapterId) }
+      ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined }
       : ({ review: true } as const);
   const session = useLearningSession(source);
 
@@ -91,7 +91,7 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
   }
 
   if (result) return session.chapterId ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : <ResultScreen result={result} />;
-  if (!started) return <SessionStart session={session} onStart={() => setStarted(true)} />;
+  if (!started) return <SessionStart session={session} onStart={() => setStarted(true)} onClose={() => closeScreen("/learn")} />;
 
   const progress = step / Math.max(queue.length, 1);
 

@@ -34,7 +34,7 @@ export function nextStep(
         eyebrow: "Prochain verset à comprendre",
         title: `${name}${chapter.nextVerse ? ` · verset ${chapter.nextVerse}` : ""}`,
         detail: `${chapter.missingWords} mot${chapter.missingWords > 1 ? "s" : ""} manquant${chapter.missingWords > 1 ? "s" : ""} · apprendre ${words} mot${words > 1 ? "s" : ""}`,
-        href: { pathname: "/learn/session", params: { chapterId: String(chapter.chapterId) } },
+        href: { pathname: "/learn/session", params: { chapterId: String(chapter.chapterId), size: String(words) } },
       };
     }
     const lesson = data.lessons?.find((l) => l.unlocked && !l.completed);
