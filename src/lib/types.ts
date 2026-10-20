@@ -435,3 +435,106 @@ export type Profile = {
   progress: ProfileProgress | null;
 };
 export type Profiles = { isOwner: boolean; pinSet: boolean; maxProfiles: number; profiles: Profile[] };
+
+// ---------------------------------------------------------------------------
+// Familles (backend : docs/familles-v1.md)
+// ---------------------------------------------------------------------------
+
+export type FamilySharing = "none" | "goals" | "all";
+export type FamilyRole = "admin" | "member";
+export type GoalMetric = "verses_read" | "words_learned" | "verses_learned" | "reviews" | "active_days" | "xp";
+export type GoalPeriod = "week" | "month";
+export type GoalScope = "each" | "shared" | "assigned";
+export type GoalParticipantStatus = "pending" | "accepted" | "declined" | "left";
+export type EncouragementKind = "barakallah" | "almost" | "mashallah" | "count_on_you";
+
+export type FamilySummary = {
+  id: string;
+  name: string;
+  role: FamilyRole;
+  sharing: FamilySharing;
+  membersCount: number;
+  activeGoals: number;
+  /** Objectifs qui attendent ma réponse (ou celle d'un profil de mon compte). */
+  pendingGoals: number;
+  unseenEncouragements: number;
+};
+
+export type FamilyMember = {
+  userId: string;
+  displayName: string;
+  avatar: string | null;
+  isChild: boolean;
+  role: FamilyRole;
+  sharing: FamilySharing;
+  joinedAt: string;
+  isMe: boolean;
+  /** Moi ou un profil de mon compte : je règle son partage et réponds pour lui. */
+  isMine: boolean;
+  statsVisible: boolean;
+};
+
+export type FamilyGoalParticipant = {
+  userId: string;
+  status: GoalParticipantStatus;
+  /** null : en attente, refusé, ou progression non partagée. */
+  value: number | null;
+  done: boolean | null;
+  canRespond: boolean;
+};
+
+export type FamilyGoal = {
+  id: string;
+  title: string | null;
+  metric: GoalMetric;
+  target: number;
+  period: GoalPeriod;
+  scope: GoalScope;
+  createdBy: string | null;
+  startsOn: string;
+  range: { start: string; end: string };
+  canEdit: boolean;
+  participants: FamilyGoalParticipant[];
+  /** Objectif commun seulement. */
+  total: number | null;
+  done: boolean | null;
+};
+
+export type FamilyEncouragement = {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  kind: EncouragementKind;
+  goalId: string | null;
+  createdAt: string;
+  seen: boolean;
+};
+
+export type FamilyDetail = {
+  id: string;
+  name: string;
+  myRole: FamilyRole;
+  mySharing: FamilySharing;
+  isChild: boolean;
+  inviteCode: { code: string; expiresAt: string } | null;
+  members: FamilyMember[];
+  goals: FamilyGoal[];
+  encouragements: FamilyEncouragement[];
+  unseenEncouragements: number;
+};
+
+export type FamilyInvitation = { id: string; email: string; createdAt: string; expiresAt: string };
+export type FamilyJoinPreview = { familyId: string; familyName: string; inviterName: string | null; membersCount: number; alreadyMember: boolean };
+export type FamilyMemberStats = {
+  userId: string;
+  displayName: string;
+  xp: number;
+  currentStreak: number;
+  longestStreak: number;
+  wordsLearned: number;
+  versesMemorized: number;
+  versesSolid: number;
+  weeks: { weekStart: string; activeDays: number }[];
+};
+/** Invitation adressée à l'e-mail de mon compte, visible sans ouvrir l'e-mail. */
+export type FamilyReceivedInvitation = { id: string; familyId: string; familyName: string; inviterName: string | null; expiresAt: string };

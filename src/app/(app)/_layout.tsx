@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useOffline } from "@/lib/offline";
+import { takePendingInvite } from "@/lib/pending-invite";
 import { loadRememberedProfile } from "@/lib/profile-memory";
 import { refreshDailyReserve } from "@/lib/queries";
 import { useReminderSync, useReminderTaps } from "@/lib/reminders";
@@ -56,6 +57,11 @@ export default function AppLayout() {
   useDailyReserve();
   useReminderTaps();
   useProfilePickerOnLaunch();
+  // Invitation ouverte avant la connexion : on reprend là où la personne voulait aller.
+  useEffect(() => {
+    const invite = takePendingInvite();
+    if (invite) router.push({ pathname: "/famille/rejoindre", params: invite });
+  }, []);
   useEffect(() => useOffline.getState().load(), []);
   return (
     <Stack
@@ -140,6 +146,14 @@ export default function AppLayout() {
       />
       <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
       <Stack.Screen name="search" options={{ title: "Rechercher" }} />
+      <Stack.Screen name="famille/index" options={{ title: "Mes familles" }} />
+      <Stack.Screen name="famille/nouvelle" options={{ presentation: "modal", title: "Nouvelle famille" }} />
+      <Stack.Screen name="famille/rejoindre" options={{ title: "Rejoindre une famille" }} />
+      <Stack.Screen name="famille/[id]/index" options={{ title: "" }} />
+      <Stack.Screen name="famille/[id]/objectif" options={{ presentation: "modal", title: "Nouvel objectif" }} />
+      <Stack.Screen name="famille/[id]/inviter" options={{ title: "Inviter" }} />
+      <Stack.Screen name="famille/[id]/partage" options={{ title: "Ma participation" }} />
+      <Stack.Screen name="famille/[id]/membre/[userId]" options={{ title: "" }} />
       <Stack.Screen name="prayer" options={{ title: "" }} />
       <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
       <Stack.Screen

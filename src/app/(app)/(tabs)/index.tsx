@@ -11,6 +11,8 @@ import { SearchBar } from "@/components/SearchBar";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/lib/auth-store";
+import { useFamilies, useReceivedInvitations } from "@/lib/families";
+import { familiesSummary } from "@/lib/families-format";
 import { nextStep } from "@/lib/next-step";
 import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats, useCourse } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
@@ -39,6 +41,11 @@ export default function Home() {
   const programs = usePrograms();
   const activeProgram = programs.data?.find((p) => p.progress && !p.progress.finished);
   const lessons = useLessons();
+  const families = useFamilies();
+  const invitations = useReceivedInvitations(!me.data?.isChild);
+  const invitationCount = invitations.data?.length ?? 0;
+  const familyLine = families.data ? familiesSummary(families.data, invitationCount) : null;
+  const familyAlert = invitationCount > 0 || (families.data ?? []).some((f) => f.pendingGoals > 0 || f.unseenEncouragements > 0);
   const course = useCourse(me.data?.goal === "understand");
   const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data, course: course.data, chapters: chapters.data });
   const s = stats.data;
@@ -136,6 +143,22 @@ export default function Home() {
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <StatTile value={s?.memorization.verses ?? 0} label="versets suivis" />
       </View>
+
+      {familyLine && families.data ? (
+        <Card
+          tone={familyAlert ? "accent" : "default"}
+          onPress={() => (families.data.length === 1 && invitationCount === 0 ? router.push({ pathname: "/famille/[id]", params: { id: families.data[0]!.id } }) : router.push("/famille"))}
+          style={styles.resume}>
+          <Ionicons name="heart-circle-outline" size={26} color={colors.accent} />
+          <View style={styles.flex}>
+            <AppText variant="label" muted>
+              {families.data.length === 1 && invitationCount === 0 ? families.data[0]!.name : "Mes familles"}
+            </AppText>
+            <AppText variant="bodyStrong">{familyLine}</AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+        </Card>
+      ) : null}
 
       <SectionHeader title="Reprendre la lecture" />
       <Card

@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth-store";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
 import { publishWidgetSnapshot } from "@/lib/widget";
+import { watchInvites } from "@/lib/pending-invite";
 import "@/lib/appearance-store";
 import { darkColors, lightColors } from "@/lib/theme";
 
@@ -72,6 +73,9 @@ export default function RootLayout() {
     clearOutbox();
     void publishWidgetSnapshot(null);
   }, [status, queryClient]);
+
+  // Hors connexion, un lien d'invitation à une famille est gardé pour l'ouvrir après la connexion.
+  useEffect(() => (status === "signedOut" ? watchInvites() : undefined), [status]);
 
   // Connecté, au démarrage et à chaque retour au premier plan : envoi des évaluations faites hors ligne.
   useEffect(() => {

@@ -9,6 +9,8 @@ import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { useFamilies, useReceivedInvitations } from "@/lib/families";
+import { familiesSummary } from "@/lib/families-format";
 import { offlineSupported } from "@/lib/offline";
 import { useMe, useStats } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -18,6 +20,9 @@ const WEEKDAYS = ["D", "L", "M", "M", "J", "V", "S"];
 export default function Profile() {
   const colors = useColors();
   const me = useMe();
+  const families = useFamilies();
+  const invitations = useReceivedInvitations(!me.data?.isChild);
+  const familyBadge = families.data ? familiesSummary(families.data, invitations.data?.length ?? 0) : null;
   const stats = useStats();
   const signOut = useAuth((s) => s.signOut);
   const refreshToken = useAuth((s) => s.tokens?.refreshToken);
@@ -146,8 +151,14 @@ export default function Profile() {
         <ListRow
           icon="people-outline"
           title="Changer de profil"
-          subtitle="Un profil par membre de la famille"
+          subtitle="Un profil par personne sur ce compte"
           onPress={() => router.push("/profiles")}
+        />
+        <ListRow
+          icon="heart-circle-outline"
+          title={me.data?.isChild ? "Ma famille" : "Mes familles"}
+          subtitle={familyBadge ?? "Objectifs et encouragements entre proches"}
+          onPress={() => router.push("/famille")}
         />
         {me.data?.isChild ? null : (
           <ListRow
