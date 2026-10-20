@@ -58,6 +58,14 @@ export type Word = {
 /** Le mot du lexique tel qu'il apparaît dans le Coran (occurrence trouvée via le Corpus). */
 export type QuranExample = { verseKey: string; word: Word };
 
+/** Tout ce qui aide à retenir un mot du lexique : occurrence, mini-phrase de repli, famille connue. */
+export type WordContext = {
+  example: QuranExample | null;
+  /** Fenêtre de mots autour du mot dans le premier verset qui le contient (si pas d'occurrence sûre). */
+  phrase: { verseKey: string; position: number; words: Word[] } | null;
+  family: { root: string | null; known: { wordId: string; headword: string; fr: string }[] };
+};
+
 /** Part des mots d'une sourate reconnue grâce aux mots appris dans les leçons. */
 export type ChapterComprehension = { chapterId: number; totalWords: number; knownWords: number; coveredByBook: number };
 

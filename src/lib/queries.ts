@@ -12,6 +12,7 @@ import type {
   ChapterComprehensionDetail,
   ChapterInfo,
   CourseChapter,
+  WordContext,
   DueVerse,
   LearningSession,
   LessonDetail,
@@ -59,6 +60,7 @@ export const keys = {
   lessons: ["lessons"] as const,
   lesson: (id: string) => ["lesson", id] as const,
   example: (wordId: string) => ["vocab-example", wordId] as const,
+  wordContext: (wordId: string) => ["vocab-context", wordId] as const,
   comprehension: ["comprehension"] as const,
   course: ["course"] as const,
   programs: ["programs"] as const,
@@ -332,6 +334,15 @@ export function useWordExample(wordId: string) {
     queryKey: keys.example(wordId),
     queryFn: async () => (await api<{ example: QuranExample | null }>(`/vocabulary/words/${wordId}/example`)).example,
     staleTime: DAY,
+  });
+}
+
+export function useWordContext(wordId: string, enabled = true) {
+  return useQuery({
+    queryKey: keys.wordContext(wordId),
+    queryFn: () => api<WordContext>(`/vocabulary/words/${wordId}/context`),
+    staleTime: DAY,
+    enabled,
   });
 }
 
