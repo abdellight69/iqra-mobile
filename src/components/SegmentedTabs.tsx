@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { useReducedMotion } from "@/lib/a11y";
-import { darkColors, radius, spacing, useColors } from "@/lib/theme";
+import { isDarkPalette, radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
 
 /**
@@ -21,7 +21,7 @@ export function SegmentedTabs<T extends string>({
 }) {
   const colors = useColors();
   // En sombre, une pastille claire sur fond sombre ne se distinguerait pas : elle passe au vert.
-  const dark = colors === darkColors;
+  const dark = isDarkPalette(colors);
   const pillColor = dark ? colors.primary : colors.surface;
   const selectedText = dark ? colors.onPrimary : colors.text;
   const reduced = useReducedMotion();

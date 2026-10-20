@@ -17,7 +17,7 @@ import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/que
 import { publishWidgetSnapshot } from "@/lib/widget";
 import { watchInvites } from "@/lib/pending-invite";
 import "@/lib/appearance-store";
-import { darkColors, lightColors } from "@/lib/theme";
+import { useColors } from "@/lib/theme";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -42,7 +42,7 @@ function createQueryClient() {
 
 export default function RootLayout() {
   const scheme = useColorScheme();
-  const colors = scheme === "dark" ? darkColors : lightColors;
+  const colors = useColors();
   const [queryClient] = useState(createQueryClient);
   const status = useAuth((s) => s.status);
   const bootstrap = useAuth((s) => s.bootstrap);

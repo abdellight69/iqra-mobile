@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Switch,
+  useColorScheme,
   View,
 } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -18,10 +19,11 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
-import { type AppearanceMode, useAppearance } from "@/lib/appearance-store";
+import { type AppearanceMode, useActiveTheme, useAppearance } from "@/lib/appearance-store";
 import { useAuth } from "@/lib/auth-store";
 import { router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
+import { palette, THEMES, type ThemeDefinition } from "@/lib/palettes";
 import { useProfiles } from "@/lib/profiles";
 import {
   formatTime,
@@ -51,6 +53,9 @@ export default function Settings() {
   const colors = useColors();
   const appearance = useAppearance((s) => s.mode);
   const setAppearance = useAppearance((s) => s.setMode);
+  const activeTheme = useActiveTheme();
+  const setTheme = useAppearance((s) => s.setTheme);
+  const supporter = useAppearance((s) => s.supporter);
   const me = useMe();
   const update = useUpdateMe();
   const translations = useTranslations();
@@ -214,6 +219,26 @@ export default function Settings() {
             label={a.label}
             selected={appearance === a.mode}
             onPress={() => setAppearance(a.mode)}
+          />
+        ))}
+      </View>
+
+      <SectionHeader title="Couleurs" />
+      <View style={styles.themes}>
+        {THEMES.map((theme) => (
+          <ThemeChoice
+            key={theme.id}
+            theme={theme}
+            selected={activeTheme === theme.id}
+            locked={theme.supporter && !supporter}
+            onPress={() =>
+              theme.supporter && !supporter
+                ? Alert.alert(
+                    "Thème Soutien",
+                    `« ${theme.label} » fait partie des remerciements de l'abonnement Soutien. Eqra reste entièrement gratuite : l'abonnement sert seulement à soutenir son développement.`,
+                  )
+                : setTheme(theme.id)
+            }
           />
         ))}
       </View>
@@ -598,6 +623,55 @@ function Choice({
   );
 }
 
+/** Aperçu d'un thème : sa couleur principale et son or, dans le mode (clair ou sombre) en cours. */
+function ThemeChoice({
+  theme,
+  selected,
+  locked,
+  onPress,
+}: {
+  theme: ThemeDefinition;
+  selected: boolean;
+  locked: boolean;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  const preview = palette(theme.id, useColorScheme() === "dark");
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={locked ? `${theme.label}, réservé au Soutien` : theme.label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.themeChoice,
+        {
+          borderColor: selected ? colors.primary : colors.border,
+          backgroundColor: preview.surface,
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <View style={[styles.swatch, { backgroundColor: preview.hero }]}>
+        <View style={[styles.swatchDot, { backgroundColor: preview.accent }]} />
+      </View>
+      <AppText variant="bodyStrong" color={preview.text}>
+        {theme.label}
+      </AppText>
+      {locked ? (
+        <View style={styles.themeLabel}>
+          <Ionicons name="lock-closed" size={12} color={preview.textMuted} />
+          <AppText variant="caption" color={preview.textMuted}>
+            Soutien
+          </AppText>
+        </View>
+      ) : selected ? (
+        <Ionicons name="checkmark-circle" size={18} color={preview.primary} />
+      ) : null}
+    </Pressable>
+  );
+}
+
 function Option({
   label,
   detail,
@@ -641,6 +715,20 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   group: { gap: spacing.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  themes: { flexDirection: "row", gap: spacing.sm },
+  themeChoice: {
+    flex: 1,
+    alignItems: "center",
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    minHeight: 124,
+  },
+  swatch: { width: 44, height: 44, borderRadius: 22, alignItems: "flex-end", justifyContent: "flex-end" },
+  swatchDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: "#FFFFFF" },
+  themeLabel: { flexDirection: "row", alignItems: "center", gap: 4 },
   reminder: { gap: spacing.md },
   reminderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   chip: {

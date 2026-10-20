@@ -11,6 +11,8 @@ export type User = {
   isOwner?: boolean;
   /** Profil enfant : interface simplifiée, séances plus courtes (absent sur un serveur plus ancien). */
   isChild?: boolean;
+  /** Abonnement « Soutien » en cours sur le compte, hérité par les profils (absent sur un serveur plus ancien). */
+  supporter?: boolean;
   translationId: number | null;
   recitationId: number | null;
   /** Tafsir choisi (absent sur un serveur plus ancien ; null : français par défaut s'il existe). */

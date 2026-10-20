@@ -1,5 +1,5 @@
 import { TAJWEED_RULES } from "../tajweed";
-import { darkColors, lightColors, type Colors } from "../theme";
+import { THEMES, type Colors } from "../palettes";
 
 /** Luminance relative (WCAG 2.x) d'une couleur #RRGGBB. */
 function luminance(hex: string): number {
@@ -18,10 +18,11 @@ export function contrastRatio(a: string, b: string): number {
 const AA_TEXT = 4.5;
 
 describe("contraste des couleurs du thème (WCAG AA, texte courant ≥ 4.5:1)", () => {
-  const themes: [string, Colors][] = [
-    ["clair", lightColors],
-    ["sombre", darkColors],
-  ];
+  // Tous les thèmes (Soutien compris), en clair et en sombre.
+  const themes: [string, Colors][] = THEMES.flatMap((t): [string, Colors][] => [
+    [`${t.label} clair`, t.light],
+    [`${t.label} sombre`, t.dark],
+  ]);
 
   describe.each(themes)("thème %s", (_name, colors) => {
     const surfaces = ["background", "surface", "surfaceMuted"] as const;
@@ -63,12 +64,14 @@ describe("contraste des couleurs de tajwid", () => {
   const rules = Object.entries(TAJWEED_RULES);
 
   it.each(rules)("%s est lisible sur le papier, les cartes et le verset actif", (_key, rule) => {
-    for (const surface of ["background", "surface"] as const) {
-      expect(contrastRatio(rule.light, lightColors[surface])).toBeGreaterThanOrEqual(AA_TEXT);
-      expect(contrastRatio(rule.dark, darkColors[surface])).toBeGreaterThanOrEqual(AA_TEXT);
+    for (const { light, dark } of THEMES) {
+      for (const surface of ["background", "surface"] as const) {
+        expect(contrastRatio(rule.light, light[surface])).toBeGreaterThanOrEqual(AA_TEXT);
+        expect(contrastRatio(rule.dark, dark[surface])).toBeGreaterThanOrEqual(AA_TEXT);
+      }
+      // Verset en cours de lecture (fond primarySoft) : texte arabe grand (≥ 24 pt), seuil « grand texte » 3:1 largement dépassé.
+      expect(contrastRatio(rule.light, light.primarySoft)).toBeGreaterThanOrEqual(4.2);
+      expect(contrastRatio(rule.dark, dark.primarySoft)).toBeGreaterThanOrEqual(4.2);
     }
-    // Verset en cours de lecture (fond primarySoft) : texte arabe grand (≥ 24 pt), seuil « grand texte » 3:1 largement dépassé.
-    expect(contrastRatio(rule.light, lightColors.primarySoft)).toBeGreaterThanOrEqual(4.2);
-    expect(contrastRatio(rule.dark, darkColors.primarySoft)).toBeGreaterThanOrEqual(4.2);
   });
 });

@@ -1,60 +1,8 @@
 import { Platform, useColorScheme, type ViewStyle } from "react-native";
+import { useActiveTheme } from "./appearance-store";
+import { type Colors, isDarkPalette, palette } from "./palettes";
 
-/**
- * Système de design « éditorial » : papier chaud, encre profonde, vert d'eau sombre
- * et une touche d'or discrète. Peu de bordures, beaucoup d'espace, ombres très douces.
- */
-export const lightColors = {
-  background: "#F7F5F0",
-  surface: "#FFFFFF",
-  surfaceMuted: "#EFECE5",
-  border: "#E6E1D8",
-  text: "#15171A",
-  /** Texte secondaire : ≥ 4.5:1 sur toutes les surfaces (WCAG AA). */
-  textMuted: "#5F5C55",
-  /** Texte tertiaire (sources, indices) : ≥ 4.5:1 sur le fond et les surfaces. */
-  textFaint: "#6D6A63",
-  primary: "#0F4F44",
-  primaryStrong: "#0A3A32",
-  primarySoft: "#E2EDE9",
-  onPrimary: "#FFFFFF",
-  /** Surface de mise en avant (texte blanc dessus), dans les deux thèmes. */
-  hero: "#0F4F44",
-  /** Or bronze : sert aussi de couleur de texte (phonétique), donc ≥ 4.5:1 sur le papier. */
-  accent: "#85661F",
-  accentSoft: "#F3ECDC",
-  danger: "#B23D33",
-  dangerSoft: "#F8E5E2",
-  success: "#23715A",
-  successSoft: "#E1F1EA",
-  arabic: "#14201C",
-  shadow: "#1B1A17",
-};
-
-export type Colors = typeof lightColors;
-
-export const darkColors: Colors = {
-  background: "#0C0F0E",
-  surface: "#151A18",
-  surfaceMuted: "#1D2422",
-  border: "#27302D",
-  text: "#EDE9E2",
-  textMuted: "#9B9F9B",
-  textFaint: "#8F948F",
-  primary: "#7CC4AE",
-  primaryStrong: "#A8DCCB",
-  primarySoft: "#16302A",
-  onPrimary: "#08201A",
-  hero: "#143F36",
-  accent: "#D4B36E",
-  accentSoft: "#2B251A",
-  danger: "#E4796D",
-  dangerSoft: "#3A1F1C",
-  success: "#6FC6A3",
-  successSoft: "#15302A",
-  arabic: "#F3EEE3",
-  shadow: "#000000",
-};
+export { darkColors, isDarkPalette, lightColors, type Colors } from "./palettes";
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;
 export const radius = { sm: 10, md: 14, lg: 20, xl: 28, pill: 999 } as const;
@@ -70,13 +18,15 @@ export const fonts = {
   arabic: "AmiriQuran_400Regular",
 } as const;
 
+/** Palette du thème choisi (Réglages > Apparence), en clair ou en sombre selon le téléphone ou le choix. */
 export function useColors(): Colors {
-  return useColorScheme() === "dark" ? darkColors : lightColors;
+  const theme = useActiveTheme();
+  return palette(theme, useColorScheme() === "dark");
 }
 
 /** Ombre très douce en mode clair ; en mode sombre, une bordure fine remplace l'ombre. */
 export function elevation(colors: Colors, level: 1 | 2 = 1): ViewStyle {
-  if (colors === darkColors) return { borderWidth: 1, borderColor: colors.border };
+  if (isDarkPalette(colors)) return { borderWidth: 1, borderColor: colors.border };
   return Platform.select<ViewStyle>({
     web: { boxShadow: level === 1 ? "0 6px 24px rgba(27,26,23,0.06)" : "0 12px 36px rgba(27,26,23,0.10)" },
     default: {
