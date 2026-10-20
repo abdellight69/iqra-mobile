@@ -725,6 +725,8 @@ export type FamilyMember = {
   displayName: string;
   avatar: string | null;
   isChild: boolean;
+  /** Abonnement « Soutien » sur son compte : badge à côté du nom (absent sur un serveur plus ancien). */
+  supporter?: boolean;
   role: FamilyRole;
   sharing: FamilySharing;
   joinedAt: string;

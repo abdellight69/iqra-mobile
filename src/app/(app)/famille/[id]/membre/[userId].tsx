@@ -7,6 +7,7 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
+import { SupporterBadge } from "@/components/SupporterBadge";
 import { ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useFamily, useFamilyMemberStats, useRemoveMember, useUpdateMember } from "@/lib/families";
@@ -35,6 +36,7 @@ export default function MemberScreen() {
         <View style={styles.header}>
           <ProfileAvatar name={member.displayName} avatar={member.avatar} size={64} />
           <AppText variant="title">{member.displayName}</AppText>
+          {member.supporter ? <SupporterBadge /> : null}
           <AppText muted>
             {[member.role === "admin" ? "Administrateur" : "Membre", member.isChild ? "profil enfant" : null, `partage : ${SHARING[member.sharing].label.toLowerCase()}`]
               .filter(Boolean)

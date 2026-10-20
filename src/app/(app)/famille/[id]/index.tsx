@@ -8,6 +8,7 @@ import { Card } from "@/components/Card";
 import { EncourageSheet, FamilyGoalCard } from "@/components/FamilyGoalCard";
 import { IconButton } from "@/components/IconButton";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { SupporterBadge } from "@/components/SupporterBadge";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ErrorState, LoadingState } from "@/components/States";
@@ -116,10 +117,13 @@ export default function FamilyScreen() {
               ]}>
               <ProfileAvatar name={m.displayName} avatar={m.avatar} size={36} />
               <View style={styles.flex}>
-                <AppText variant="bodyStrong">
-                  {m.displayName}
-                  {m.isMe ? " (moi)" : ""}
-                </AppText>
+                <View style={styles.name}>
+                  <AppText variant="bodyStrong" style={styles.flexShrink}>
+                    {m.displayName}
+                    {m.isMe ? " (moi)" : ""}
+                  </AppText>
+                  {m.supporter ? <SupporterBadge /> : null}
+                </View>
                 <AppText variant="caption" muted>
                   {[m.role === "admin" ? "Administrateur" : null, m.isChild ? "Profil enfant" : null, `Partage : ${SHARING[m.sharing].label.toLowerCase()}`]
                     .filter(Boolean)
@@ -172,6 +176,8 @@ export default function FamilyScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  flexShrink: { flexShrink: 1 },
+  name: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   encouragements: { gap: spacing.sm },
   encouragement: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   member: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
