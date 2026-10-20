@@ -13,6 +13,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
 import { SessionStart, VerseContext, VerseReview } from "@/components/exercises/ChapterSession";
 import { InVerseExercise } from "@/components/exercises/InVerseExercise";
+import { ContrastExercise } from "@/components/exercises/ContrastExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchPairs } from "@/components/exercises/MatchPairs";
 import { MissingLetterExercise } from "@/components/exercises/MissingLetterExercise";
@@ -30,7 +31,7 @@ type Answer = { wordId: string; correct: boolean };
 export default function LearningSessionScreen() {
   const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; size?: string; review?: string }>();
   const source = params.lessonId
-    ? { lessonId: params.lessonId }
+    ? { lessonId: params.lessonId, size: params.size === "all" ? ("all" as const) : params.size ? Number(params.size) : undefined }
     : params.chapterId
       ? { chapterId: Number(params.chapterId), size: params.size ? Number(params.size) : undefined }
       : ({ review: true } as const);
@@ -129,6 +130,8 @@ function ExerciseView(props: ExerciseProps) {
       return <IntroCard {...props} word={props.byId.get(exercise.wordId)} />;
     case "match":
       return <MatchPairs {...props} exercise={exercise} />;
+    case "contrast":
+      return <ContrastExercise {...props} exercise={exercise} />;
     case "listen":
     case "listen_ar":
       return <ListenExercise {...props} exercise={exercise} />;

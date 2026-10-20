@@ -211,7 +211,9 @@ export type Choice = { id: string; text: string };
 export type Exercise =
   | { type: "intro"; wordId: string }
   | { type: "ar_to_fr" | "fr_to_ar"; wordId: string; choices: Choice[]; answerId: string }
-  | { type: "match"; wordIds: string[] };
+  | { type: "match"; wordIds: string[] }
+  /** Deux mots qui se ressemblent, tous deux connus : lequel a ce sens ? (noté sur `wordId`). */
+  | { type: "contrast"; wordId: string; otherId: string };
 export type LearningSession = {
   kind: "lesson" | "review" | "words";
   lessonId: string | null;

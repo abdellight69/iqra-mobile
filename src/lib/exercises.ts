@@ -122,7 +122,7 @@ export function planSession(session: Pick<LearningSession, "kind" | "words" | "e
 
   if (session.kind === "review") {
     return session.exercises.map((exercise, i) => {
-      if (i % 3 !== 2 || exercise.type === "intro" || exercise.type === "match") return exercise;
+      if (i % 3 !== 2 || exercise.type === "intro" || exercise.type === "match" || exercise.type === "contrast") return exercise;
       return pickGame(exercise.wordId, plan, counter) ?? exercise;
     });
   }

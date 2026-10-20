@@ -374,10 +374,10 @@ export function useKnownWords(chapterId: number, enabled: boolean) {
   });
 }
 
-export function useLearningSession(source: { lessonId: string } | { chapterId: number; size?: number } | { review: true }) {
+export function useLearningSession(source: { lessonId: string; size?: number | "all" } | { chapterId: number; size?: number } | { review: true }) {
   const path =
     "lessonId" in source
-      ? `/vocabulary/lessons/${source.lessonId}/session`
+      ? `/vocabulary/lessons/${source.lessonId}/session${source.size ? `?size=${source.size}` : ""}`
       : "chapterId" in source
         ? `/vocabulary/comprehension/${source.chapterId}/session?size=${source.size ?? 6}`
         : "/vocabulary/review/session";

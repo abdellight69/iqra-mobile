@@ -114,9 +114,8 @@ export default function LessonDetail() {
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + spacing.md, backgroundColor: colors.background }]}>
         <Button
-          title={summary?.completed ? "Refaire la leçon" : "Commencer la leçon"}
-          disabled={summary ? !summary.unlocked : false}
-          onPress={() => router.push({ pathname: "/learn/session", params: { lessonId } })}
+          title={summary?.completed ? "Revoir toute la fiche" : `Apprendre ${Math.min(6, Math.max(1, (summary?.wordCount ?? 6) - (summary?.learnedCount ?? 0)))} mots`}
+          onPress={() => router.push({ pathname: "/learn/session", params: summary?.completed ? { lessonId, size: "all" } : { lessonId } })}
         />
       </View>
     </View>
