@@ -33,6 +33,7 @@ import {
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
+import { useCompleteMissionStep } from "@/lib/missions";
 
 const MAX_NEW_VERSES = 5;
 type HideLevel = 0 | 1 | 2;
@@ -56,8 +57,18 @@ function firstLetter(text: string): string {
 }
 
 export default function MemorizationSession() {
-  const params = useLocalSearchParams<{ planId?: string; verse?: string; due?: string; keys?: string; programId?: string; day?: string }>();
+  const params = useLocalSearchParams<{
+    planId?: string;
+    verse?: string;
+    due?: string;
+    keys?: string;
+    programId?: string;
+    day?: string;
+    missionPlanId?: string;
+    missionDay?: string;
+  }>();
   const programAction = useProgramAction(params.programId ?? "");
+  const missionStep = useCompleteMissionStep();
   const plan = usePlan(params.planId ?? "");
   const due = useDueVerses();
   const kids = useKidsMode();
@@ -105,6 +116,13 @@ export default function MemorizationSession() {
       keys={keys}
       onFinished={() => {
         if (params.programId && params.day) completeDay(Number(params.day));
+        // Étape « Retenir » de la mission du jour d'un enfant.
+        if (params.missionPlanId && params.missionDay) {
+          missionStep.mutate(
+            { planId: params.missionPlanId, dayIndex: Number(params.missionDay), step: "memorize" },
+            { onError: (error) => Alert.alert("Étape non enregistrée", errorMessage(error)) },
+          );
+        }
       }}
     />
   );

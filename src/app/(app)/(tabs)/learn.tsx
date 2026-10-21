@@ -157,6 +157,18 @@ export default function LearnScreen() {
             80 % des mots du Qour’ân
           </AppText>
           <AppText variant="display">Vocabulaire</AppText>
+          {kids ? (
+            <Card onPress={() => router.push("/mes-mots")} style={styles.myWords}>
+              <Ionicons name="albums" size={28} color={colors.accent} />
+              <View style={styles.flex}>
+                <AppText variant="headline">Mes mots</AppText>
+                <AppText variant="caption" muted>
+                  Tous les mots que tu as déjà trouvés
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </Card>
+          ) : null}
           <TodayCard
             learned={learned}
             total={total}
@@ -884,6 +896,7 @@ function LessonNode({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  myWords: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.lg },
   header: { gap: spacing.lg, marginBottom: spacing.md },
   today: { gap: spacing.md },

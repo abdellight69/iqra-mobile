@@ -1,4 +1,4 @@
-import { countVerses, dayLabel, duration, missionSummary, planTitle, todayLine } from "../missions-format";
+import { countVerses, dayLabel, duration, kidMissionTitle, missionSummary, planTitle, STICKERS, stickersUnlocked, todayLine, versesLabel } from "../missions-format";
 import type { Chapter } from "../types";
 
 const chapter = (id: number, nameSimple: string, versesCount: number) => ({ id, nameSimple, versesCount }) as Chapter;
@@ -54,5 +54,27 @@ describe("missions : la journée de l'enfant, vue du parent", () => {
     expect(todayLine({ kind: "none", reason: "rest_day", nextMissionOn: "2026-10-22" }, 4, today)).toBe("Jour de repos, prochaine mission demain");
     expect(todayLine({ kind: "none", reason: "paused", nextMissionOn: null }, 4, today)).toBe("En pause");
     expect(todayLine({ kind: "none", reason: "finished", nextMissionOn: null }, 4, today)).toBe("Mission terminée");
+  });
+});
+
+describe("missions : côté enfant", () => {
+  it("nomme les versets du jour", () => {
+    expect(versesLabel(["112:1"])).toBe("Verset 1");
+    expect(versesLabel(["112:1", "112:2"])).toBe("Versets 1 et 2");
+    expect(versesLabel(["2:1", "2:2", "2:3"])).toBe("Versets 1 à 3");
+  });
+
+  it("donne un titre à la mission, celui du parent d'abord", () => {
+    expect(kidMissionTitle(null, ["112:1"], chapters)).toBe("Sourate Al-Ikhlas");
+    expect(kidMissionTitle("Ma première sourate", ["112:1"], chapters)).toBe("Ma première sourate");
+    expect(kidMissionTitle(null, ["112:1"], undefined)).toBe("Ta mission");
+  });
+
+  it("débloque un autocollant toutes les 5 étoiles, jusqu'à la collection complète", () => {
+    expect(stickersUnlocked(0)).toBe(0);
+    expect(stickersUnlocked(4)).toBe(0);
+    expect(stickersUnlocked(5)).toBe(1);
+    expect(stickersUnlocked(23)).toBe(4);
+    expect(stickersUnlocked(1000)).toBe(STICKERS.length);
   });
 });

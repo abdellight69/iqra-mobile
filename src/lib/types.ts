@@ -862,3 +862,27 @@ export type MissionChild = {
 };
 
 export type VerseNote = { authorName: string | null; text: string | null; audioId: string | null };
+
+/** Mission du jour vue par l'enfant (GET /me/missions/today). */
+export type KidMission = {
+  planId: string;
+  dayIndex: number;
+  totalDays: number;
+  title: string | null;
+  verses: string[];
+  steps: { kind: MissionStep; done: boolean }[];
+  stars: number;
+  completed: boolean;
+  message: { authorName: string | null; text: string | null; audioId: string | null; updatedAt: string } | null;
+  notes: Record<string, VerseNote>;
+};
+
+export type KidToday = {
+  mission: KidMission | null;
+  reason: null | "no_plan" | "paused" | "not_started" | "rest_day" | "finished";
+  nextMissionOn: string | null;
+  totalStars: number;
+};
+
+/** « Mes mots » : mots réussis au moins une fois ; `known` dit s'ils sont sus en ce moment. */
+export type LearnedWord = VocabWord & { learnedAt: string; known: boolean };

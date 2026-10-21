@@ -87,3 +87,51 @@ export function duration(ms: number): string {
   const seconds = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
+
+// --- Côté enfant ---------------------------------------------------------------
+
+/** Étapes telles que l'enfant les lit : un mot chacune. */
+export const KID_STEPS: Record<MissionStep, { label: string; icon: Icon }> = {
+  listen: { label: "Écouter", icon: "headset" },
+  repeat: { label: "Répéter", icon: "mic" },
+  memorize: { label: "Retenir", icon: "repeat" },
+  play: { label: "Jouer", icon: "shapes" },
+};
+
+/** « Verset 1 », « Versets 1 et 2 », « Versets 1 à 3 » (versets d'une même sourate). */
+export function versesLabel(verses: string[]): string {
+  const numbers = verses.map((v) => v.split(":")[1]);
+  if (numbers.length === 1) return `Verset ${numbers[0]}`;
+  if (numbers.length === 2) return `Versets ${numbers[0]} et ${numbers[1]}`;
+  return `Versets ${numbers[0]} à ${numbers.at(-1)}`;
+}
+
+/** Titre de la mission pour l'enfant : celui du parent, sinon la sourate des versets du jour. */
+export function kidMissionTitle(title: string | null, verses: string[], chapters: Chapter[] | undefined): string {
+  if (title) return title;
+  const chapterId = Number(verses[0]?.split(":")[0]);
+  const chapter = chapters?.find((c) => c.id === chapterId);
+  return chapter ? `Sourate ${chapter.nameSimple}` : "Ta mission";
+}
+
+/** Autocollants gagnés avec les étoiles : nature et ciel, jamais de visage. */
+export const STICKERS: { icon: Icon; label: string }[] = [
+  { icon: "moon", label: "La lune" },
+  { icon: "sunny", label: "Le soleil" },
+  { icon: "star", label: "L’étoile" },
+  { icon: "leaf", label: "La feuille" },
+  { icon: "flower", label: "La fleur" },
+  { icon: "water", label: "La goutte d’eau" },
+  { icon: "cloud", label: "Le nuage" },
+  { icon: "snow", label: "Le flocon" },
+  { icon: "planet", label: "La planète" },
+  { icon: "sparkles", label: "Les étincelles" },
+  { icon: "diamond", label: "Le diamant" },
+  { icon: "rose", label: "La rose" },
+];
+export const STARS_PER_STICKER = 5;
+
+/** Autocollants gagnés pour un total d'étoiles (tous gardés une fois la collection complète). */
+export function stickersUnlocked(totalStars: number): number {
+  return Math.min(STICKERS.length, Math.floor(totalStars / STARS_PER_STICKER));
+}

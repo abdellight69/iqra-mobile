@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import type { MissionChild, MissionPlan, MissionPlanDetail, MissionRange, MissionStep, VerseNote } from "./types";
+import type { KidToday, LearnedWord, MissionChild, MissionPlan, MissionPlanDetail, MissionRange, MissionStep, VerseNote } from "./types";
 
 /** Missions parent → enfant (backend : docs/missions-v1.md) : requêtes du profil actif. */
 export const missionKeys = {
@@ -94,5 +94,37 @@ export function useDeleteVerseNote() {
   return useMutation({
     mutationFn: (verseKey: string) => api<void>(`/me/missions/notes/${verseKey}`, { method: "DELETE" }),
     onSuccess: () => client.invalidateQueries({ queryKey: ["missions", "notes"] }),
+  });
+}
+
+// --- Côté enfant ---------------------------------------------------------------
+
+export const kidKeys = {
+  today: ["missions", "today"] as const,
+  learned: ["vocabulary-learned"] as const,
+};
+
+export function useTodayMission(enabled = true) {
+  return useQuery({ queryKey: kidKeys.today, queryFn: () => api<KidToday>("/me/missions/today"), enabled });
+}
+
+/** Étape réussie : le serveur renvoie la mission du jour à jour (étoiles, mission réussie). */
+export function useCompleteMissionStep() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { planId: string; dayIndex: number; step: MissionStep }) =>
+      api<KidToday>("/me/missions/today/steps", { method: "POST", body: { ...input, playedAt: new Date().toISOString() } }),
+    onSuccess: (today) => {
+      client.setQueryData(kidKeys.today, today);
+      void client.invalidateQueries({ queryKey: kidKeys.learned });
+    },
+  });
+}
+
+export function useLearnedWords(enabled = true) {
+  return useQuery({
+    queryKey: kidKeys.learned,
+    queryFn: async () => (await api<{ words: LearnedWord[] }>("/vocabulary/learned")).words,
+    enabled,
   });
 }

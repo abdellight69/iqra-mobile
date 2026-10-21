@@ -11,3 +11,12 @@ export function useKidsMode(): boolean {
 
 /** Versets au plus par séance de révision pour un enfant. */
 export const KIDS_MAX_DUE_VERSES = 5;
+
+/** Couleurs de l'interface enfant, ajoutées au thème de l'app (lisibles en clair comme en sombre). */
+export const KIDS = {
+  /** Jaune soleil des étoiles et des grands boutons ; le texte posé dessus est `sunInk`. */
+  sun: "#FFC93C",
+  sunSoft: "#FFF1CC",
+  sunStroke: "#C98A00",
+  sunInk: "#1F2A27",
+} as const;

@@ -154,6 +154,9 @@ export default function AppLayout() {
       <Stack.Screen name="famille/[id]/inviter" options={{ title: "Inviter" }} />
       <Stack.Screen name="famille/[id]/partage" options={{ title: "Ma participation" }} />
       <Stack.Screen name="famille/[id]/membre/[userId]" options={{ title: "" }} />
+      <Stack.Screen name="mission/index" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="mission/bravo" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false, animation: "fade" }} />
+      <Stack.Screen name="mes-mots" options={{ title: "Mes mots" }} />
       <Stack.Screen name="missions/index" options={{ title: "Missions des enfants" }} />
       <Stack.Screen name="missions/new" options={{ presentation: "modal", title: "Nouvelle mission" }} />
       <Stack.Screen name="missions/[id]" options={{ title: "" }} />

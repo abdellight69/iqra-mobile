@@ -10,6 +10,8 @@ import { Screen } from "@/components/Screen";
 import { SearchBar } from "@/components/SearchBar";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatTile } from "@/components/StatTile";
+import { KidsHome } from "@/components/kids/KidsHome";
+import { useKidsMode } from "@/lib/kids";
 import { useAuth } from "@/lib/auth-store";
 import { useFamilies, useReceivedInvitations } from "@/lib/families";
 import { familiesSummary } from "@/lib/families-format";
@@ -30,7 +32,12 @@ function today(): string {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export default function Home() {
+/** Un profil enfant a son propre accueil : la mission du jour, les étoiles et « Mes mots ». */
+export default function HomeTab() {
+  return useKidsMode() ? <KidsHome /> : <Home />;
+}
+
+function Home() {
   const colors = useColors();
   const me = useMe();
   const userName = useAuth((s) => s.user?.displayName);

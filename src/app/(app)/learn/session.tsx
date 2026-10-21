@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { SafeArea } from "@/components/SafeArea";
@@ -25,11 +25,24 @@ import { radius, spacing, useColors } from "@/lib/theme";
 import { annotateArabic } from "@/lib/transliterate";
 import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
+import { useCompleteMissionStep } from "@/lib/missions";
 
 type Answer = { wordId: string; correct: boolean };
 
 export default function LearningSessionScreen() {
-  const params = useLocalSearchParams<{ lessonId?: string; chapterId?: string; verse?: string; themeId?: string; size?: string; review?: string; daily?: string }>();
+  const params = useLocalSearchParams<{
+    lessonId?: string;
+    chapterId?: string;
+    verse?: string;
+    themeId?: string;
+    size?: string;
+    review?: string;
+    daily?: string;
+    missionPlanId?: string;
+    missionDay?: string;
+  }>();
+  // Étape « Jouer » de la mission du jour d'un enfant : réussie quand la séance est envoyée.
+  const mission = params.missionPlanId && params.missionDay ? { planId: params.missionPlanId, dayIndex: Number(params.missionDay) } : null;
   const source = params.lessonId
     ? { lessonId: params.lessonId, size: params.size === "all" ? ("all" as const) : params.size ? Number(params.size) : undefined }
     : params.chapterId
@@ -44,6 +57,7 @@ export default function LearningSessionScreen() {
   if (session.isPending) return <LoadingState label="Préparation de la séance…" />;
   if (session.isError) return <ErrorState error={session.error} onRetry={() => closeScreen("/learn")} />;
   if (session.data.exercises.length === 0) {
+    if (mission) return <MissionWordsKnown mission={mission} />;
     return (
       <SafeArea style={{ flex: 1 }}>
         {params.chapterId ? (
@@ -54,10 +68,33 @@ export default function LearningSessionScreen() {
       </SafeArea>
     );
   }
-  return <SessionRunner session={session.data} lessonId={params.lessonId} />;
+  return <SessionRunner session={session.data} lessonId={params.lessonId} mission={mission} />;
 }
 
-function SessionRunner({ session, lessonId }: { session: LearningSession; lessonId?: string }) {
+type MissionRef = { planId: string; dayIndex: number };
+
+/** Mission d'un enfant qui connaît déjà tous les mots du verset : l'étape « Jouer » est réussie d'office. */
+function MissionWordsKnown({ mission }: { mission: MissionRef }) {
+  const step = useCompleteMissionStep();
+  const { mutate } = step;
+  const { planId, dayIndex } = mission;
+  useEffect(() => {
+    mutate({ planId, dayIndex, step: "play" });
+  }, [mutate, planId, dayIndex]);
+  return (
+    <SafeArea style={{ flex: 1 }}>
+      <EmptyState
+        icon="star"
+        title="Tu connais déjà tous ces mots !"
+        message={step.isError ? "L’étoile n’a pas pu être enregistrée : vérifie ta connexion." : "Bravo, ils sont tous dans « Mes mots ». Tu gagnes ton étoile."}
+        action={{ title: "Continuer", onPress: () => closeScreen("/") }}
+      />
+    </SafeArea>
+  );
+}
+
+function SessionRunner({ session, lessonId, mission }: { session: LearningSession; lessonId?: string; mission: MissionRef | null }) {
+  const missionStep = useCompleteMissionStep();
   const colors = useColors();
   const byId = useMemo(() => new Map(session.words.map((w) => [w.id, w])), [session.words]);
   // Les petits jeux sont ajoutés une fois, à l'ouverture de la séance (tirage aléatoire).
@@ -90,6 +127,7 @@ function SessionRunner({ session, lessonId }: { session: LearningSession; lesson
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           // Séance du jour faite (en ligne ou non) : la réserve hors ligne ne doit pas être rejouée.
           if (session.daily) markDailyDone();
+          if (mission) missionStep.mutate({ ...mission, step: "play" }, { onError: () => Alert.alert("Étoile non enregistrée", "Vérifie ta connexion, puis refais l’étape.") });
           setResult(r);
         },
         onError: () => Alert.alert("Envoi impossible", "Vérifiez votre connexion puis réessayez.", [{ text: "Réessayer", onPress: next }]),
