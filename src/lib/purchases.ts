@@ -1,6 +1,5 @@
 import { Platform } from "react-native";
 import type { CustomerInfo, PurchasesPackage, PurchasesStoreProduct } from "react-native-purchases";
-import { API_URL } from "./api";
 import { useAuth } from "./auth-store";
 
 /**
@@ -19,11 +18,6 @@ const NO_END = Number.MAX_SAFE_INTEGER;
 
 /** Achat unique « Merci » : ne donne pas le badge. */
 export const TIP_PRODUCT = "eqra_merci";
-
-/** Pages légales du site (même hôte que l'API, sauf EXPO_PUBLIC_SITE_URL). */
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? API_URL).replace(/\/+$/, "");
-export const TERMS_URL = `${SITE_URL}/conditions/`;
-export const PRIVACY_URL = `${SITE_URL}/confidentialite/`;
 
 type Module = typeof import("react-native-purchases");
 type Sdk = Module["default"];

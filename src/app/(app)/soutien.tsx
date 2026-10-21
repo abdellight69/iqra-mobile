@@ -18,6 +18,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState, LoadingState } from "@/components/States";
 import { SupporterBadge } from "@/components/SupporterBadge";
 import { errorMessage } from "@/lib/api";
+import { PRIVACY_URL, TERMS_URL } from "@/lib/legal";
 import {
   setStoreSupporterUntil,
   useSupporterPerks,
@@ -27,11 +28,9 @@ import {
   isCancelled,
   loadSupportOffers,
   manageSupport,
-  PRIVACY_URL,
   purchasesEnabled,
   restoreSupport,
   type SupportOffer,
-  TERMS_URL,
 } from "@/lib/purchases";
 import { useMe, useSupporterSync } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
