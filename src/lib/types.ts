@@ -817,3 +817,48 @@ export type FamilyReceivedInvitation = {
   inviterName: string | null;
   expiresAt: string;
 };
+
+// --- Missions parent → enfant (backend : docs/missions-v1.md) ----------------
+
+export type MissionStep = "listen" | "repeat" | "memorize" | "play";
+export type MissionStatus = "active" | "paused" | "finished" | "archived";
+export type MissionRange = { chapterId: number; fromVerse: number; toVerse: number };
+
+export type MissionPlan = {
+  id: string;
+  childId: string;
+  authorName: string | null;
+  title: string | null;
+  ranges: MissionRange[];
+  totalVerses: number;
+  versesPerDay: number;
+  /** 1 = lundi … 7 = dimanche. */
+  weekdays: number[];
+  steps: MissionStep[];
+  messageText: string | null;
+  messageAudioId: string | null;
+  messageUpdatedAt: string;
+  status: MissionStatus;
+  startsOn: string;
+  totalDays: number;
+  completedDays: number;
+  createdAt: string;
+};
+
+export type MissionDay = { dayIndex: number; verses: string[]; stepsDone: MissionStep[]; stars: number; completedOn: string | null };
+export type MissionPlanDetail = MissionPlan & { days: MissionDay[] };
+
+/** Mission du jour d'un enfant, telle que le calendrier du serveur la calcule. */
+export type MissionToday =
+  | { kind: "mission"; dayIndex: number; verses: string[]; completed: boolean }
+  | { kind: "none"; reason: "paused" | "not_started" | "rest_day" | "finished"; nextMissionOn: string | null };
+
+export type MissionChild = {
+  id: string;
+  displayName: string;
+  avatar: string | null;
+  plan: (MissionPlan & { today: MissionToday }) | null;
+  stars: { total: number; last7Days: number };
+};
+
+export type VerseNote = { authorName: string | null; text: string | null; audioId: string | null };

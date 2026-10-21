@@ -163,6 +163,14 @@ export default function Profile() {
         />
         {me.data?.isChild ? null : (
           <ListRow
+            icon="flag-outline"
+            title="Missions des enfants"
+            subtitle="Préparer ce que vos enfants apprennent chaque jour"
+            onPress={() => router.push("/missions")}
+          />
+        )}
+        {me.data?.isChild ? null : (
+          <ListRow
             icon="options-outline"
             title="Réglages"
             subtitle="Traduction, récitateur, objectif, compte"
