@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-store";
 import { useFamilies, useReceivedInvitations } from "@/lib/families";
 import { familiesSummary } from "@/lib/families-format";
 import { offlineSupported } from "@/lib/offline";
+import { purchasesEnabled } from "@/lib/purchases";
 import { useMe, useStats } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 
@@ -168,6 +169,14 @@ export default function Profile() {
             onPress={() => router.push("/settings")}
           />
         )}
+        {purchasesEnabled && me.data && me.data.isOwner !== false && !me.data.isChild ? (
+          <ListRow
+            icon="sparkles-outline"
+            title="Soutenir Eqra"
+            subtitle={me.data.supporter ? "Merci pour votre soutien" : "Un abonnement facultatif, l’app reste gratuite"}
+            onPress={() => router.push("/soutien")}
+          />
+        ) : null}
         <ListRow
           icon="bookmark-outline"
           title="Signets"

@@ -655,3 +655,18 @@ export function useCompleteReadingLesson(lessonId: string) {
     },
   });
 }
+
+/**
+ * Relit l'abonnement « Soutien » côté serveur (qui interroge RevenueCat) après un achat ou une
+ * restauration : le badge et les thèmes suivent sans attendre le webhook.
+ */
+export function useSupporterSync() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ supporter: boolean }>("/me/supporter/sync", { method: "POST" }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: keys.me });
+      void client.invalidateQueries({ queryKey: ["families"] });
+    },
+  });
+}

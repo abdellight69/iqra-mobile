@@ -156,6 +156,7 @@ export default function AppLayout() {
       <Stack.Screen name="famille/[id]/membre/[userId]" options={{ title: "" }} />
       <Stack.Screen name="prayer" options={{ title: "" }} />
       <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
+      <Stack.Screen name="soutien" options={{ title: "Soutien" }} />
       <Stack.Screen
         name="onboarding"
         options={{
