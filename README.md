@@ -57,3 +57,18 @@ src/
 ## Build
 
 `eas.json` contient des profils `development`, `preview` et `production` : `npx eas-cli@latest build --profile preview --platform android`.
+
+Build local Android (APK installée sur un téléphone de test) : `npx expo prebuild --platform android` puis
+`cd android && ./gradlew assembleRelease` → `android/app/build/outputs/apk/release/app-release.apk`.
+
+**Signature Android.** Les builds release sont signés avec le keystore d'Eqra, qui vit **hors du dépôt** :
+`~/.eqra/eqra-release.keystore` et `~/.eqra/eqra-release.properties` (`storeFile`, `storePassword`,
+`keyAlias`, `keyPassword`). Le plugin `plugins/withReleaseSigning.js` l'injecte dans `app/build.gradle` à
+chaque `prebuild` ; sans ce fichier, le build release échoue (plus jamais d'APK signée avec la clé de debug).
+**Sauvegarder ces deux fichiers** (gestionnaire de mots de passe, disque chiffré) : perdus, plus aucune mise
+à jour ne pourra être installée par-dessus l'app existante. Empreinte SHA-256 du certificat :
+`95:E6:4F:35:DD:6C:82:63:60:41:41:D3:5F:F9:B1:61:0F:2C:95:9E:62:CB:8C:07:43:D7:81:A4:FD:4C:FB:8D`.
+
+**Versions.** Incrémenter `android.versionCode` et `ios.buildNumber` dans `app.json` à chaque livraison
+(Android refuse d'installer un APK dont le `versionCode` n'augmente pas), `version` quand l'app change
+visiblement.
