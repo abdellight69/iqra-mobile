@@ -6,7 +6,7 @@ jest.mock("expo-secure-store", () => ({
 }));
 
 import { Appearance } from "react-native";
-import { sanitizeAppearanceMode, useAppearance } from "../appearance-store";
+import { hasSupporterPerks, sanitizeAppearanceMode, setStoreSupporterUntil, useAppearance } from "../appearance-store";
 import { useAuth } from "../auth-store";
 import { availableTheme, isDarkPalette, palette, sanitizeThemeId, THEMES } from "../palettes";
 import type { User } from "../types";
@@ -83,5 +83,23 @@ describe("apparence : thèmes de couleurs et abonnement Soutien", () => {
     expect(useAppearance.getState().supporter).toBe(false);
     // Le choix est gardé : il revient avec un nouvel abonnement.
     expect(useAppearance.getState().theme).toBe("sable");
+  });
+});
+
+describe("apparence : thèmes ouverts juste après un achat", () => {
+  const now = Date.parse("2026-10-21T10:00:00Z");
+
+  it("RevenueCat suffit jusqu'à la fin de la période, même si le serveur n'a pas encore relu l'abonnement", () => {
+    expect(hasSupporterPerks({ supporter: false, storeSupporterUntil: now + 1000 }, now)).toBe(true);
+    expect(hasSupporterPerks({ supporter: false, storeSupporterUntil: now - 1000 }, now)).toBe(false);
+    expect(hasSupporterPerks({ supporter: false, storeSupporterUntil: null }, now)).toBe(false);
+    expect(hasSupporterPerks({ supporter: true, storeSupporterUntil: null }, now)).toBe(true);
+  });
+
+  it("l'état RevenueCat est oublié à la déconnexion", async () => {
+    setStoreSupporterUntil(Date.now() + 60_000);
+    expect(useAppearance.getState().storeSupporterUntil).not.toBeNull();
+    await useAuth.getState().signOut();
+    expect(useAppearance.getState().storeSupporterUntil).toBeNull();
   });
 });

@@ -19,7 +19,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
-import { type AppearanceMode, useActiveTheme, useAppearance } from "@/lib/appearance-store";
+import { type AppearanceMode, useActiveTheme, useAppearance, useSupporterPerks } from "@/lib/appearance-store";
 import { useAuth } from "@/lib/auth-store";
 import { router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
@@ -55,7 +55,7 @@ export default function Settings() {
   const setAppearance = useAppearance((s) => s.setMode);
   const activeTheme = useActiveTheme();
   const setTheme = useAppearance((s) => s.setTheme);
-  const supporter = useAppearance((s) => s.supporter);
+  const supporter = useSupporterPerks();
   const me = useMe();
   const update = useUpdateMe();
   const translations = useTranslations();

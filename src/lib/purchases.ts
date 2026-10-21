@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import type { PurchasesPackage, PurchasesStoreProduct } from "react-native-purchases";
+import type { CustomerInfo, PurchasesPackage, PurchasesStoreProduct } from "react-native-purchases";
 import { API_URL } from "./api";
 import { useAuth } from "./auth-store";
 
@@ -11,6 +11,11 @@ import { useAuth } from "./auth-store";
 const API_KEY =
   Platform.select({ ios: process.env.EXPO_PUBLIC_RC_IOS_KEY, android: process.env.EXPO_PUBLIC_RC_ANDROID_KEY })?.trim() ?? "";
 export const purchasesEnabled = API_KEY !== "";
+
+/** Droit d'accès RevenueCat porté par les deux abonnements. */
+export const ENTITLEMENT = "soutien";
+/** Droit sans date de fin (accordé à la main dans RevenueCat). */
+const NO_END = Number.MAX_SAFE_INTEGER;
 
 /** Achat unique « Merci » : ne donne pas le badge. */
 export const TIP_PRODUCT = "eqra_merci";
@@ -97,14 +102,23 @@ export async function loadSupportOffers(ownerId: string): Promise<SupportOffer[]
   return supportOffers(offerings.current?.availablePackages ?? [], tips[0] ?? null);
 }
 
-export async function buySupportOffer(ownerId: string, offer: SupportOffer): Promise<void> {
-  const Purchases = await purchasesFor(ownerId);
-  if (offer.package) await Purchases.purchasePackage(offer.package);
-  else if (offer.product) await Purchases.purchaseStoreProduct(offer.product);
+/** Fin (ms) du droit « soutien » actif selon RevenueCat, ou null s'il n'est pas actif. */
+export function supporterUntil(info: Pick<CustomerInfo, "entitlements">): number | null {
+  const entitlement = info.entitlements.active[ENTITLEMENT];
+  if (!entitlement) return null;
+  return entitlement.expirationDate ? Date.parse(entitlement.expirationDate) : NO_END;
 }
 
-export async function restoreSupport(ownerId: string): Promise<void> {
-  await (await purchasesFor(ownerId)).restorePurchases();
+/** Achète l'offre ; renvoie la fin du droit « soutien » vu par RevenueCat (null pour le merci unique). */
+export async function buySupportOffer(ownerId: string, offer: SupportOffer): Promise<number | null> {
+  const Purchases = await purchasesFor(ownerId);
+  if (offer.package) return supporterUntil((await Purchases.purchasePackage(offer.package)).customerInfo);
+  if (offer.product) return supporterUntil((await Purchases.purchaseStoreProduct(offer.product)).customerInfo);
+  return null;
+}
+
+export async function restoreSupport(ownerId: string): Promise<number | null> {
+  return supporterUntil(await (await purchasesFor(ownerId)).restorePurchases());
 }
 
 /** Réglages d'abonnement du store (résiliation, changement de formule). */

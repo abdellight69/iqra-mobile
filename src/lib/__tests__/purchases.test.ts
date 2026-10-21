@@ -3,7 +3,7 @@ jest.mock("expo/fetch", () => ({ fetch: jest.fn() }));
 jest.mock("../session-storage", () => ({ loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => undefined) }));
 
 import type { PurchasesPackage, PurchasesStoreProduct } from "react-native-purchases";
-import { isCancelled, purchasesEnabled, supportOffers } from "../purchases";
+import { isCancelled, purchasesEnabled, supporterUntil, supportOffers } from "../purchases";
 
 const pkg = (packageType: string, priceString: string) => ({ packageType, product: { priceString } }) as unknown as PurchasesPackage;
 const tip = { priceString: "4,99 €" } as PurchasesStoreProduct;
@@ -34,5 +34,16 @@ describe("abonnement Soutien : offres", () => {
 
   it("sans clé RevenueCat, l'abonnement est absent de l'app", () => {
     expect(purchasesEnabled).toBe(false);
+  });
+});
+
+describe("abonnement Soutien : droit vu par RevenueCat", () => {
+  const info = (active: Record<string, { expirationDate: string | null }>) => ({ entitlements: { active, all: active } }) as never;
+
+  it("fin du droit soutien, sans fin pour un droit accordé à la main, null s'il est inactif", () => {
+    expect(supporterUntil(info({ soutien: { expirationDate: "2026-11-21T09:00:00Z" } }))).toBe(Date.parse("2026-11-21T09:00:00Z"));
+    expect(supporterUntil(info({ soutien: { expirationDate: null } }))).toBe(Number.MAX_SAFE_INTEGER);
+    expect(supporterUntil(info({ eqra_pro: { expirationDate: "2026-11-21T09:00:00Z" } }))).toBeNull();
+    expect(supporterUntil(info({}))).toBeNull();
   });
 });
