@@ -13,7 +13,9 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
 import { RepeatSheet, type RepeatSettings } from "@/components/RepeatSheet";
+import { KidsReader } from "@/components/kids/KidsReader";
 import { useReducedMotion } from "@/lib/a11y";
+import { useKidsMode } from "@/lib/kids";
 import { useTrackQueue } from "@/lib/audio";
 import { openWordSheet } from "@/lib/navigation";
 import { formatRate, usePlayback } from "@/lib/playback-store";
@@ -37,7 +39,12 @@ import { ARABIC_SIZES, useReaderSettings } from "@/lib/reader-store";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 
-export default function SurahReader() {
+/** Un profil enfant lit avec le lecteur simplifié ; celui des adultes ne change pas. */
+export default function SurahScreen() {
+  return useKidsMode() ? <KidsReader /> : <SurahReader />;
+}
+
+function SurahReader() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id: string; verse?: string }>();

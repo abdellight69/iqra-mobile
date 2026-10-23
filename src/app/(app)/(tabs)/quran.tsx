@@ -11,6 +11,8 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { VerseBadge } from "@/components/VerseBadge";
 import { useOffline } from "@/lib/offline";
+import { KidsQuran } from "@/components/kids/KidsQuran";
+import { useKidsMode } from "@/lib/kids";
 import { useChapters, useComprehension, useMemorizationMap } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Chapter, ChapterComprehension } from "@/lib/types";
@@ -22,7 +24,12 @@ function normalize(text: string): string {
     .toLowerCase();
 }
 
-export default function QuranTab() {
+/** Un profil enfant a son propre onglet Coran ; celui des adultes ne change pas. */
+export default function QuranTabScreen() {
+  return useKidsMode() ? <KidsQuran /> : <QuranTab />;
+}
+
+function QuranTab() {
   const colors = useColors();
   const tabBarHeight = useBottomTabBarHeight();
   const chapters = useChapters();
