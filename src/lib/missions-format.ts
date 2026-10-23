@@ -1,3 +1,4 @@
+import type { ImageSource } from "expo-image";
 import type Ionicons from "@expo/vector-icons/Ionicons";
 import type { ComponentProps } from "react";
 import type { Chapter, MissionRange, MissionStep, MissionToday } from "./types";
@@ -114,20 +115,20 @@ export function kidMissionTitle(title: string | null, verses: string[], chapters
   return chapter ? `Sourate ${chapter.nameSimple}` : "Ta mission";
 }
 
-/** Autocollants gagnés avec les étoiles : nature et ciel, jamais de visage. */
-export const STICKERS: { icon: Icon; label: string }[] = [
-  { icon: "moon", label: "La lune" },
-  { icon: "sunny", label: "Le soleil" },
-  { icon: "star", label: "L’étoile" },
-  { icon: "leaf", label: "La feuille" },
-  { icon: "flower", label: "La fleur" },
-  { icon: "water", label: "La goutte d’eau" },
-  { icon: "cloud", label: "Le nuage" },
-  { icon: "snow", label: "Le flocon" },
-  { icon: "planet", label: "La planète" },
-  { icon: "sparkles", label: "Les étincelles" },
-  { icon: "diamond", label: "Le diamant" },
-  { icon: "rose", label: "La rose" },
+/** Autocollants illustrés gagnés avec les étoiles : nature et ciel, jamais de visage. */
+export const STICKERS: { image: ImageSource; label: string }[] = [
+  { image: require("../../assets/stickers/lune.png"), label: "La lune" },
+  { image: require("../../assets/stickers/soleil.png"), label: "Le soleil" },
+  { image: require("../../assets/stickers/etoile.png"), label: "L’étoile" },
+  { image: require("../../assets/stickers/feuille.png"), label: "La feuille" },
+  { image: require("../../assets/stickers/fleur.png"), label: "La fleur" },
+  { image: require("../../assets/stickers/goutte.png"), label: "La goutte d’eau" },
+  { image: require("../../assets/stickers/nuage.png"), label: "Le nuage" },
+  { image: require("../../assets/stickers/flocon.png"), label: "Le flocon" },
+  { image: require("../../assets/stickers/planete.png"), label: "La planète" },
+  { image: require("../../assets/stickers/etincelles.png"), label: "Les étincelles" },
+  { image: require("../../assets/stickers/diamant.png"), label: "Le diamant" },
+  { image: require("../../assets/stickers/rose.png"), label: "La rose" },
 ];
 export const STARS_PER_STICKER = 5;
 

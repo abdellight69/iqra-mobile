@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -59,8 +60,12 @@ export default function MissionBravo() {
 
         <View style={styles.body}>
           <Card style={styles.sticker}>
-            <View style={[styles.stickerIcon, { backgroundColor: kc.sunSoft }]}>
-              <Ionicons name={sticker?.icon ?? "lock-closed"} size={56} color={sticker ? KIDS.sunStroke : colors.textFaint} />
+            <View style={[styles.stickerIcon, { backgroundColor: sticker ? colors.surfaceMuted : kc.sunSoft }]}>
+              {sticker ? (
+                <Image source={sticker.image} style={styles.stickerImage} contentFit="contain" accessibilityLabel={sticker.label} />
+              ) : (
+                <Ionicons name="lock-closed" size={56} color={colors.textFaint} />
+              )}
             </View>
             <View style={styles.flex}>
               <AppText variant="label" color={colors.accent}>
@@ -98,6 +103,7 @@ const styles = StyleSheet.create({
   pill: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: -28, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.pill },
   body: { padding: spacing.lg, gap: spacing.lg },
   sticker: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
-  stickerIcon: { width: 96, height: 96, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },
+  stickerIcon: { width: 104, height: 104, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },
+  stickerImage: { width: 96, height: 96, transform: [{ rotate: "-8deg" }] },
   tomorrow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
 });

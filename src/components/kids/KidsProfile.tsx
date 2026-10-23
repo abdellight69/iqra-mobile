@@ -1,11 +1,12 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KIDS } from "@/lib/kids";
 import { useTodayMission } from "@/lib/missions";
 import { STARS_PER_STICKER, STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { useMe } from "@/lib/queries";
@@ -17,7 +18,6 @@ import { radius, spacing, useColors } from "@/lib/theme";
  */
 export function KidsProfile() {
   const colors = useColors();
-  const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
   const stars = today.data?.totalStars ?? 0;
@@ -51,13 +51,17 @@ export function KidsProfile() {
               <View
                 key={sticker.label}
                 accessibilityLabel={open ? sticker.label : "Autocollant à gagner"}
-                style={[styles.sticker, { backgroundColor: open ? kc.sunSoft : colors.surfaceMuted }]}>
-                <Ionicons name={open ? sticker.icon : "lock-closed"} size={open ? 34 : 22} color={open ? KIDS.sunStroke : colors.textFaint} />
+                style={[styles.sticker, { backgroundColor: open ? colors.surface : colors.surfaceMuted }]}>
                 {open ? (
-                  <AppText variant="caption" center numberOfLines={1} color={kc.onSunSoft}>
-                    {sticker.label}
-                  </AppText>
-                ) : null}
+                  <>
+                    <Image source={sticker.image} style={styles.stickerImage} contentFit="contain" />
+                    <AppText variant="caption" center numberOfLines={1}>
+                      {sticker.label}
+                    </AppText>
+                  </>
+                ) : (
+                  <Ionicons name="lock-closed" size={22} color={colors.textFaint} />
+                )}
               </View>
             );
           })}
@@ -88,6 +92,7 @@ const styles = StyleSheet.create({
   stars: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
   section: { gap: spacing.sm },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  sticker: { width: "31%", flexGrow: 1, minHeight: 92, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: 4, padding: spacing.xs },
+  sticker: { width: "31%", flexGrow: 1, minHeight: 104, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: 4, padding: spacing.xs },
+  stickerImage: { width: 64, height: 64 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
 });
