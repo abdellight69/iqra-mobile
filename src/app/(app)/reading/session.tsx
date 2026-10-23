@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
-import { Button } from "@/components/Button";
+import { Button, type ButtonProps } from "@/components/Button";
+import { BigButton, RoundButton } from "@/components/kids/KidButton";
 import { Card } from "@/components/Card";
 import { HighlightedArabic } from "@/components/HighlightedArabic";
 import { LetterCard } from "@/components/LetterCard";
@@ -14,12 +15,20 @@ import { SafeArea } from "@/components/SafeArea";
 import { TracePad } from "@/components/TracePad";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useOneShot } from "@/lib/audio";
+import { KIDS, useKidsColors, useKidsMode } from "@/lib/kids";
 import { useAlphabet, useCompleteReadingLesson, useReadingSession } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { AlphabetLetter, ReadingResult, ReadingStep, ReadingWord } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
 
 type ChoiceStep = Extract<ReadingStep, { type: "choice" }>;
+
+/** Bouton de passage à la suite : grand bouton jaune pour un enfant, bouton courant sinon. */
+function NextButton(props: ButtonProps) {
+  const kids = useKidsMode();
+  if (!kids) return <Button {...props} />;
+  return <BigButton title={props.title} icon={props.icon ?? "arrow-forward"} tone={props.variant === "ghost" ? "white" : "sun"} disabled={props.disabled || props.loading} onPress={props.onPress ?? (() => undefined)} />;
+}
 
 export default function ReadingSessionScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
@@ -58,6 +67,7 @@ function Runner({
   nextLesson: { id: string; title: string } | null;
 }) {
   const colors = useColors();
+  const kids = useKidsMode();
   const [queue, setQueue] = useState(steps);
   const [index, setIndex] = useState(0);
   const score = useRef({ correct: 0, total: 0 });
@@ -95,20 +105,33 @@ function Runner({
   return (
     <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Quitter la leçon"
-          hitSlop={10}
-          onPress={() =>
-            Alert.alert("Quitter la leçon ?", "Votre progression dans cette leçon sera perdue.", [
-              { text: "Continuer", style: "cancel" },
-              { text: "Quitter", style: "destructive", onPress: () => closeScreen("/reading") },
-            ])
-          }>
-          <Ionicons name="close" size={28} color={colors.textMuted} />
-        </Pressable>
+        {kids ? (
+          <RoundButton
+            icon="close"
+            label="Arrêter la leçon"
+            onPress={() =>
+              Alert.alert("Arrêter la leçon ?", "Ce que tu as fait dans cette leçon sera perdu.", [
+                { text: "Continuer", style: "cancel" },
+                { text: "Arrêter", style: "destructive", onPress: () => closeScreen("/reading") },
+              ])
+            }
+          />
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Quitter la leçon"
+            hitSlop={10}
+            onPress={() =>
+              Alert.alert("Quitter la leçon ?", "Votre progression dans cette leçon sera perdue.", [
+                { text: "Continuer", style: "cancel" },
+                { text: "Quitter", style: "destructive", onPress: () => closeScreen("/reading") },
+              ])
+            }>
+            <Ionicons name="close" size={28} color={colors.textMuted} />
+          </Pressable>
+        )}
         <View style={styles.flex}>
-          <ProgressBar value={index / Math.max(queue.length, 1)} height={6} color={colors.accent} />
+          <ProgressBar value={index / Math.max(queue.length, 1)} height={kids ? 12 : 6} color={kids ? KIDS.sun : colors.accent} />
         </View>
       </View>
       {step ? (
@@ -153,7 +176,7 @@ function LetterStep({ step, letters, onNext }: StepProps & { step: Extract<Readi
         </View>
         {letter ? <LetterCard letter={letter} example={step.example} /> : null}
       </ScrollView>
-      <Button title="Continuer" onPress={onNext} />
+      <NextButton title="Continuer" onPress={onNext} />
     </View>
   );
 }
@@ -187,7 +210,7 @@ function ConceptStep({ step, onNext }: StepProps & { step: Extract<ReadingStep, 
           ))}
         </View>
       </ScrollView>
-      <Button title="J’ai compris" onPress={onNext} />
+      <NextButton title="J’ai compris" onPress={onNext} />
     </View>
   );
 }
@@ -219,6 +242,8 @@ function PlayButton({ url, label, size = 56, autoPlay = false }: { url: string |
 
 function ChoiceView({ step, onAnswer, onNext, busy }: StepProps & { step: ChoiceStep }) {
   const colors = useColors();
+  const kids = useKidsMode();
+  const kc = useKidsColors();
   const [picked, setPicked] = useState<string | null>(null);
   const correct = picked === step.answerId;
   const { prompt } = step;
@@ -284,6 +309,8 @@ function ChoiceView({ step, onAnswer, onNext, busy }: StepProps & { step: Choice
                     borderColor: state === "right" ? colors.success : state === "wrong" ? colors.danger : colors.border,
                     transform: [{ scale: pressed ? 0.97 : 1 }],
                   },
+                  // Enfant : pastille épaisse posée sur son bord, comme les autres boutons.
+                  kids && { borderWidth: 0, borderRadius: 22, borderBottomWidth: pressed ? 1 : 4, borderBottomColor: state === "right" ? colors.success : state === "wrong" ? colors.danger : kc.edge, marginTop: pressed ? 3 : 0 },
                 ]}>
                 {choice.arabic ? (
                   <ArabicText size={[...choice.arabic].length <= 3 ? 44 : 32} center style={[...choice.arabic].length <= 3 ? styles.choiceGlyph : undefined}>
@@ -336,7 +363,7 @@ function ChoiceView({ step, onAnswer, onNext, busy }: StepProps & { step: Choice
               {step.explain}
             </AppText>
           ) : null}
-          <Button title="Continuer" onPress={onNext} loading={busy} />
+          <NextButton title="Continuer" onPress={onNext} loading={busy} />
         </View>
       ) : null}
     </View>
@@ -379,7 +406,7 @@ function TraceStep({ step, letters, onNext }: StepProps & { step: Extract<Readin
         </Pressable>
       </View>
       <View style={styles.flex} />
-      <Button title={drawn ? "Continuer" : "Passer"} variant={drawn ? "primary" : "ghost"} onPress={onNext} />
+      <NextButton title={drawn ? "Continuer" : "Passer"} variant={drawn ? "primary" : "ghost"} onPress={onNext} />
     </View>
   );
 }
@@ -469,7 +496,7 @@ function SpellStep({ step, onAnswer, onNext, busy }: StepProps & { step: Extract
               ) : null}
             </View>
           </View>
-          <Button title="Continuer" onPress={onNext} loading={busy} />
+          <NextButton title="Continuer" onPress={onNext} loading={busy} />
         </View>
       ) : null}
     </View>
@@ -535,7 +562,7 @@ function MatchView({ step, onAnswer, onNext, busy }: StepProps & { step: Extract
           </View>
         </View>
       </ScrollView>
-      {done ? <Button title="Continuer" onPress={onNext} loading={busy} /> : null}
+      {done ? <NextButton title="Continuer" onPress={onNext} loading={busy} /> : null}
     </View>
   );
 }
@@ -590,13 +617,37 @@ function GuidedReading({ step, onNext }: StepProps & { step: Extract<ReadingStep
           </AppText>
         </Pressable>
       </ScrollView>
-      <Button title="Passer aux exercices" onPress={onNext} />
+      <NextButton title="Passer aux exercices" onPress={onNext} />
     </View>
   );
 }
 
 function Result({ title, result, nextLesson }: { title: string; result: ReadingResult; nextLesson: { id: string; title: string } | null }) {
   const colors = useColors();
+  const kids = useKidsMode();
+  const kc = useKidsColors();
+  if (kids) {
+    return (
+      <SafeArea style={[styles.flex, styles.result, { backgroundColor: colors.background }]}>
+        <Ionicons name="star" size={118} color={KIDS.sun} />
+        <AppText variant="display" center>
+          Leçon terminée !
+        </AppText>
+        <AppText muted center>
+          {title} · Bâraka Allâhou fîk !
+        </AppText>
+        <View style={[styles.kidsScore, { backgroundColor: kc.sunSoft }]}>
+          <Ionicons name="checkmark-circle" size={26} color={KIDS.sunStroke} />
+          <AppText variant="headline" color={kc.onSunSoft}>
+            {result.score} % de bonnes réponses
+          </AppText>
+        </View>
+        <View style={styles.flex} />
+        {nextLesson ? <BigButton title="Leçon suivante" icon="arrow-forward" onPress={() => router.replace({ pathname: "/reading/session", params: { lessonId: nextLesson.id } })} /> : null}
+        <BigButton title="Retour aux lettres" icon="home" tone={nextLesson ? "white" : "green"} onPress={() => closeScreen("/reading")} />
+      </SafeArea>
+    );
+  }
   return (
     <SafeArea style={[styles.flex, styles.result, { backgroundColor: colors.background }]}>
       <View style={[styles.trophy, { backgroundColor: colors.accentSoft }]}>
@@ -678,6 +729,7 @@ const styles = StyleSheet.create({
   verseWord: { borderRadius: radius.sm, paddingHorizontal: 6, alignItems: "center" },
   link: { alignSelf: "center", paddingHorizontal: spacing.xs, minHeight: 44, justifyContent: "center" },
   result: { padding: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.lg },
+  kidsScore: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm + 2, borderRadius: radius.pill },
   trophy: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center" },
   resultStats: { flexDirection: "row", gap: spacing.md, alignSelf: "stretch" },
 });

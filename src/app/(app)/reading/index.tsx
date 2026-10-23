@@ -10,7 +10,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { Screen } from "@/components/Screen";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
-import { KIDS, useKidsMode } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors, useKidsMode } from "@/lib/kids";
 import { useAlphabet } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { AlphabetLessonSummary } from "@/lib/types";
@@ -20,6 +20,7 @@ const start = (lessonId: string) => router.push({ pathname: "/reading/session", 
 export default function ReadingCourse() {
   const colors = useColors();
   const kids = useKidsMode();
+  const kc = useKidsColors();
   const overview = useAlphabet();
   if (overview.isPending) return <LoadingState />;
   if (overview.isError) return <ErrorState error={overview.error} onRetry={() => void overview.refetch()} />;
@@ -36,8 +37,8 @@ export default function ReadingCourse() {
             Pour lire le Coran tout seul.
           </AppText>
         </View>
-        <Card tone="primary" style={styles.kidsHero}>
-          <AppText variant="label" color={KIDS.sun}>
+        <Card style={[styles.kidsHero, { backgroundColor: KID_TONES.green.main }]}>
+          <AppText variant="label" color="#DDF6EE">
             {next ? (completedCount === 0 ? "On commence" : "On continue") : "Bravo !"}
           </AppText>
           {next && isArabicTitle(next.title) ? (
@@ -49,11 +50,11 @@ export default function ReadingCourse() {
               {next ? next.title : "Tu as fini toutes les leçons !"}
             </AppText>
           )}
-          <ProgressBar value={lessonCount ? completedCount / lessonCount : 0} color={KIDS.sun} track="rgba(255,255,255,0.25)" height={8} />
-          <AppText color={KIDS.onHero}>
+          <ProgressBar value={lessonCount ? completedCount / lessonCount : 0} color={KIDS.sun} track="rgba(255,255,255,0.3)" height={8} />
+          <AppText variant="caption" color="#DDF6EE">
             {completedCount} leçon{completedCount > 1 ? "s" : ""} sur {lessonCount}
           </AppText>
-          {next ? <BigButton title="C’est parti !" icon="play" onPress={() => start(next.id)} /> : null}
+          {next ? <BigButton title="C’est parti !" icon="play" tone="sun" onPress={() => start(next.id)} /> : null}
         </Card>
         <Card onPress={() => router.push("/reading/alphabet")} style={styles.alphabet}>
           <View style={styles.flex}>
@@ -80,7 +81,7 @@ export default function ReadingCourse() {
                     onPress={() => start(lesson.id)}
                     style={({ pressed }) => [
                       styles.kidsTile,
-                      { backgroundColor: current ? KIDS.sun : colors.surface, opacity: pressed ? 0.8 : 1 },
+                      { backgroundColor: current ? KIDS.sun : colors.surface, borderBottomColor: current ? KIDS.sunStroke : kc.edge, borderBottomWidth: pressed ? 1 : 4, marginTop: pressed ? 3 : 0 },
                     ]}>
                     {lesson.completed ? <Ionicons name="star" size={22} color={current ? KIDS.sunInk : KIDS.sun} /> : <View style={styles.starSpace} />}
                     {isArabicTitle(lesson.title) ? (
@@ -209,6 +210,6 @@ const styles = StyleSheet.create({
   arabicTitle: { textAlign: "left", lineHeight: 60 },
   kidsHero: { gap: spacing.md, borderRadius: radius.xl },
   kidsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  kidsTile: { width: "31%", flexGrow: 1, minHeight: 104, borderRadius: radius.lg, padding: spacing.sm, alignItems: "center", justifyContent: "center", gap: 2 },
+  kidsTile: { width: "31%", flexGrow: 1, minHeight: 104, borderRadius: 22, padding: spacing.sm, alignItems: "center", justifyContent: "center", gap: 2 },
   starSpace: { height: 22 },
 });

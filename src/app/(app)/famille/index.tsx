@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useDeclineInvitation, useFamilies, useReceivedInvitations } from "@/lib/families";
+import { KID_TONES, useKidsColors } from "@/lib/kids";
 import { useMe } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 
@@ -19,6 +20,7 @@ export default function Families() {
   const me = useMe();
   const families = useFamilies();
   const child = me.data?.isChild ?? false;
+  const kc = useKidsColors();
   const received = useReceivedInvitations(!child);
   const decline = useDeclineInvitation();
 
@@ -70,11 +72,11 @@ export default function Families() {
       ) : (
         families.data.map((f) => (
           <Card key={f.id} onPress={() => router.push({ pathname: "/famille/[id]", params: { id: f.id } })} style={styles.row}>
-            <View style={[styles.icon, { backgroundColor: colors.primarySoft }]}>
-              <Ionicons name="people" size={20} color={colors.primary} />
+            <View style={[styles.icon, child && styles.iconKids, { backgroundColor: child ? kc.tint("pink").bg : colors.primarySoft }]}>
+              <Ionicons name={child ? "heart" : "people"} size={child ? 24 : 20} color={child ? KID_TONES.pink.main : colors.primary} />
             </View>
             <View style={styles.flex}>
-              <AppText variant="bodyStrong">{f.name}</AppText>
+              <AppText variant={child ? "headline" : "bodyStrong"}>{f.name}</AppText>
               <AppText variant="caption" muted>
                 {plural(f.membersCount, "membre", "membres")} · {plural(f.activeGoals, "objectif", "objectifs")}
                 {f.role === "admin" ? " · administrateur" : ""}
@@ -109,6 +111,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   icon: { width: 44, height: 44, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  iconKids: { width: 48, height: 48 },
   actions: { gap: spacing.sm, marginTop: spacing.md },
   invitation: { gap: spacing.xs },
   invitationButtons: { flexDirection: "row", justifyContent: "flex-end", gap: spacing.sm, marginTop: spacing.sm },

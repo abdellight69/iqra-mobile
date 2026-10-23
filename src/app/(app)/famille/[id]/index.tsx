@@ -15,6 +15,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useEncourage, useFamily, useMarkEncouragementsSeen, useRespondGoal } from "@/lib/families";
 import { ENCOURAGEMENTS, localDay, SHARING } from "@/lib/families-format";
+import { KID_TONES, useKidsColors } from "@/lib/kids";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { FamilyMember } from "@/lib/types";
 
@@ -22,6 +23,7 @@ import type { FamilyMember } from "@/lib/types";
 export default function FamilyScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const kc = useKidsColors();
   const family = useFamily(id);
   const respond = useRespondGoal(id);
   const encourage = useEncourage(id);
@@ -61,10 +63,15 @@ export default function FamilyScreen() {
       />
       <Screen edges={[]} onRefresh={() => void family.refetch()} refreshing={family.isRefetching}>
         {received.length > 0 ? (
-          <Card tone="accent" style={styles.encouragements}>
+          <Card tone="accent" style={[styles.encouragements, f.isChild && { backgroundColor: kc.tint("pink").bg }]}>
+            {f.isChild ? (
+              <AppText variant="label" color={kc.tint("pink").ink}>
+                Pour toi
+              </AppText>
+            ) : null}
             {received.map((e) => (
               <View key={e.id} style={styles.encouragement}>
-                <Ionicons name="heart" size={16} color={colors.accent} />
+                <Ionicons name="heart" size={f.isChild ? 22 : 16} color={f.isChild ? KID_TONES.pink.main : colors.accent} />
                 <AppText style={styles.flex}>
                   <AppText variant="bodyStrong">{byId.get(e.fromUserId)?.displayName ?? "Un membre"}</AppText>
                   {byId.get(e.toUserId)?.isMe ? "" : ` à ${byId.get(e.toUserId)?.displayName}`} : {ENCOURAGEMENTS[e.kind]}
@@ -136,8 +143,8 @@ export default function FamilyScreen() {
                   accessibilityLabel={`Encourager ${m.displayName}`}
                   hitSlop={8}
                   onPress={() => setTarget({ member: m })}
-                  style={[styles.heart, { backgroundColor: colors.accentSoft }]}>
-                  <Ionicons name="heart-outline" size={18} color={colors.accent} />
+                  style={[styles.heart, { backgroundColor: f.isChild ? kc.tint("pink").bg : colors.accentSoft }]}>
+                  <Ionicons name={f.isChild ? "heart" : "heart-outline"} size={f.isChild ? 22 : 18} color={f.isChild ? KID_TONES.pink.main : colors.accent} />
                 </Pressable>
               ) : null}
             </Pressable>
