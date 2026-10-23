@@ -12,7 +12,7 @@ import { VoicePlayButton } from "@/components/VoiceNote";
 import { errorMessage } from "@/lib/api";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
-import { KIDS } from "@/lib/kids";
+import { KIDS, useKidsColors } from "@/lib/kids";
 import { useCompleteMissionStep, useTodayMission } from "@/lib/missions";
 import { KID_STEPS, versesLabel } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
@@ -169,6 +169,7 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
 
 function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; activeWord: number | null; onWord: (url: string) => void; note?: VerseNote }) {
   const colors = useColors();
+  const kc = useKidsColors();
   const translationId = useAuth((s) => s.user?.translationId ?? null);
   const verse = useVerse(verseKey, translationId);
   if (verse.isPending) return <ActivityIndicator color={colors.primary} />;
@@ -186,7 +187,7 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
               accessibilityLabel={`Écouter le mot ${w.transliteration ?? ""}`}
               disabled={!w.audioUrl}
               onPress={() => w.audioUrl && onWord(w.audioUrl)}
-              style={[styles.word, { backgroundColor: active ? KIDS.sunSoft : colors.surfaceMuted, borderColor: active ? KIDS.sun : "transparent" }]}>
+              style={[styles.word, { backgroundColor: active ? kc.sunSoft : colors.surfaceMuted, borderColor: active ? KIDS.sun : "transparent" }]}>
               <ArabicText size="lg">{w.textUthmani}</ArabicText>
               {w.transliteration ? (
                 <AppText variant="caption" muted>
@@ -208,12 +209,12 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
         </View>
       ) : null}
       {note ? (
-        <View style={[styles.note, { backgroundColor: KIDS.sunSoft }]}>
-          <AppText variant="bodyStrong" color={KIDS.sunInk}>
+        <View style={[styles.note, { backgroundColor: kc.sunSoft }]}>
+          <AppText variant="bodyStrong" color={kc.onSunSoft}>
             L’explication de {note.authorName ?? "ta famille"}
           </AppText>
           {note.audioId ? <VoicePlayButton id={note.audioId} label="Écouter l’explication" /> : null}
-          {note.text ? <AppText color={KIDS.sunInk}>{note.text}</AppText> : null}
+          {note.text ? <AppText color={kc.onSunSoft}>{note.text}</AppText> : null}
         </View>
       ) : null}
     </View>

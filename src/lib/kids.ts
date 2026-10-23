@@ -1,4 +1,5 @@
 import { useMe } from "./queries";
+import { isDarkPalette, useColors } from "./theme";
 
 /**
  * Mode enfant : le profil courant est marqué « profil enfant » par le titulaire. L'app cache
@@ -19,4 +20,19 @@ export const KIDS = {
   sunSoft: "#FFF1CC",
   sunStroke: "#C98A00",
   sunInk: "#1F2A27",
+  /** Texte posé sur les cartes vert profond (`colors.hero`), sombres dans les deux thèmes. */
+  onHero: "#FFFFFF",
 } as const;
+
+/**
+ * Jaune pâle des fonds enfant et texte posé dessus, selon le thème : en sombre, un ambre profond
+ * sous le texte clair du thème (le jaune pâle rendait le texte clair illisible).
+ */
+export function useKidsColors() {
+  const colors = useColors();
+  const dark = isDarkPalette(colors);
+  return {
+    sunSoft: dark ? "#3A2F14" : KIDS.sunSoft,
+    onSunSoft: dark ? colors.text : KIDS.sunInk,
+  };
+}

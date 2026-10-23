@@ -8,7 +8,7 @@ import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { ErrorState, LoadingState } from "@/components/States";
-import { KIDS } from "@/lib/kids";
+import { KIDS, useKidsColors } from "@/lib/kids";
 import { KIDS_SURAHS, useFinishedSurahs } from "@/lib/kids-quran";
 import { useChapters, useMe, useReadingPosition } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -22,6 +22,7 @@ const openSurah = (id: number, verse?: number) => router.push({ pathname: "/sura
  */
 export function KidsQuran() {
   const colors = useColors();
+  const kc = useKidsColors();
   const me = useMe();
   const chapters = useChapters();
   const position = useReadingPosition();
@@ -48,10 +49,10 @@ export function KidsQuran() {
             <AppText variant="label" color={KIDS.sun}>
               Continuer
             </AppText>
-            <AppText variant="title" color={colors.onPrimary}>
+            <AppText variant="title" color={KIDS.onHero}>
               {current.nameSimple}
             </AppText>
-            <AppText color={colors.onPrimary} style={styles.soft}>
+            <AppText color={KIDS.onHero} style={styles.soft}>
               Verset {position.data.verseNumber} sur {current.versesCount}
             </AppText>
             <ProgressBar value={position.data.verseNumber / current.versesCount} color={KIDS.sun} track="rgba(255,255,255,0.25)" height={8} />
@@ -66,7 +67,7 @@ export function KidsQuran() {
       <View style={styles.grid}>
         {KIDS_SURAHS.map((id, i) => {
           const chapter = byId.get(id);
-          return chapter ? <SurahTile key={id} chapter={chapter} done={finished.has(id)} tint={i % 2 === 0 ? colors.primarySoft : KIDS.sunSoft} /> : null;
+          return chapter ? <SurahTile key={id} chapter={chapter} done={finished.has(id)} tint={i % 2 === 0 ? colors.primarySoft : kc.sunSoft} /> : null;
         })}
       </View>
 

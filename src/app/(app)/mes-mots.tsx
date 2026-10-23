@@ -8,7 +8,7 @@ import { Screen } from "@/components/Screen";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { api } from "@/lib/api";
 import { useOneShot } from "@/lib/audio";
-import { KIDS } from "@/lib/kids";
+import { useKidsColors } from "@/lib/kids";
 import { useLearnedWords } from "@/lib/missions";
 import { keys } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -62,6 +62,7 @@ export default function MyWords() {
 
 function WordCard({ word, loading, onPress }: { word: LearnedWord; loading: boolean; onPress: () => void }) {
   const colors = useColors();
+  const kc = useKidsColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -77,8 +78,8 @@ function WordCard({ word, loading, onPress }: { word: LearnedWord; loading: bool
       <View style={styles.footer}>
         {loading ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="volume-high" size={20} color={colors.primary} />}
         {word.known ? null : (
-          <View style={[styles.badge, { backgroundColor: KIDS.sunSoft }]}>
-            <AppText variant="caption" color={KIDS.sunInk}>
+          <View style={[styles.badge, { backgroundColor: kc.sunSoft }]}>
+            <AppText variant="caption" color={kc.onSunSoft}>
               à revoir
             </AppText>
           </View>

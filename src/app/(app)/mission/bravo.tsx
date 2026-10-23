@@ -8,7 +8,7 @@ import { BigButton } from "@/components/kids/KidsHome";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { LoadingState } from "@/components/States";
-import { KIDS } from "@/lib/kids";
+import { KIDS, useKidsColors } from "@/lib/kids";
 import { useTodayMission } from "@/lib/missions";
 import { STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
@@ -18,6 +18,7 @@ import { radius, spacing, useColors } from "@/lib/theme";
 /** Mission du jour réussie : les étoiles gagnées, l'autocollant, et la suite pour demain. */
 export default function MissionBravo() {
   const colors = useColors();
+  const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
   useEffect(() => {
@@ -41,10 +42,10 @@ export default function MissionBravo() {
               <Ionicons key={i} name="star" size={i === Math.floor(stars / 2) ? 96 : 64} color={KIDS.sun} />
             ))}
           </View>
-          <AppText variant="display" color={colors.onPrimary} center>
+          <AppText variant="display" color={KIDS.onHero} center>
             Bravo {me.data?.displayName ?? ""} !
           </AppText>
-          <AppText variant="headline" color={colors.onPrimary} center>
+          <AppText variant="headline" color={KIDS.onHero} center>
             {last ? "Tu as fini toute ta mission !" : "Ta mission du jour est réussie"}
           </AppText>
         </View>
@@ -58,7 +59,7 @@ export default function MissionBravo() {
 
         <View style={styles.body}>
           <Card style={styles.sticker}>
-            <View style={[styles.stickerIcon, { backgroundColor: KIDS.sunSoft }]}>
+            <View style={[styles.stickerIcon, { backgroundColor: kc.sunSoft }]}>
               <Ionicons name={sticker?.icon ?? "lock-closed"} size={56} color={sticker ? KIDS.sunStroke : colors.textFaint} />
             </View>
             <View style={styles.flex}>

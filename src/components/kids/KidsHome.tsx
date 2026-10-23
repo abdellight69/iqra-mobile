@@ -9,7 +9,7 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
 import { VoicePlayButton } from "@/components/VoiceNote";
 import { localDay } from "@/lib/families-format";
-import { KIDS } from "@/lib/kids";
+import { KIDS, useKidsColors } from "@/lib/kids";
 import { useLearnedWords, useTodayMission } from "@/lib/missions";
 import { dayLabel, KID_STEPS, kidMissionTitle, versesLabel } from "@/lib/missions-format";
 import { useChapters, useMe } from "@/lib/queries";
@@ -22,6 +22,7 @@ import type { KidMission, KidToday } from "@/lib/types";
  */
 export function KidsHome() {
   const colors = useColors();
+  const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
   const words = useLearnedWords();
@@ -55,7 +56,7 @@ export function KidsHome() {
       {today.data?.mission ? <MissionCard mission={today.data.mission} /> : <NoMission today={today.data} loading={today.isPending} />}
 
       <Card onPress={() => router.push("/mes-mots")} style={styles.words}>
-        <View style={[styles.wordsIcon, { backgroundColor: KIDS.sunSoft }]}>
+        <View style={[styles.wordsIcon, { backgroundColor: kc.sunSoft }]}>
           <Ionicons name="albums" size={30} color={KIDS.sunStroke} />
         </View>
         <View style={styles.flex}>
@@ -81,10 +82,10 @@ function MissionCard({ mission }: { mission: KidMission }) {
         <AppText variant="label" color={KIDS.sun}>
           Ta mission du jour
         </AppText>
-        <AppText variant="title" color={colors.onPrimary}>
+        <AppText variant="title" color={KIDS.onHero}>
           {kidMissionTitle(mission.title, mission.verses, chapters.data)}
         </AppText>
-        <AppText color={colors.onPrimary} style={styles.soft}>
+        <AppText color={KIDS.onHero} style={styles.soft}>
           {versesLabel(mission.verses)} · jour {mission.dayIndex} sur {mission.totalDays}
         </AppText>
       </View>
@@ -103,7 +104,7 @@ function MissionCard({ mission }: { mission: KidMission }) {
             <View style={[styles.stepIcon, { backgroundColor: colors.surface }]}>
               <Ionicons name={KID_STEPS[step.kind].icon} size={26} color={colors.primary} />
             </View>
-            <AppText variant="bodyStrong" color={colors.onPrimary}>
+            <AppText variant="bodyStrong" color={KIDS.onHero}>
               {KID_STEPS[step.kind].label}
             </AppText>
             <Ionicons
