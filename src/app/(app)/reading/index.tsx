@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton } from "@/components/kids/KidButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Screen } from "@/components/Screen";

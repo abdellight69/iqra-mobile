@@ -1,15 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton, RoundButton } from "@/components/kids/KidButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { ErrorState, LoadingState } from "@/components/States";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useChapters, useDueVerses, usePlans } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { MemorizationPlan } from "@/lib/types";
@@ -19,7 +19,6 @@ import type { MemorizationPlan } from "@/lib/types";
  * la récitation au micro. Ni carte de mémorisation, ni programmes, ni détail des plans.
  */
 export function KidsRecite() {
-  const colors = useColors();
   const kc = useKidsColors();
   const plans = usePlans();
   const due = useDueVerses();
@@ -55,40 +54,34 @@ export function KidsRecite() {
             Apprends tes sourates par cœur.
           </AppText>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Apprendre une nouvelle sourate"
-          onPress={() => router.push("/memorize/new")}
-          style={[styles.add, { backgroundColor: colors.hero }]}>
-          <Ionicons name="add" size={30} color={KIDS.onHero} />
-        </Pressable>
+        <RoundButton icon="add" label="Apprendre une nouvelle sourate" tone="green" size={54} onPress={() => router.push("/memorize/new")} />
       </View>
 
       {dueCount > 0 ? (
-        <Card tone="primary" style={styles.due}>
+        <Card style={[styles.due, { backgroundColor: KID_TONES.orange.main }]}>
           <View>
-            <AppText variant="label" color={KIDS.sun}>
+            <AppText variant="label" color="#FFE1CC">
               À revoir aujourd’hui
             </AppText>
             <AppText variant="title" color={KIDS.onHero}>
               {dueCount} verset{dueCount > 1 ? "s t’attendent" : " t’attend"}
             </AppText>
             {dueNames ? (
-              <AppText color={KIDS.onHero} style={styles.soft}>
+              <AppText variant="caption" color="#FFEFE3">
                 {dueNames}
               </AppText>
             ) : null}
           </View>
-          <BigButton title="Réviser" icon="play" onPress={() => router.push({ pathname: "/memorize/session", params: { due: "1" } })} />
+          <BigButton title="Réviser" icon="play" tone="white" onPress={() => router.push({ pathname: "/memorize/session", params: { due: "1" } })} />
         </Card>
       ) : plans.data.length > 0 ? (
-        <Card tone="primary" style={styles.done}>
+        <Card style={[styles.done, { backgroundColor: KID_TONES.green.main }]}>
           <Ionicons name="star" size={44} color={KIDS.sun} />
           <View style={styles.flex}>
-            <AppText variant="title" color={KIDS.onHero}>
+            <AppText variant="headline" color={KIDS.onHero}>
               Tout est révisé !
             </AppText>
-            <AppText color={KIDS.onHero} style={styles.soft}>
+            <AppText variant="caption" color="#DDF6EE">
               Reviens demain pour la suite.
             </AppText>
           </View>
@@ -111,20 +104,20 @@ export function KidsRecite() {
       {latest ? (
         <Card
           tone="flat"
-          style={[styles.mic, { backgroundColor: kc.sunSoft }]}
+          style={[styles.mic, { backgroundColor: kc.tint("violet").bg }]}
           onPress={() =>
             router.push({ pathname: "/memorize/recite", params: { chapterId: String(latest.chapterId), from: String(latest.fromVerse), to: String(latest.toVerse) } })
           }>
-          <View style={[styles.micIcon, { backgroundColor: colors.hero }]}>
-            <Ionicons name="mic" size={28} color={KIDS.onHero} />
+          <View style={[styles.micIcon, { backgroundColor: KID_TONES.violet.main, borderBottomColor: KID_TONES.violet.edge }]}>
+            <Ionicons name="mic" size={26} color={KIDS.onHero} />
           </View>
           <View style={styles.flex}>
-            <AppText variant="headline" color={kc.onSunSoft}>
-              Réciter au micro
+            <AppText variant="headline">Réciter au micro</AppText>
+            <AppText variant="caption" color={kc.tint("violet").ink}>
+              Récite {name(latest.chapterId)}, Eqra t’écoute.
             </AppText>
-            <AppText color={kc.onSunSoft}>Récite {name(latest.chapterId)}, Eqra t’écoute.</AppText>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={kc.onSunSoft} />
+          <Ionicons name="chevron-forward" size={20} color={kc.tint("violet").ink} />
         </Card>
       ) : null}
     </Screen>
@@ -141,11 +134,11 @@ function PlanRow({ plan, name, arabic }: { plan: MemorizationPlan; name: string;
       onPress={() => router.push({ pathname: "/memorize/session", params: { planId: plan.id } })}
       style={styles.plan}
       accessibilityLabel={`${name} : ${known ? "connue par cœur" : `${solid} versets sur ${total}`}, s’entraîner`}>
-      <View style={[styles.badge, { backgroundColor: known ? kc.sunSoft : colors.primarySoft }]}>
+      <View style={[styles.badge, { backgroundColor: known ? kc.sunSoft : kc.tint("green").bg }]}>
         {known ? (
-          <Ionicons name="star" size={28} color={KIDS.sun} />
+          <Ionicons name="star" size={30} color={KIDS.sun} />
         ) : (
-          <AppText variant="bodyStrong" color={colors.primary}>
+          <AppText variant="bodyStrong" color={kc.tint("green").ink}>
             {solid}/{total}
           </AppText>
         )}
@@ -154,27 +147,25 @@ function PlanRow({ plan, name, arabic }: { plan: MemorizationPlan; name: string;
         <AppText variant="headline" numberOfLines={1}>
           {name}
         </AppText>
-        <ProgressBar value={total ? solid / total : 0} color={known ? KIDS.sun : colors.primary} height={8} />
+        <ProgressBar value={total ? solid / total : 0} color={known ? KIDS.sun : KID_TONES.green.main} track={colors.surfaceMuted} height={8} />
         <AppText variant="caption" muted>
           {known ? "Je la connais par cœur" : `${solid} verset${solid > 1 ? "s" : ""} sur ${total} · on continue`}
         </AppText>
       </View>
-      {arabic ? <ArabicText size="sm">{arabic}</ArabicText> : null}
+      {arabic ? <ArabicText size="md">{arabic}</ArabicText> : null}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  soft: { opacity: 0.85 },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  add: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
   due: { gap: spacing.lg, borderRadius: radius.xl },
   done: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: radius.xl },
   empty: { alignItems: "center", gap: spacing.md },
-  plan: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.md },
+  plan: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.md, borderRadius: 24 },
   planText: { gap: 4 },
-  badge: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
-  mic: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  micIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  badge: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  mic: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: 24 },
+  micIcon: { width: 52, height: 56, borderRadius: 26, borderBottomWidth: 4, alignItems: "center", justifyContent: "center" },
 });

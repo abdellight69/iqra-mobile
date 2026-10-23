@@ -16,7 +16,9 @@ export const fonts = {
   serifSemibold: "Fraunces_600SemiBold",
   serifItalic: "Fraunces_400Regular_Italic",
   arabic: "AmiriQuran_400Regular",
-  /** Police ronde des profils enfants (Nunito). */
+  /** Polices des profils enfants : Fredoka (titres, très ronde) et Nunito (texte courant). */
+  kidsTitle: "Fredoka_700Bold",
+  kidsTitleMedium: "Fredoka_600SemiBold",
   kidsRegular: "Nunito_600SemiBold",
   kidsBold: "Nunito_700Bold",
   kidsHeavy: "Nunito_800ExtraBold",

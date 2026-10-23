@@ -26,7 +26,7 @@ import { annotateArabic } from "@/lib/transliterate";
 import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
 import { useCompleteMissionStep } from "@/lib/missions";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton } from "@/components/kids/KidButton";
 import { KIDS, useKidsMode } from "@/lib/kids";
 
 type Answer = { wordId: string; correct: boolean };

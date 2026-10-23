@@ -6,7 +6,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { api } from "@/lib/api";
 import { useOneShot } from "@/lib/audio";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { keys } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { transliterate } from "@/lib/transliterate";
@@ -63,10 +63,10 @@ export function KidWordCard({
       accessibilityRole="button"
       accessibilityLabel={`${word.fr ?? "Mot"} : écouter`}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, { backgroundColor: colors.surface, opacity: pressed ? 0.8 : 1 }]}>
+      style={({ pressed }) => [styles.card, { backgroundColor: colors.surface, borderBottomColor: kc.edge, borderBottomWidth: pressed ? 1 : 5, marginTop: pressed ? 4 : 0 }]}>
       <View style={styles.top}>
-        {status === "learned" ? <Ionicons name="star" size={20} color={KIDS.sun} accessibilityLabel="Appris" /> : <View />}
-        {loading ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="volume-high" size={20} color={colors.primary} />}
+        {status === "learned" ? <Ionicons name="star" size={22} color={KIDS.sun} accessibilityLabel="Appris" /> : <View />}
+        {loading ? <ActivityIndicator color={KID_TONES.blue.main} /> : <Ionicons name="volume-high" size={22} color={KID_TONES.blue.main} />}
       </View>
       <ArabicText size="xl" center>
         {arabic}
@@ -91,7 +91,7 @@ export function KidWordCard({
 }
 
 const styles = StyleSheet.create({
-  card: { width: "47%", flexGrow: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs, alignItems: "center", minHeight: 170, justifyContent: "center" },
+  card: { width: "47%", flexGrow: 1, borderRadius: 24, padding: spacing.md, gap: spacing.xs, alignItems: "center", minHeight: 170, justifyContent: "center" },
   top: { alignSelf: "stretch", flexDirection: "row", justifyContent: "space-between" },
   badge: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
 });

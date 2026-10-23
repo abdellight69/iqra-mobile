@@ -1,14 +1,14 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
+import { RoundButton } from "@/components/kids/KidButton";
+import { ParentNote } from "@/components/kids/ParentNote";
 import { SafeArea } from "@/components/SafeArea";
 import { ErrorState, LoadingState } from "@/components/States";
-import { VoicePlayButton } from "@/components/VoiceNote";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { kidPhonetic, useFinishedSurahs } from "@/lib/kids-quran";
 import { useVerseNotes } from "@/lib/missions";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
@@ -26,6 +26,7 @@ const REPEATS = 3;
  */
 export function KidsReader() {
   const colors = useColors();
+  const kc = useKidsColors();
   const params = useLocalSearchParams<{ id: string; verse?: string }>();
   const chapterId = Number(params.id);
   const me = useMe();
@@ -89,9 +90,7 @@ export function KidsReader() {
     <SafeArea style={[styles.flex, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Retour aux sourates" onPress={() => router.back()} style={[styles.round, { backgroundColor: colors.surface }]}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
+        <RoundButton icon="arrow-back" label="Retour aux sourates" onPress={() => router.back()} />
         <View style={styles.title}>
           <AppText variant="headline" numberOfLines={1}>
             {chapter.data.nameSimple}
@@ -108,11 +107,11 @@ export function KidsReader() {
           {total <= 30 ? (
             <View style={styles.dots}>
               {Array.from({ length: total }, (_, i) => (
-                <View key={i} style={[styles.dot, { backgroundColor: i < index ? colors.primary : i === index ? KIDS.sun : colors.border }]} />
+                <View key={i} style={[styles.dot, { backgroundColor: i < index ? KID_TONES.blue.main : i === index ? KIDS.sun : colors.border }]} />
               ))}
             </View>
           ) : null}
-          <AppText variant="bodyStrong" color={colors.accent} center>
+          <AppText variant="bodyStrong" color={kc.tint("blue").ink} center>
             Verset {verse.verseNumber} sur {total}
           </AppText>
         </View>
@@ -128,41 +127,38 @@ export function KidsReader() {
 
       <View style={styles.controls}>
         <View style={styles.buttons}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Verset précédent"
-            disabled={index === 0}
-            onPress={() => go(index - 1)}
-            style={[styles.side, { backgroundColor: colors.surface, borderColor: colors.border, opacity: index === 0 ? 0.4 : 1 }]}>
-            <Ionicons name="chevron-back" size={30} color={colors.text} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={playing ? "Mettre en pause" : "Écouter le verset"}
-            disabled={tracks.length === 0}
-            onPress={() => (queue.currentKey === verse.key ? queue.toggle() : queue.playKey(verse.key))}
-            style={[styles.play, { backgroundColor: colors.primary, borderColor: colors.primarySoft, opacity: tracks.length === 0 ? 0.5 : 1 }]}>
-            {audio.isPending ? <ActivityIndicator color={colors.onPrimary} /> : <Ionicons name={playing ? "pause" : "play"} size={44} color={colors.onPrimary} />}
-          </Pressable>
+          <RoundButton icon="chevron-back" label="Verset précédent" size={64} disabled={index === 0} onPress={() => go(index - 1)} />
+          {audio.isPending ? (
+            <View style={[styles.play, { backgroundColor: colors.surfaceMuted }]}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            <RoundButton
+              icon={playing ? "pause" : "play"}
+              label={playing ? "Mettre en pause" : "Écouter le verset"}
+              tone="blue"
+              size={104}
+              disabled={tracks.length === 0}
+              onPress={() => (queue.currentKey === verse.key ? queue.toggle() : queue.playKey(verse.key))}
+            />
+          )}
           {isLast ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Sourate finie, retour aux sourates"
+            <RoundButton
+              icon="checkmark"
+              label="Sourate finie, retour aux sourates"
+              tone="sun"
+              size={64}
               onPress={() => {
                 queue.stop();
                 markFinished(chapterId);
                 router.back();
               }}
-              style={[styles.side, { backgroundColor: KIDS.sun, borderColor: KIDS.sun }]}>
-              <Ionicons name="checkmark" size={32} color={KIDS.sunInk} />
-            </Pressable>
+            />
           ) : (
-            <Pressable accessibilityRole="button" accessibilityLabel="Verset suivant" onPress={() => go(index + 1)} style={[styles.side, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="chevron-forward" size={30} color={colors.text} />
-            </Pressable>
+            <RoundButton icon="chevron-forward" label="Verset suivant" size={64} onPress={() => go(index + 1)} />
           )}
         </View>
-        <AppText variant="bodyStrong" color={colors.primary} center>
+        <AppText variant="bodyStrong" color={kc.tint("blue").ink} center>
           {playing ? "J’écoute…" : isLast ? "Dernier verset : touche ✓ quand tu as fini" : "Écoute, puis passe au verset suivant"}
         </AppText>
         <View style={styles.pills}>
@@ -196,10 +192,10 @@ function VerseView({ verse, help, activeWord, onWord }: { verse: Verse; help: bo
               accessibilityLabel={`Écouter le mot ${phonetic ?? ""}`}
               disabled={!w.audioUrl}
               onPress={() => w.audioUrl && onWord(w.audioUrl)}
-              style={[styles.word, { backgroundColor: active ? kc.sunSoft : colors.surfaceMuted, borderColor: active ? KIDS.sun : "transparent" }]}>
+              style={[styles.word, { backgroundColor: active ? kc.sunSoft : colors.background, borderBottomColor: active ? KIDS.sun : kc.edge }]}>
               <ArabicText size="xl">{w.textUthmani}</ArabicText>
               {phonetic ? (
-                <AppText variant="bodyStrong" muted>
+                <AppText variant="bodyStrong" color={active ? kc.onSunSoft : colors.textMuted}>
                   {phonetic}
                 </AppText>
               ) : null}
@@ -208,7 +204,7 @@ function VerseView({ verse, help, activeWord, onWord }: { verse: Verse; help: bo
         })}
       </View>
       {verse.translation ? (
-        <View style={[styles.meaning, { borderColor: colors.border }]}>
+        <View style={[styles.meaning, { borderColor: colors.surfaceMuted }]}>
           <AppText variant="label" color={colors.accent}>
             Ce que ça veut dire
           </AppText>
@@ -217,29 +213,25 @@ function VerseView({ verse, help, activeWord, onWord }: { verse: Verse; help: bo
           </AppText>
         </View>
       ) : null}
-      {note ? (
-        <View style={[styles.note, { backgroundColor: kc.sunSoft }]}>
-          <AppText variant="bodyStrong" color={kc.onSunSoft}>
-            L’explication de {note.authorName ?? "ta famille"}
-          </AppText>
-          {note.audioId ? <VoicePlayButton id={note.audioId} label="Écouter l’explication" /> : null}
-          {note.text ? <AppText color={kc.onSunSoft}>{note.text}</AppText> : null}
-        </View>
-      ) : null}
+      {note ? <ParentNote note={note} /> : null}
     </View>
   );
 }
 
 function Pill({ label, on, onPress, accessibilityLabel }: { label: string; on: boolean; onPress: () => void; accessibilityLabel?: string }) {
   const colors = useColors();
+  const kc = useKidsColors();
   return (
     <Pressable
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
-      style={[styles.pill, { backgroundColor: on ? colors.primary : colors.surface, borderColor: on ? colors.primary : colors.border }]}>
-      <AppText variant="bodyStrong" color={on ? colors.onPrimary : colors.text}>
+      style={({ pressed }) => [
+        styles.pill,
+        { backgroundColor: on ? KID_TONES.green.main : colors.surface, borderBottomColor: on ? KID_TONES.green.edge : kc.edge, borderBottomWidth: pressed ? 1 : 4, marginTop: pressed ? 3 : 0 },
+      ]}>
+      <AppText variant="bodyStrong" color={on ? KIDS.onHero : colors.text}>
         {label}
       </AppText>
     </Pressable>
@@ -249,7 +241,6 @@ function Pill({ label, on, onPress, accessibilityLabel }: { label: string; on: b
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   top: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  round: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   title: { flex: 1, alignItems: "center" },
   content: { padding: spacing.lg, gap: spacing.lg },
   progress: { gap: spacing.sm },
@@ -257,13 +248,11 @@ const styles = StyleSheet.create({
   dot: { flex: 1, height: 10, borderRadius: 5 },
   card: { borderRadius: radius.xl, padding: spacing.lg, gap: spacing.lg },
   words: { flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "center", gap: spacing.sm },
-  word: { minWidth: 72, alignItems: "center", borderRadius: radius.lg, borderWidth: 3, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-  meaning: { alignItems: "center", gap: 4, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md },
-  note: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+  word: { minWidth: 72, alignItems: "center", borderRadius: radius.lg, borderBottomWidth: 4, paddingHorizontal: spacing.md, paddingTop: 2, paddingBottom: spacing.sm },
+  meaning: { alignItems: "center", gap: 4, borderTopWidth: 2, paddingTop: spacing.md },
   controls: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
   buttons: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xl },
-  side: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  play: { width: 104, height: 104, borderRadius: 52, borderWidth: 8, alignItems: "center", justifyContent: "center" },
-  pills: { flexDirection: "row", justifyContent: "center", gap: spacing.sm },
-  pill: { minHeight: 44, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  play: { width: 104, height: 104, borderRadius: 52, alignItems: "center", justifyContent: "center" },
+  pills: { flexDirection: "row", justifyContent: "center", gap: spacing.sm + 2 },
+  pill: { minHeight: 44, paddingHorizontal: spacing.lg, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
 });

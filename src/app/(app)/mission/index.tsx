@@ -4,15 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton, RoundButton } from "@/components/kids/KidButton";
+import { ParentNote } from "@/components/kids/ParentNote";
 import { RecitationRecorder } from "@/components/RecitationCheck";
 import { SafeArea } from "@/components/SafeArea";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
-import { VoicePlayButton } from "@/components/VoiceNote";
 import { errorMessage } from "@/lib/api";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useCompleteMissionStep, useTodayMission } from "@/lib/missions";
 import { KID_STEPS, versesLabel } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
@@ -65,25 +65,20 @@ export default function MissionScreen() {
 
 function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: MissionStep; onDone: () => void; saving: boolean }) {
   const colors = useColors();
+  const kc = useKidsColors();
   const position = mission.steps.findIndex((s) => s.kind === step);
   return (
     <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <View style={styles.top}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour à l’accueil"
-          onPress={() => closeScreen("/")}
-          style={[styles.close, { backgroundColor: colors.surface }]}>
-          <Ionicons name="close" size={24} color={colors.text} />
-        </Pressable>
+        <RoundButton icon="arrow-back" label="Retour à l’accueil" onPress={() => closeScreen("/")} />
         <View style={styles.segments}>
           {mission.steps.map((s, i) => (
-            <View key={s.kind} style={[styles.segment, { backgroundColor: s.done ? colors.primary : i === position ? KIDS.sun : colors.border }]} />
+            <View key={s.kind} style={[styles.segment, { backgroundColor: s.done ? KID_TONES.green.main : i === position ? KIDS.sun : colors.border }]} />
           ))}
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <AppText variant="label" color={colors.accent}>
+        <AppText variant="label" color={kc.tint("orange").ink}>
           Étape {position + 1} sur {mission.steps.length} · {versesLabel(mission.verses)}
         </AppText>
         {step === "listen" ? <ListenStep mission={mission} onDone={onDone} saving={saving} /> : null}
@@ -93,6 +88,7 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
             title="Retiens le verset"
             text="Écoute, cache le texte, puis récite de mémoire. Tu peux t’aider des premiers mots."
             icon={KID_STEPS.memorize.icon}
+            tone="blue"
             onPress={() =>
               router.push({ pathname: "/memorize/session", params: { keys: mission.verses.join(","), missionPlanId: mission.planId, missionDay: String(mission.dayIndex) } })
             }
@@ -103,6 +99,7 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
             title="Joue avec les mots"
             text="Des petits jeux avec les mots du verset. Chaque mot trouvé rejoint « Mes mots »."
             icon={KID_STEPS.play.icon}
+            tone="violet"
             onPress={() => {
               const [chapter, verse] = mission.verses[0]!.split(":");
               router.push({ pathname: "/learn/session", params: { chapterId: chapter!, verse: verse!, missionPlanId: mission.planId, missionDay: String(mission.dayIndex) } });
@@ -125,7 +122,9 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
     () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
     [audio.data, mission.verses],
   );
-  const queue = useTrackQueue(tracks, { autoAdvance: true });
+  // « Lent » : la récitation à trois quarts de sa vitesse, pour suivre mot à mot.
+  const [slow, setSlow] = useState(false);
+  const queue = useTrackQueue(tracks, { autoAdvance: true, rate: slow ? 0.75 : 1 });
   const word = useOneShot();
   // Écouté jusqu'au bout : la file s'arrête après le dernier verset.
   const [heard, setHeard] = useState(false);
@@ -145,19 +144,29 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
         <VerseWords key={key} verseKey={key} activeWord={queue.currentKey === key ? queue.currentWord : null} onWord={(url) => word.play(url)} note={mission.notes[key]} />
       ))}
       <View style={styles.playRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={queue.playing ? "Mettre en pause" : "Écouter le verset"}
-          disabled={tracks.length === 0}
-          onPress={queue.toggle}
-          style={[styles.playBig, { backgroundColor: colors.primary, borderColor: colors.primarySoft, opacity: tracks.length === 0 ? 0.5 : 1 }]}>
-          {audio.isPending ? <ActivityIndicator color={colors.onPrimary} /> : <Ionicons name={queue.playing ? "pause" : "play"} size={44} color={colors.onPrimary} />}
-        </Pressable>
-        <AppText variant="headline" color={colors.primary}>
-          {queue.playing ? "J’écoute…" : heard ? "Encore une fois ?" : "Écouter le verset"}
-        </AppText>
+        <BigButton title="Lent" size="md" tone={slow ? "green" : "white"} accessibilityLabel={slow ? "Vitesse normale" : "Écouter lentement"} onPress={() => setSlow((s) => !s)} />
+        <View style={styles.playCenter}>
+          {audio.isPending ? (
+            <View style={[styles.playBig, { backgroundColor: colors.surfaceMuted }]}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            <RoundButton
+              icon={queue.playing ? "pause" : "play"}
+              label={queue.playing ? "Mettre en pause" : "Écouter le verset"}
+              tone="green"
+              size={104}
+              disabled={tracks.length === 0}
+              onPress={queue.toggle}
+            />
+          )}
+          <AppText variant="bodyStrong" color={colors.primary}>
+            {queue.playing ? "J’écoute…" : heard ? "Encore une fois ?" : "Écouter le verset"}
+          </AppText>
+        </View>
+        <View style={styles.playSpacer} />
       </View>
-      <BigButton title="J’ai bien écouté !" icon="checkmark" disabled={!heard || saving} onPress={onDone} />
+      <BigButton title="J’ai bien écouté !" icon="checkmark" tone="sun" disabled={!heard || saving} onPress={onDone} />
       {!heard ? (
         <AppText variant="caption" muted center>
           Écoute le verset jusqu’au bout pour gagner ton étoile.
@@ -187,10 +196,10 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
               accessibilityLabel={`Écouter le mot ${w.transliteration ?? ""}`}
               disabled={!w.audioUrl}
               onPress={() => w.audioUrl && onWord(w.audioUrl)}
-              style={[styles.word, { backgroundColor: active ? kc.sunSoft : colors.surfaceMuted, borderColor: active ? KIDS.sun : "transparent" }]}>
+              style={[styles.word, { backgroundColor: active ? kc.sunSoft : colors.background, borderBottomColor: active ? KIDS.sun : kc.edge }]}>
               <ArabicText size="lg">{w.textUthmani}</ArabicText>
               {w.transliteration ? (
-                <AppText variant="caption" muted>
+                <AppText variant="bodyStrong" color={active ? kc.onSunSoft : colors.textMuted}>
                   {w.transliteration}
                 </AppText>
               ) : null}
@@ -208,15 +217,7 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
           </AppText>
         </View>
       ) : null}
-      {note ? (
-        <View style={[styles.note, { backgroundColor: kc.sunSoft }]}>
-          <AppText variant="bodyStrong" color={kc.onSunSoft}>
-            L’explication de {note.authorName ?? "ta famille"}
-          </AppText>
-          {note.audioId ? <VoicePlayButton id={note.audioId} label="Écouter l’explication" /> : null}
-          {note.text ? <AppText color={kc.onSunSoft}>{note.text}</AppText> : null}
-        </View>
-      ) : null}
+      {note ? <ParentNote note={note} /> : null}
     </View>
   );
 }
@@ -252,7 +253,7 @@ function RepeatStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
           {passed ? "Bravo, c’est très bien récité !" : tries >= MAX_TRIES ? "Tu as bien travaillé, on continue !" : "Presque ! Essaie encore une fois."}
         </AppText>
       ) : null}
-      <BigButton title={available.data === false ? "J’ai récité !" : "Continuer"} icon="checkmark" disabled={!canGoOn || saving} onPress={onDone} />
+      <BigButton title={available.data === false ? "J’ai récité !" : "Continuer"} icon="checkmark" tone="sun" disabled={!canGoOn || saving} onPress={onDone} />
     </View>
   );
 }
@@ -275,12 +276,12 @@ function VerseText({ verseKey }: { verseKey: string }) {
 
 // --- Retenir et jouer : séances existantes ---------------------------------------
 
-function OpenSessionStep({ title, text, icon, onPress }: { title: string; text: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
-  const colors = useColors();
+function OpenSessionStep({ title, text, icon, tone, onPress }: { title: string; text: string; icon: keyof typeof Ionicons.glyphMap; tone: "blue" | "violet"; onPress: () => void }) {
+  const kc = useKidsColors();
   return (
     <View style={[styles.step, styles.center]}>
-      <View style={[styles.bigIcon, { backgroundColor: colors.primarySoft }]}>
-        <Ionicons name={icon} size={56} color={colors.primary} />
+      <View style={[styles.bigIcon, { backgroundColor: kc.tint(tone).bg }]}>
+        <Ionicons name={icon} size={56} color={KID_TONES[tone].main} />
       </View>
       <AppText variant="display" center>
         {title}
@@ -298,7 +299,6 @@ function OpenSessionStep({ title, text, icon, onPress }: { title: string; text: 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   top: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  close: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   segments: { flex: 1, flexDirection: "row", gap: 6 },
   segment: { flex: 1, height: 12, borderRadius: 6 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxxl },
@@ -307,10 +307,11 @@ const styles = StyleSheet.create({
   stretch: { alignSelf: "stretch" },
   verseCard: { borderRadius: radius.xl, padding: spacing.lg, gap: spacing.lg },
   words: { flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "center", gap: spacing.sm },
-  word: { minWidth: 72, alignItems: "center", borderRadius: radius.lg, borderWidth: 3, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+  word: { minWidth: 74, alignItems: "center", borderRadius: radius.lg, borderBottomWidth: 4, paddingHorizontal: spacing.md, paddingTop: 2, paddingBottom: spacing.sm },
   meaning: { alignItems: "center", gap: 4 },
-  note: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-  playRow: { alignItems: "center", gap: spacing.sm },
-  playBig: { width: 108, height: 108, borderRadius: 54, borderWidth: 8, alignItems: "center", justifyContent: "center" },
+  playRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.lg, paddingVertical: spacing.sm },
+  playCenter: { alignItems: "center", gap: spacing.sm },
+  playSpacer: { minWidth: 78 },
+  playBig: { width: 104, height: 104, borderRadius: 52, alignItems: "center", justifyContent: "center" },
   bigIcon: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center" },
 });

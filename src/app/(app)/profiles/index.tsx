@@ -9,15 +9,18 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { SafeArea } from "@/components/SafeArea";
 import { ErrorState } from "@/components/States";
 import { TextField } from "@/components/TextField";
+import { KIDS, useKidsMode } from "@/lib/kids";
 import { errorMessage } from "@/lib/api";
 import { rememberProfile } from "@/lib/profile-memory";
 import { useProfiles, useSwitchProfile } from "@/lib/profiles";
-import { spacing, useColors } from "@/lib/theme";
+import { elevation, spacing, useColors } from "@/lib/theme";
 import type { Profile } from "@/lib/types";
 
 /** « Qui lit ? » : choix du profil, code parent pour le profil du titulaire s'il en a un. */
 export default function ProfilePicker() {
   const colors = useColors();
+  // Profil enfant : pastilles plus grandes cerclées de blanc, un conseil pour le profil à code.
+  const kids = useKidsMode();
   const profiles = useProfiles();
   const switchProfile = useSwitchProfile();
   const [askPinFor, setAskPinFor] = useState<Profile | null>(null);
@@ -59,9 +62,16 @@ export default function ProfilePicker() {
         <Ionicons name="close" size={26} color={colors.textMuted} />
       </Pressable>
       <View style={styles.body}>
-      <AppText variant="display" center>
-        Qui lit ?
-      </AppText>
+      <View style={styles.titleBlock}>
+        <AppText variant="display" center>
+          Qui lit ?
+        </AppText>
+        {kids ? (
+          <AppText variant="bodyStrong" muted center>
+            Touche ton prénom.
+          </AppText>
+        ) : null}
+      </View>
 
       {profiles.isPending ? (
         <ActivityIndicator color={colors.primary} />
@@ -110,11 +120,22 @@ export default function ProfilePicker() {
                 disabled={switchProfile.isPending}
                 onPress={() => choose(p)}
                 style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.7 : 1 }]}>
-                <ProfileAvatar name={p.displayName} avatar={p.avatar} size={84} selected={p.current} />
-                <AppText variant="bodyStrong" center numberOfLines={1}>
+                {kids ? (
+                  <View style={[styles.ring, { backgroundColor: p.current ? KIDS.sun : colors.surface }, elevation(colors, 2)]}>
+                    <ProfileAvatar name={p.displayName} avatar={p.avatar} size={96} />
+                    {p.isOwner && profiles.data.pinSet && !profiles.data.isOwner ? (
+                      <View style={[styles.lock, { backgroundColor: colors.surface }, elevation(colors)]}>
+                        <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+                      </View>
+                    ) : null}
+                  </View>
+                ) : (
+                  <ProfileAvatar name={p.displayName} avatar={p.avatar} size={84} selected={p.current} />
+                )}
+                <AppText variant={kids ? "headline" : "bodyStrong"} center numberOfLines={1}>
                   {p.displayName}
                 </AppText>
-                {p.isOwner && profiles.data.pinSet && !profiles.data.isOwner ? <Ionicons name="lock-closed" size={14} color={colors.textMuted} /> : null}
+                {!kids && p.isOwner && profiles.data.pinSet && !profiles.data.isOwner ? <Ionicons name="lock-closed" size={14} color={colors.textMuted} /> : null}
               </Pressable>
             ))}
           </View>
@@ -126,6 +147,11 @@ export default function ProfilePicker() {
           {switchProfile.isPending ? <ActivityIndicator color={colors.primary} /> : null}
           {profiles.data.isOwner ? (
             <Button title="Gérer les profils" variant="secondary" icon="people-outline" onPress={() => router.push("/profiles/manage")} />
+          ) : null}
+          {kids && profiles.data.pinSet ? (
+            <AppText variant="caption" muted center>
+              Le profil avec un cadenas a un code : demande à un parent avant de l’ouvrir.
+            </AppText>
           ) : null}
         </>
       )}
@@ -139,7 +165,10 @@ const styles = StyleSheet.create({
   close: { alignSelf: "flex-start" },
   body: { flex: 1, gap: spacing.xl, justifyContent: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: spacing.xl },
-  tile: { width: 120, alignItems: "center", gap: spacing.sm },
+  titleBlock: { gap: spacing.xs },
+  tile: { width: 128, alignItems: "center", gap: spacing.sm },
+  ring: { padding: 6, borderRadius: 54 },
+  lock: { position: "absolute", right: -2, bottom: -2, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   pin: { gap: spacing.md, alignItems: "stretch" },
   center: { alignItems: "center" },
 });

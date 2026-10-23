@@ -13,7 +13,7 @@ import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/compon
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useTrackQueue } from "@/lib/audio";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton } from "@/components/kids/KidButton";
 import { KIDS, KIDS_MAX_DUE_VERSES, useKidsMode } from "@/lib/kids";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";

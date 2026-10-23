@@ -2,7 +2,7 @@ import { isDarkPalette, lightColors, palette } from "../palettes";
 
 describe("thème enfant", () => {
   it("remplace le thème choisi par la palette enfant, en clair comme en sombre", () => {
-    expect(palette("eqra", false, true).background).toBe("#FBF4E6");
+    expect(palette("eqra", false, true).background).toBe("#F4F7FF");
     expect(palette("nuit", false, true)).toBe(palette("eqra", false, true));
     expect(isDarkPalette(palette("eqra", true, true))).toBe(true);
     expect(isDarkPalette(palette("eqra", false, true))).toBe(false);

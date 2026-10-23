@@ -9,9 +9,9 @@ import { Button } from "@/components/Button";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuranExample } from "@/components/QuranExample";
 import { ErrorState, LoadingState } from "@/components/States";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton } from "@/components/kids/KidButton";
 import { KidWordCard, useWordAudio } from "@/components/kids/KidWordCard";
-import { KIDS, useKidsColors, useKidsMode } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsMode } from "@/lib/kids";
 import { useTheme } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 import { annotateArabic, transliterate } from "@/lib/transliterate";
@@ -25,7 +25,6 @@ export default function ThemeDetail() {
   const theme = useTheme(themeId);
   // Profil enfant : séances plus courtes, et une grille de grandes cartes à écouter.
   const kids = useKidsMode();
-  const kc = useKidsColors();
   const audio = useWordAudio();
 
   if (theme.isPending) return <LoadingState />;
@@ -43,14 +42,14 @@ export default function ThemeDetail() {
         <Stack.Screen options={{ title: "" }} />
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]} showsVerticalScrollIndicator={false}>
           <View style={styles.kidsHeader}>
-            <View style={[styles.kidsIcon, { backgroundColor: kc.sunSoft }]}>
-              <Ionicons name={(info.icon ?? "pricetag-outline") as ComponentProps<typeof Ionicons>["name"]} size={40} color={KIDS.sunStroke} />
+            <View style={[styles.kidsIcon, { backgroundColor: KID_TONES.pink.main, borderBottomColor: KID_TONES.pink.edge }]}>
+              <Ionicons name={(info.icon ?? "pricetag-outline") as ComponentProps<typeof Ionicons>["name"]} size={36} color={KIDS.onHero} />
             </View>
             <AppText variant="display" center>
               {info.title}
             </AppText>
             <View style={styles.kidsProgress}>
-              <ProgressBar value={words.length ? learned.length / words.length : 0} color={KIDS.sun} height={10} />
+              <ProgressBar value={words.length ? learned.length / words.length : 0} color={KID_TONES.pink.main} track={colors.border} height={12} />
               <AppText variant="bodyStrong" muted center>
                 {done ? "Bravo, tu connais tous les mots !" : `${learned.length} mot${learned.length > 1 ? "s" : ""} trouvé${learned.length > 1 ? "s" : ""} sur ${words.length}`}
               </AppText>
@@ -72,7 +71,7 @@ export default function ThemeDetail() {
           </View>
         </ScrollView>
         <View style={[styles.cta, { paddingBottom: insets.bottom + spacing.md, backgroundColor: colors.background }]}>
-          <BigButton title={done ? "Rejouer ce thème" : `Apprendre ${next} mots`} icon="play" onPress={learn} />
+          <BigButton title={done ? "Rejouer ce thème" : `Apprendre ${next} mots`} icon="play" tone="pink" onPress={learn} />
         </View>
       </View>
     );
@@ -178,7 +177,7 @@ const styles = StyleSheet.create({
   arabic: { alignItems: "flex-end", gap: 2, maxWidth: "45%" },
   phonetic: { textAlign: "right" },
   kidsHeader: { alignItems: "center", gap: spacing.md, paddingTop: spacing.sm },
-  kidsIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
+  kidsIcon: { width: 76, height: 81, borderRadius: 38, borderBottomWidth: 5, alignItems: "center", justifyContent: "center" },
   kidsProgress: { alignSelf: "stretch", gap: spacing.xs },
   kidsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   cta: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xl - 4, paddingTop: spacing.md },

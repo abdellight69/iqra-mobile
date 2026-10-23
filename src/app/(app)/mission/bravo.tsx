@@ -5,16 +5,29 @@ import { useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
-import { BigButton } from "@/components/kids/KidsHome";
+import { BigButton } from "@/components/kids/KidButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { LoadingState } from "@/components/States";
-import { KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useTodayMission } from "@/lib/missions";
 import { STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
 import { useMe } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
+
+/** Confettis posés derrière les étoiles (position en points, sur une largeur d'écran courante). */
+const CONFETTI = [
+  { x: 30, y: 40, s: 14, color: KID_TONES.sun.main, round: true },
+  { x: 340, y: 24, s: 12, color: KID_TONES.blue.main, round: true },
+  { x: 306, y: 110, s: 16, color: KID_TONES.pink.main, round: true },
+  { x: 52, y: 120, s: 10, color: KID_TONES.green.main, round: true },
+  { x: 80, y: 90, s: 12, color: KID_TONES.violet.main, round: false },
+  { x: 282, y: 76, s: 10, color: KID_TONES.orange.main, round: false },
+  { x: 190, y: 6, s: 10, color: KID_TONES.orange.main, round: true },
+  { x: 120, y: 150, s: 10, color: KID_TONES.blue.main, round: false },
+  { x: 262, y: 140, s: 12, color: KID_TONES.sun.main, round: true },
+];
 
 /** Mission du jour réussie : les étoiles gagnées, l'autocollant, et la suite pour demain. */
 export default function MissionBravo() {
@@ -33,63 +46,68 @@ export default function MissionBravo() {
   const unlocked = stickersUnlocked(total);
   const sticker = unlocked > 0 ? STICKERS[unlocked - 1] : null;
   const last = mission ? mission.dayIndex >= mission.totalDays : false;
+  const green = kc.tint("green");
+  const violet = kc.tint("violet");
 
   return (
-    <SafeArea style={[styles.flex, { backgroundColor: colors.background }]} edges={["bottom"]}>
+    <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-          <View style={styles.stars} accessibilityLabel={`${stars} étoile${stars > 1 ? "s" : ""} gagnée${stars > 1 ? "s" : ""}`}>
-            {Array.from({ length: Math.max(1, stars) }, (_, i) => (
-              <Ionicons key={i} name="star" size={i === Math.floor(stars / 2) ? 96 : 64} color={KIDS.sun} />
-            ))}
-          </View>
-          <AppText variant="display" color={KIDS.onHero} center>
-            Bravo {me.data?.displayName ?? ""} !
-          </AppText>
-          <AppText variant="headline" color={KIDS.onHero} center>
-            {last ? "Tu as fini toute ta mission !" : "Ta mission du jour est réussie"}
-          </AppText>
+        <View pointerEvents="none" style={styles.confettiLayer} aria-hidden>
+          {CONFETTI.map((c, i) => (
+            <View key={i} style={{ position: "absolute", left: c.x, top: c.y, width: c.s, height: c.s, borderRadius: c.round ? c.s / 2 : 3, backgroundColor: c.color, transform: [{ rotate: `${(i * 37) % 60}deg` }] }} />
+          ))}
         </View>
 
-        <View style={[styles.pill, { backgroundColor: colors.surface }]}>
+        <View style={styles.stars} accessibilityLabel={`${stars} étoile${stars > 1 ? "s" : ""} gagnée${stars > 1 ? "s" : ""}`}>
+          {Array.from({ length: Math.max(1, stars) }, (_, i) => {
+            const middle = i === Math.floor(stars / 2);
+            return <Ionicons key={i} name="star" size={middle ? 118 : 78} color={KIDS.sun} style={{ marginBottom: middle ? 18 : 8, transform: [{ rotate: middle ? "0deg" : i < stars / 2 ? "-14deg" : "14deg" }] }} />;
+          })}
+        </View>
+        <AppText variant="display" center>
+          Bravo {me.data?.displayName ?? ""} !
+        </AppText>
+        <AppText muted center>
+          {last ? "Tu as fini toute ta mission !" : "Ta mission du jour est réussie"}
+        </AppText>
+        <View style={[styles.pill, { backgroundColor: kc.sunSoft }]}>
           <Ionicons name="star" size={26} color={KIDS.sun} />
-          <AppText variant="title">
+          <AppText variant="headline" color={kc.onSunSoft}>
             +{stars} étoile{stars > 1 ? "s" : ""}
           </AppText>
         </View>
 
-        <View style={styles.body}>
-          <Card style={styles.sticker}>
-            <View style={[styles.stickerIcon, { backgroundColor: sticker ? colors.surfaceMuted : kc.sunSoft }]}>
-              {sticker ? (
-                <Image source={sticker.image} style={styles.stickerImage} contentFit="contain" accessibilityLabel={sticker.label} />
-              ) : (
-                <Ionicons name="lock-closed" size={56} color={colors.textFaint} />
-              )}
-            </View>
-            <View style={styles.flex}>
-              <AppText variant="label" color={colors.accent}>
-                {sticker ? "Mes autocollants" : "Premier autocollant"}
-              </AppText>
-              <AppText variant="headline">{sticker?.label ?? "Encore quelques étoiles !"}</AppText>
-              <ProgressBar value={unlocked / STICKERS.length} />
-              <AppText variant="caption" muted>
-                {unlocked} autocollant{unlocked > 1 ? "s" : ""} sur {STICKERS.length}
-              </AppText>
-            </View>
-          </Card>
+        <Card style={styles.sticker}>
+          <View style={[styles.stickerIcon, { backgroundColor: sticker ? colors.background : kc.sunSoft }]}>
+            {sticker ? (
+              <Image source={sticker.image} style={styles.stickerImage} contentFit="contain" accessibilityLabel={sticker.label} />
+            ) : (
+              <Ionicons name="lock-closed" size={48} color={colors.textFaint} />
+            )}
+          </View>
+          <View style={styles.flex}>
+            <AppText variant="label" color={violet.ink}>
+              {sticker ? "Nouvel autocollant" : "Premier autocollant"}
+            </AppText>
+            <AppText variant="headline">{sticker?.label ?? "Encore quelques étoiles !"}</AppText>
+            <ProgressBar value={unlocked / STICKERS.length} color={KID_TONES.violet.main} height={10} />
+            <AppText variant="caption" muted>
+              {unlocked} autocollant{unlocked > 1 ? "s" : ""} sur {STICKERS.length}
+            </AppText>
+          </View>
+        </Card>
 
-          {!last && mission ? (
-            <Card tone="flat" style={styles.tomorrow}>
-              <Ionicons name="sunny" size={28} color={colors.primary} />
-              <AppText variant="bodyStrong" style={styles.flex}>
-                Prochaine fois : la suite de ta mission, jour {mission.dayIndex + 1} sur {mission.totalDays}.
-              </AppText>
-            </Card>
-          ) : null}
+        {!last && mission ? (
+          <View style={[styles.tomorrow, { backgroundColor: green.bg }]}>
+            <Ionicons name="sunny" size={28} color={KID_TONES.green.edge} />
+            <AppText variant="bodyStrong" color={green.ink} style={styles.flex}>
+              Prochaine fois : la suite de ta mission, jour {mission.dayIndex + 1} sur {mission.totalDays}.
+            </AppText>
+          </View>
+        ) : null}
 
-          <BigButton title="Retour à l’accueil" icon="home" onPress={() => closeScreen("/")} />
-        </View>
+        <View style={styles.flex} />
+        <BigButton title="Retour à l’accueil" icon="home" onPress={() => closeScreen("/")} />
       </ScrollView>
     </SafeArea>
   );
@@ -97,13 +115,12 @@ export default function MissionBravo() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scroll: { paddingBottom: spacing.xxxl },
-  hero: { paddingTop: spacing.xxxl + spacing.xl, paddingBottom: spacing.xxxl, paddingHorizontal: spacing.xl, gap: spacing.md, borderBottomLeftRadius: 44, borderBottomRightRadius: 44 },
-  stars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", minHeight: 110 },
-  pill: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: -28, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.pill },
-  body: { padding: spacing.lg, gap: spacing.lg },
-  sticker: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+  scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
+  confettiLayer: { position: "absolute", left: 0, top: 0, right: 0, height: 200 },
+  stars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", minHeight: 130 },
+  pill: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.lg + 4, paddingVertical: spacing.sm + 2, borderRadius: radius.pill },
+  sticker: { flexDirection: "row", alignItems: "center", gap: spacing.lg, marginTop: spacing.sm },
   stickerIcon: { width: 104, height: 104, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },
   stickerImage: { width: 96, height: 96, transform: [{ rotate: "-8deg" }] },
-  tomorrow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  tomorrow: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: radius.lg, padding: spacing.lg },
 });

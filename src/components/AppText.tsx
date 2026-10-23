@@ -16,17 +16,17 @@ const variants: Record<Variant, TextStyle> = {
   serifBody: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 25 },
 };
 
-/** Profil enfant : police ronde (Nunito), plus grasse et plus grande, sans majuscules forcées. */
+/** Profil enfant : titres très ronds (Fredoka), texte courant gras et lisible (Nunito). */
 const kidsVariants: Record<Variant, TextStyle> = {
-  display: { fontFamily: fonts.kidsBlack, fontSize: 34, lineHeight: 40 },
-  title: { fontFamily: fonts.kidsBlack, fontSize: 27, lineHeight: 33 },
-  headline: { fontFamily: fonts.kidsHeavy, fontSize: 21, lineHeight: 27 },
-  heading: { fontFamily: fonts.kidsHeavy, fontSize: 18, lineHeight: 24 },
-  body: { fontFamily: fonts.kidsRegular, fontSize: 17, lineHeight: 25 },
-  bodyStrong: { fontFamily: fonts.kidsBold, fontSize: 17, lineHeight: 24 },
-  caption: { fontFamily: fonts.kidsRegular, fontSize: 15, lineHeight: 21 },
-  label: { fontFamily: fonts.kidsHeavy, fontSize: 13, lineHeight: 17, letterSpacing: 1, textTransform: "uppercase" },
-  serifBody: { fontFamily: fonts.kidsBold, fontSize: 18, lineHeight: 26 },
+  display: { fontFamily: fonts.kidsTitle, fontSize: 36, lineHeight: 42 },
+  title: { fontFamily: fonts.kidsTitle, fontSize: 26, lineHeight: 31 },
+  headline: { fontFamily: fonts.kidsTitle, fontSize: 21, lineHeight: 26 },
+  heading: { fontFamily: fonts.kidsTitleMedium, fontSize: 18, lineHeight: 23 },
+  body: { fontFamily: fonts.kidsBold, fontSize: 16, lineHeight: 23 },
+  bodyStrong: { fontFamily: fonts.kidsHeavy, fontSize: 15, lineHeight: 20 },
+  caption: { fontFamily: fonts.kidsBold, fontSize: 14, lineHeight: 19 },
+  label: { fontFamily: fonts.kidsHeavy, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, textTransform: "uppercase" },
+  serifBody: { fontFamily: fonts.kidsTitleMedium, fontSize: 19, lineHeight: 26 },
 };
 
 /**

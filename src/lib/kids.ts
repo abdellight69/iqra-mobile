@@ -13,26 +13,56 @@ export function useKidsMode(): boolean {
 /** Versets au plus par séance de révision pour un enfant. */
 export const KIDS_MAX_DUE_VERSES = 5;
 
-/** Couleurs de l'interface enfant, ajoutées au thème de l'app (lisibles en clair comme en sombre). */
+/**
+ * Teintes de l'interface enfant « Ciel » : chacune a sa couleur franche (`main`), son bord
+ * (`edge`, l'ombre portée des boutons « tactiles ») et sa pastel (`soft`) avec le texte qui
+ * se pose dessus (`onSoft`). Sur une teinte franche, le texte est `onMain`.
+ */
+export type KidTone = "sun" | "green" | "orange" | "blue" | "violet" | "pink";
+export const KID_TONES: Record<KidTone, { main: string; edge: string; soft: string; onSoft: string; onMain: string }> = {
+  sun: { main: "#FFC531", edge: "#D9A200", soft: "#FFF3CC", onSoft: "#7A5200", onMain: "#1E2A4A" },
+  green: { main: "#16B07E", edge: "#0E8F65", soft: "#DDF6EE", onSoft: "#0E6B4E", onMain: "#FFFFFF" },
+  orange: { main: "#FF8A3D", edge: "#D96A22", soft: "#FFEAD9", onSoft: "#9A4A12", onMain: "#FFFFFF" },
+  blue: { main: "#4C9BFF", edge: "#2F7BDB", soft: "#E3EEFF", onSoft: "#1F4F8F", onMain: "#FFFFFF" },
+  violet: { main: "#8F6CFF", edge: "#6C4DE0", soft: "#ECE6FF", onSoft: "#4B3A9E", onMain: "#FFFFFF" },
+  pink: { main: "#FF6FA3", edge: "#D94F82", soft: "#FFE4EE", onSoft: "#9E2F5C", onMain: "#FFFFFF" },
+};
+
+/** Pastels du mode sombre : la même teinte, profonde, sous le texte clair du thème. */
+const DARK_SOFT: Record<KidTone, string> = { sun: "#3A2F0A", green: "#0F3328", orange: "#3D2212", blue: "#15294A", violet: "#241C4A", pink: "#3B1A2A" };
+
+/** Couleurs enfant les plus utilisées, identiques en clair et en sombre. */
 export const KIDS = {
-  /** Jaune soleil des étoiles et des grands boutons ; le texte posé dessus est `sunInk`. */
-  sun: "#FFC93C",
-  sunSoft: "#FFF1CC",
-  sunStroke: "#C98A00",
-  sunInk: "#1F2A27",
-  /** Texte posé sur les cartes vert profond (`colors.hero`), sombres dans les deux thèmes. */
+  /** Jaune des étoiles et des boutons « bravo » ; le texte posé dessus est `sunInk`. */
+  sun: KID_TONES.sun.main,
+  sunSoft: KID_TONES.sun.soft,
+  sunStroke: KID_TONES.sun.edge,
+  sunInk: KID_TONES.sun.onMain,
+  /** Texte posé sur une carte de couleur franche (`colors.hero` ou une teinte). */
   onHero: "#FFFFFF",
+  /** Gris doux des étapes à venir (fond, bord, pictogramme). */
+  neutral: "#EDF0F7",
+  neutralEdge: "#D5DBE8",
+  neutralInk: "#9AA6BF",
 } as const;
 
 /**
- * Jaune pâle des fonds enfant et texte posé dessus, selon le thème : en sombre, un ambre profond
- * sous le texte clair du thème (le jaune pâle rendait le texte clair illisible).
+ * Pastels et bords selon le thème : en sombre, les pastels deviennent des teintes profondes
+ * sous le texte clair du thème, et le bord des boutons blancs reprend la bordure du thème.
  */
 export function useKidsColors() {
   const colors = useColors();
   const dark = isDarkPalette(colors);
+  const tint = (tone: KidTone) => ({ bg: dark ? DARK_SOFT[tone] : KID_TONES[tone].soft, ink: dark ? colors.text : KID_TONES[tone].onSoft });
+  const sun = tint("sun");
   return {
-    sunSoft: dark ? "#3A2F14" : KIDS.sunSoft,
-    onSunSoft: dark ? colors.text : KIDS.sunInk,
+    sunSoft: sun.bg,
+    onSunSoft: sun.ink,
+    tint,
+    /** Bord (ombre « tactile ») des boutons et pastilles de la couleur des surfaces. */
+    edge: dark ? colors.border : KIDS.neutralEdge,
+    /** Fond gris doux des éléments à venir ou désactivés. */
+    neutral: dark ? colors.surfaceMuted : KIDS.neutral,
+    neutralInk: dark ? colors.textFaint : KIDS.neutralInk,
   };
 }

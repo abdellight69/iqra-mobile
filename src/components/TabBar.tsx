@@ -24,6 +24,8 @@ export const TAB_ICONS: Record<string, [IconName, IconName]> = {
  */
 const BLUR_LAYERS = [1, 0.78, 0.56, 0.34] as const;
 
+const KIDS_LABELS: Record<string, string> = { memorize: "Réciter", profile: "Moi" };
+
 /**
  * Barre d'onglets flottante : une pastille, l'onglet actif mis en avant avec son libellé.
  * Elle se superpose au contenu, qui défile en flou derrière elle ; sa hauteur est publiée aux
@@ -56,13 +58,13 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <View style={[styles.bar, { backgroundColor: colors.surface }, elevation(colors, 2)]}>
+      <View style={[styles.bar, kids && styles.barKids, { backgroundColor: colors.surface }, elevation(colors, 2)]}>
         {state.routes.map((route, index) => {
           const focused = index === state.index;
           const options = descriptors[route.key]?.options;
           const title = typeof options?.title === "string" ? options.title : route.name;
-          // Mode enfant : cinq libellés côte à côte, « Mémoriser » ne tient pas.
-          const label = kids && route.name === "memorize" ? "Réciter" : title;
+          // Mode enfant : cinq libellés côte à côte (« Mémoriser » ne tient pas), et « Moi » plutôt que « Profil ».
+          const label = kids ? (KIDS_LABELS[route.name] ?? title) : title;
           const [icon, activeIcon] = TAB_ICONS[route.name] ?? ["ellipse-outline", "ellipse"];
           return (
             <Pressable
@@ -78,9 +80,14 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
                 }
               }}
               style={[styles.item, kids && styles.itemKids, focused && { backgroundColor: colors.primarySoft, flexGrow: kids ? 1 : 2.3 }]}>
-              <Ionicons name={focused ? activeIcon : icon} size={kids ? 24 : 20} color={focused ? colors.primary : colors.textMuted} />
+              <Ionicons name={focused ? activeIcon : icon} size={kids ? 26 : 20} color={focused ? colors.primary : colors.textMuted} />
               {focused || kids ? (
-                <AppText variant="caption" color={focused ? colors.primary : colors.textMuted} numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.label}>
+                <AppText
+                  variant="caption"
+                  color={focused ? colors.primary : colors.textMuted}
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={1.3}
+                  style={kids ? styles.labelKids : styles.label}>
                   {label}
                 </AppText>
               ) : null}
@@ -107,6 +114,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
   },
-  itemKids: { minHeight: 58, flexDirection: "column", gap: 2 },
+  barKids: { borderRadius: 32, padding: 8, gap: 2 },
+  itemKids: { minHeight: 60, borderRadius: 24, flexDirection: "column", gap: 2 },
   label: { fontWeight: "600" },
+  labelKids: { fontSize: 12, lineHeight: 15 },
 });
