@@ -34,7 +34,8 @@ function NoteForm({ verseKey, existing }: { verseKey: string; existing: VerseNot
   const remove = useDeleteVerseNote();
   const [text, setText] = useState(existing?.text ?? "");
   const [voice, setVoice] = useState<VoiceNote | null>(existing?.audioId ? { id: existing.audioId, durationMs: 0 } : null);
-  const empty = !text.trim() && !voice;
+  const [recitation, setRecitation] = useState<VoiceNote | null>(existing?.recitationAudioId ? { id: existing.recitationAudioId, durationMs: 0 } : null);
+  const empty = !text.trim() && !voice && !recitation;
 
   return (
     <Screen edges={[]} keyboard>
@@ -58,13 +59,21 @@ function NoteForm({ verseKey, existing }: { verseKey: string; existing: VerseNot
         </AppText>
       </Card>
 
+      <Card style={styles.gap}>
+        <AppText variant="headline">Votre récitation</AppText>
+        <VoiceNoteField value={recitation} onChange={setRecitation} recordLabel="Réciter le verset pour l’enfant" />
+        <AppText variant="caption" faint>
+          Votre voix en modèle : l’enfant l’entend dans sa mission et dans le lecteur, avant la récitation d’Eqra. Entendre un parent réciter motive bien plus qu’un inconnu.
+        </AppText>
+      </Card>
+
       {save.isError ? <AppText color={colors.danger}>{errorMessage(save.error)}</AppText> : null}
       <View style={styles.gap}>
         <Button
           title="Enregistrer l’explication"
           loading={save.isPending}
           disabled={empty}
-          onPress={() => save.mutate({ verseKey, text: text.trim() || null, audioId: voice?.id ?? null }, { onSuccess: () => router.back() })}
+          onPress={() => save.mutate({ verseKey, text: text.trim() || null, audioId: voice?.id ?? null, recitationAudioId: recitation?.id ?? null }, { onSuccess: () => router.back() })}
         />
         {existing ? (
           <Button

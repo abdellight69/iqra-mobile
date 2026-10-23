@@ -83,7 +83,7 @@ export function useVerseNotes(verseKeys: string[]) {
 export function useSaveVerseNote() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async ({ verseKey, ...note }: { verseKey: string; text: string | null; audioId: string | null }) =>
+    mutationFn: async ({ verseKey, ...note }: { verseKey: string; text: string | null; audioId: string | null; recitationAudioId: string | null }) =>
       (await api<{ note: VerseNote }>(`/me/missions/notes/${verseKey}`, { method: "PUT", body: note })).note,
     onSuccess: () => client.invalidateQueries({ queryKey: ["missions", "notes"] }),
   });
@@ -118,6 +118,15 @@ export function useCompleteMissionStep() {
       client.setQueryData(kidKeys.today, today);
       void client.invalidateQueries({ queryKey: kidKeys.learned });
     },
+  });
+}
+
+/** « Le dire à Maman » : la mission du jour réussie est signalée à la famille. */
+export function useShareMission() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<KidToday>("/me/missions/today/share", { method: "POST", body: {} }),
+    onSuccess: (today) => client.setQueryData(kidKeys.today, today),
   });
 }
 

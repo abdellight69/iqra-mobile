@@ -12,7 +12,7 @@ import { localDay } from "@/lib/families-format";
 import { useMissionChildren } from "@/lib/missions";
 import { planTitle, todayLine } from "@/lib/missions-format";
 import { useChapters } from "@/lib/queries";
-import { spacing, useColors } from "@/lib/theme";
+import { radius, spacing, useColors } from "@/lib/theme";
 import type { MissionChild } from "@/lib/types";
 
 /** Missions des enfants : ce que chaque enfant du compte a à faire, et où il en est. */
@@ -61,6 +61,14 @@ function ChildCard({ child }: { child: MissionChild }) {
         </View>
         {plan ? <Ionicons name="chevron-forward" size={18} color={colors.textFaint} /> : null}
       </View>
+      {child.sharedAt ? (
+        <View style={[styles.shared, { backgroundColor: colors.accentSoft }]}>
+          <Ionicons name="heart" size={16} color={colors.accent} />
+          <AppText variant="caption" color={colors.accent} style={styles.flex}>
+            {child.displayName} vous l’a dit : mission du jour réussie !
+          </AppText>
+        </View>
+      ) : null}
 
       {plan ? (
         <View style={styles.plan}>
@@ -86,4 +94,5 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   stars: { flexDirection: "row", alignItems: "center", gap: 4 },
   plan: { gap: spacing.sm },
+  shared: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
 });

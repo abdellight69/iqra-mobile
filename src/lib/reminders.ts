@@ -8,6 +8,7 @@ import { AppState, Platform } from "react-native";
 import { create } from "zustand";
 import { api } from "./api";
 import { useKidsMode } from "./kids";
+import { useTodayMission } from "./missions";
 import { keys, useDueVerses, usePlans, useStats } from "./queries";
 import { planReminders, reminderPath, type PlannedReminder } from "./reminder-plan";
 import type { MemorizationPlanDetail } from "./types";
@@ -159,6 +160,9 @@ export function useReminderSync() {
   const kids = useKidsMode();
   const stats = useStats();
   const dueAts = useDueAts();
+  // Enfant : le rappel parle de sa mission du jour, et se tait si elle est déjà faite.
+  const todayMission = useTodayMission(kids);
+  const missionDone = kids ? !todayMission.data?.mission || todayMission.data.mission.completed : false;
   const tick = useForegroundTick();
   const xp = stats.data?.today.xp;
   const goalXp = stats.data?.today.goalXp;
@@ -175,16 +179,17 @@ export function useReminderSync() {
       Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
       return;
     }
-    if (xp === undefined || goalXp === undefined) return;
+    if (kids ? todayMission.data === undefined : xp === undefined || goalXp === undefined) return;
     const reminders = planReminders({
       now: new Date(),
       time: { hour, minute },
-      today: { xp, goalXp },
+      today: { xp: xp ?? 0, goalXp: goalXp ?? 0 },
       dueAts: (dueAts ?? []).map((iso) => new Date(iso)).filter((d) => !Number.isNaN(d.getTime())),
+      kid: kids ? { missionDone } : undefined,
     });
     schedule(reminders).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `dueAts` est représenté par `dueAtsKey`
-  }, [enabled, hour, minute, kids, kidsAllowed, loaded, xp, goalXp, dueAtsKey, tick]);
+  }, [enabled, hour, minute, kids, kidsAllowed, loaded, xp, goalXp, dueAtsKey, tick, missionDone, todayMission.data === undefined]);
 }
 
 /** Toucher une notification ouvre l'écran concerné, à froid comme en arrière-plan. */

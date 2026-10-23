@@ -863,9 +863,12 @@ export type MissionChild = {
   avatar: string | null;
   plan: (MissionPlan & { today: MissionToday }) | null;
   stars: { total: number; last7Days: number };
+  /** L'enfant a « dit » sa mission du jour réussie (ISO), ou null. */
+  sharedAt: string | null;
 };
 
-export type VerseNote = { authorName: string | null; text: string | null; audioId: string | null };
+/** Explication d'un verset par un parent, et sa récitation en modèle (`recitationAudioId`). */
+export type VerseNote = { authorName: string | null; text: string | null; audioId: string | null; recitationAudioId: string | null };
 
 /** Mission du jour vue par l'enfant (GET /me/missions/today). */
 export type KidMission = {
@@ -879,6 +882,8 @@ export type KidMission = {
   steps: { kind: MissionStep; done: boolean }[];
   stars: number;
   completed: boolean;
+  /** Moment où l'enfant a « dit » sa mission réussie à sa famille, ou null. */
+  sharedAt: string | null;
   message: { authorName: string | null; text: string | null; audioId: string | null; updatedAt: string } | null;
   notes: Record<string, VerseNote>;
 };

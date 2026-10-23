@@ -10,7 +10,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { LoadingState } from "@/components/States";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
-import { useTodayMission } from "@/lib/missions";
+import { useShareMission, useTodayMission } from "@/lib/missions";
 import { STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
 import { useMe } from "@/lib/queries";
@@ -35,6 +35,7 @@ export default function MissionBravo() {
   const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
+  const share = useShareMission();
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, []);
@@ -107,6 +108,24 @@ export default function MissionBravo() {
         ) : null}
 
         <View style={styles.flex} />
+        {mission?.completed ? (
+          mission.sharedAt ? (
+            <View style={[styles.told, { backgroundColor: kc.tint("pink").bg }]}>
+              <Ionicons name="heart" size={22} color={KID_TONES.pink.main} />
+              <AppText variant="bodyStrong" color={kc.tint("pink").ink}>
+                C’est dit ! {mission.message?.authorName ?? "Ta famille"} le verra.
+              </AppText>
+            </View>
+          ) : (
+            <BigButton
+              title={mission.message?.authorName ? `Le dire à ${mission.message.authorName}` : "Le dire à ma famille"}
+              icon="heart"
+              tone="white"
+              disabled={share.isPending}
+              onPress={() => share.mutate(undefined, { onError: () => undefined })}
+            />
+          )
+        ) : null}
         <BigButton title="Retour à l’accueil" icon="home" onPress={() => closeScreen("/")} />
       </ScrollView>
     </SafeArea>
@@ -123,4 +142,5 @@ const styles = StyleSheet.create({
   stickerIcon: { width: 104, height: 104, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },
   stickerImage: { width: 96, height: 96, transform: [{ rotate: "-8deg" }] },
   tomorrow: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: radius.lg, padding: spacing.lg },
+  told: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, borderRadius: 20, minHeight: 60, paddingHorizontal: spacing.lg },
 });

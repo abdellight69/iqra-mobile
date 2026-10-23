@@ -46,6 +46,21 @@ export function dailyBody(input: { dueVerses: number; xpRemaining: number }): st
   return parts.length > 0 ? parts.join(" · ") : "Quelques minutes avec le Coran aujourd’hui ? Votre série vous attend.";
 }
 
+/** Rappels d'un enfant : « Ta mission t'attend ! » à l'heure choisie, sauf aujourd'hui si c'est fait. */
+function kidReminders(now: Date, time: ReminderTime, missionDone: boolean, daysAhead: number): PlannedReminder[] {
+  const out: PlannedReminder[] = [];
+  for (let offset = 0; offset < daysAhead; offset++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    const date = at(day, time);
+    if (date.getTime() <= now.getTime()) continue;
+    if (offset === 0 && missionDone) continue;
+    out.push({ kind: "daily", date, title: "Ta mission t’attend !", body: KID_BODIES[offset % KID_BODIES.length]!, url: REMINDER_URLS.home });
+  }
+  return out;
+}
+
+const KID_BODIES = ["Un petit verset avec Papa ou Maman aujourd’hui ?", "Écoute, répète… et gagne tes étoiles !", "Ta famille t’a préparé une mission. On y va ?"];
+
 function at(day: Date, time: ReminderTime): Date {
   return new Date(day.getFullYear(), day.getMonth(), day.getDate(), time.hour, time.minute, 0, 0);
 }
@@ -68,9 +83,12 @@ export function planReminders(input: {
   /** Échéances de tous les versets suivis, passées comme futures. */
   dueAts: Date[];
   daysAhead?: number;
+  /** Profil enfant : un seul rappel par jour, celui de sa mission ; rien aujourd'hui si elle est faite. */
+  kid?: { missionDone: boolean };
 }): PlannedReminder[] {
   const { now, time, today } = input;
   const daysAhead = input.daysAhead ?? DAYS_AHEAD;
+  if (input.kid) return kidReminders(now, time, input.kid.missionDone, daysAhead);
   const dueAts = [...input.dueAts].sort((a, b) => a.getTime() - b.getTime());
   const dueBefore = (date: Date) => dueAts.filter((d) => d.getTime() <= date.getTime()).length;
   const horizon = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);

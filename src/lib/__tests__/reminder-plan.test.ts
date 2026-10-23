@@ -85,3 +85,14 @@ describe("planReminders", () => {
     expect(times).toEqual([...times].sort((a, b) => a - b));
   });
 });
+
+describe("rappels d'un enfant", () => {
+  it("programme un rappel de mission par jour, et se tait aujourd'hui si elle est faite", () => {
+    const planned = planReminders({ now, time, today: { xp: 0, goalXp: 30 }, dueAts: [local(19, 12)], kid: { missionDone: false } });
+    expect(planned).toHaveLength(7);
+    expect(planned.every((r) => r.kind === "daily" && r.title === "Ta mission t’attend !" && r.url === REMINDER_URLS.home)).toBe(true);
+    expect(planned[0]!.date).toEqual(local(19, 20));
+    const done = planReminders({ now, time, today: { xp: 0, goalXp: 30 }, dueAts: [], kid: { missionDone: true } });
+    expect(done[0]!.date).toEqual(local(20, 20));
+  });
+});

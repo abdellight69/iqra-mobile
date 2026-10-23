@@ -13,6 +13,8 @@ export function ParentNote({ note }: { note: VerseNote }) {
   const name = note.authorName ?? "ta famille";
   const violet = kc.tint("violet");
   const playing = note.audioId !== null && player.playingId === note.audioId;
+  const reciting = note.recitationAudioId !== null && player.playingId === note.recitationAudioId;
+  const onlyRecitation = !note.text && !note.audioId && note.recitationAudioId;
   return (
     <View style={[styles.note, { backgroundColor: violet.bg }]}>
       <View style={[styles.avatar, { backgroundColor: KID_TONES.violet.main }]} aria-hidden>
@@ -21,9 +23,9 @@ export function ParentNote({ note }: { note: VerseNote }) {
         </AppText>
       </View>
       <View style={styles.flex}>
-        <AppText variant="bodyStrong">{name} t’explique</AppText>
+        <AppText variant="bodyStrong">{onlyRecitation ? `${name} récite le verset` : `${name} t’explique`}</AppText>
         <AppText variant="caption" color={violet.ink}>
-          {note.text ?? (playing ? "Lecture…" : "Touche pour écouter l’explication")}
+          {onlyRecitation ? (reciting ? "Écoute bien…" : "Touche pour entendre sa voix") : (note.text ?? (playing ? "Lecture…" : "Touche pour écouter l’explication"))}
         </AppText>
         {note.audioId && player.error ? (
           <AppText variant="caption" color={KID_TONES.pink.edge}>
@@ -38,6 +40,15 @@ export function ParentNote({ note }: { note: VerseNote }) {
           tone="violet"
           size={44}
           onPress={() => void player.toggle(note.audioId!)}
+        />
+      ) : null}
+      {note.recitationAudioId ? (
+        <RoundButton
+          icon={reciting ? "pause" : "mic"}
+          label={reciting ? "Mettre en pause" : `Écouter ${name} réciter le verset`}
+          tone="pink"
+          size={44}
+          onPress={() => void player.toggle(note.recitationAudioId!)}
         />
       ) : null}
     </View>
