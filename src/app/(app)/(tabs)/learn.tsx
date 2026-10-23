@@ -28,6 +28,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { SegmentedTabs } from "@/components/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useReducedMotion } from "@/lib/a11y";
+import { KidsWords } from "@/components/kids/KidsWords";
 import { useKidsMode } from "@/lib/kids";
 import { LEARN_TABS, type LearnTab, useLearnTab } from "@/lib/learn-tab";
 import {
@@ -60,7 +61,12 @@ type Colors = ReturnType<typeof useColors>;
  * puis trois façons d'apprendre dans des onglets qu'on touche ou qu'on balaie : le parcours par
  * sourate, les thèmes et les fiches du livre. L'onglet choisi est retenu pour chaque profil.
  */
-export default function LearnScreen() {
+/** Un profil enfant a son propre onglet Mots ; celui des adultes ne change pas. */
+export default function LearnTabScreen() {
+  return useKidsMode() ? <KidsWords /> : <LearnScreen />;
+}
+
+function LearnScreen() {
   const colors = useColors();
   const kids = useKidsMode();
   const me = useMe();
@@ -157,18 +163,6 @@ export default function LearnScreen() {
             80 % des mots du Qour’ân
           </AppText>
           <AppText variant="display">Vocabulaire</AppText>
-          {kids ? (
-            <Card onPress={() => router.push("/mes-mots")} style={styles.myWords}>
-              <Ionicons name="albums" size={28} color={colors.accent} />
-              <View style={styles.flex}>
-                <AppText variant="headline">Mes mots</AppText>
-                <AppText variant="caption" muted>
-                  Tous les mots que tu as déjà trouvés
-                </AppText>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </Card>
-          ) : null}
           <TodayCard
             learned={learned}
             total={total}
@@ -896,7 +890,6 @@ function LessonNode({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  myWords: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   content: { paddingHorizontal: spacing.xl - 4, paddingTop: spacing.lg },
   header: { gap: spacing.lg, marginBottom: spacing.md },
   today: { gap: spacing.md },

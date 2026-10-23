@@ -11,11 +11,18 @@ import { IconButton } from "@/components/IconButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { KidsRecite } from "@/components/kids/KidsRecite";
+import { useKidsMode } from "@/lib/kids";
 import { useChapters, useDueVerses, usePlans, useWeakWords } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 import type { MemorizationPlan } from "@/lib/types";
 
-export default function MemorizeTab() {
+/** Un profil enfant a son propre onglet Réciter ; celui des adultes ne change pas. */
+export default function MemorizeTabScreen() {
+  return useKidsMode() ? <KidsRecite /> : <MemorizeTab />;
+}
+
+function MemorizeTab() {
   const colors = useColors();
   const tabBarHeight = useBottomTabBarHeight();
   const plans = usePlans();
