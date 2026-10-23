@@ -874,6 +874,8 @@ export type KidMission = {
   totalDays: number;
   title: string | null;
   verses: string[];
+  /** Versets du dernier jour terminé, à réécouter avant ceux du jour (vide le premier jour). */
+  review: string[];
   steps: { kind: MissionStep; done: boolean }[];
   stars: number;
   completed: boolean;

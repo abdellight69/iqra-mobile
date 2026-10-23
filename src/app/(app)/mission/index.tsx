@@ -115,13 +115,19 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
 
 function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: () => void; saving: boolean }) {
   const colors = useColors();
+  const kc = useKidsColors();
   const recitationId = useAuth((s) => s.user?.recitationId ?? null);
   const chapterId = Number(mission.verses[0]!.split(":")[0]);
   const audio = useChapterAudio(chapterId, recitationId);
-  const tracks = useMemo(
-    () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
-    [audio.data, mission.verses],
-  );
+  // Le verset d'hier d'abord, puis ceux du jour : une seule file, écoutée jusqu'au bout.
+  const keys = useMemo(() => [...mission.review, ...mission.verses], [mission.review, mission.verses]);
+  const tracks = useMemo(() => {
+    const byKey = new Map((audio.data?.files ?? []).map((f) => [f.verseKey, f]));
+    return keys.flatMap((key) => {
+      const f = byKey.get(key);
+      return f ? [{ key: f.verseKey, url: f.url, words: f.words }] : [];
+    });
+  }, [audio.data, keys]);
   // « Lent » : la récitation à trois quarts de sa vitesse, pour suivre mot à mot.
   const [slow, setSlow] = useState(false);
   const queue = useTrackQueue(tracks, { autoAdvance: true, rate: slow ? 0.75 : 1 });
@@ -140,6 +146,19 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
       <AppText variant="bodyStrong" muted>
         Touche un mot pour l’entendre.
       </AppText>
+      {mission.review.length > 0 ? (
+        <View style={styles.review}>
+          <AppText variant="label" color={kc.tint("blue").ink}>
+            D’abord, {mission.review.length > 1 ? "les versets" : "le verset"} d’hier
+          </AppText>
+          {mission.review.map((key) => (
+            <VerseWords key={key} verseKey={key} activeWord={queue.currentKey === key ? queue.currentWord : null} onWord={(url) => word.play(url)} note={mission.notes[key]} />
+          ))}
+          <AppText variant="label" color={kc.tint("orange").ink}>
+            Et maintenant, {mission.verses.length > 1 ? "les nouveaux versets" : "le nouveau verset"}
+          </AppText>
+        </View>
+      ) : null}
       {mission.verses.map((key) => (
         <VerseWords key={key} verseKey={key} activeWord={queue.currentKey === key ? queue.currentWord : null} onWord={(url) => word.play(url)} note={mission.notes[key]} />
       ))}
@@ -303,6 +322,7 @@ const styles = StyleSheet.create({
   segment: { flex: 1, height: 12, borderRadius: 6 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxxl },
   step: { gap: spacing.lg },
+  review: { gap: spacing.md },
   center: { alignItems: "center", paddingTop: spacing.xl },
   stretch: { alignSelf: "stretch" },
   verseCard: { borderRadius: radius.xl, padding: spacing.lg, gap: spacing.lg },
