@@ -1,0 +1,32 @@
+diff --git a/node_modules/expo-router/build/global-state/routingQueueContext.js b/node_modules/expo-router/build/global-state/routingQueueContext.js
+index 54629aa..46988db 100644
+--- a/node_modules/expo-router/build/global-state/routingQueueContext.js
++++ b/node_modules/expo-router/build/global-state/routingQueueContext.js
+@@ -60,6 +60,7 @@ const _router = require("./router");
+ const _routingQueue = require("./routingQueue");
+ const EMPTY = [];
+ let boundBridges = 0;
++let activeBinding = null;
+ const throwMissingRoutingQueue = ()=>{
+     throw new Error('Attempted to navigate from a component rendered outside the Expo Router root. Render the component inside `ExpoRoot`. If this happened inside `ExpoRoot`, please report a bug at https://github.com/expo/expo/issues.');
+ };
+@@ -131,10 +132,17 @@ function ImperativeRoutingQueueBridge({ enqueue, setTransitionMode }) {
+         }
+         boundBridges++;
+         // The exported router identity must stay stable, so the bridge mutates it in place.
+-        Object.assign(_router.router, (0, _router.createImperativeRouter)(enqueue, setTransitionMode));
++        const binding = (0, _router.createImperativeRouter)(enqueue, setTransitionMode);
++        activeBinding = binding;
++        Object.assign(_router.router, binding);
+         return ()=>{
+             boundBridges--;
+-            Object.assign(_router.router, _router.unboundRouter);
++            // Android can mount a new root (recreated activity) before the old one unmounts: only
++            // unbind if no other bridge has bound the router since, or the app is left unroutable.
++            if (activeBinding === binding) {
++                activeBinding = null;
++                Object.assign(_router.router, _router.unboundRouter);
++            }
+         };
+     }, [
+         enqueue,
