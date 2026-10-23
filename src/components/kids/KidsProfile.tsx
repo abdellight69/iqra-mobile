@@ -1,15 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
-import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors, type KidTone } from "@/lib/kids";
 import { useTodayMission } from "@/lib/missions";
 import { STARS_PER_STICKER, STICKERS, stickersUnlocked } from "@/lib/missions-format";
-import { useMe } from "@/lib/queries";
+import { useChapters, useMe, usePlans, useThemes } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 
 /**
@@ -21,7 +21,14 @@ export function KidsProfile() {
   const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
+  const themes = useThemes();
+  const plans = usePlans();
+  const chapters = useChapters();
   const stars = today.data?.totalStars ?? 0;
+  // Albums : les thèmes illustrés ; trophées : les sourates sues par cœur (tous les versets solides).
+  const albums = (themes.data ?? []).filter((t) => t.imageCount > 0);
+  const trophies = (plans.data ?? []).filter((p) => p.progress.total > 0 && p.progress.solid >= p.progress.total);
+  const chapterName = (id: number) => chapters.data?.find((c) => c.id === id)?.nameSimple ?? `Sourate ${id}`;
   const unlocked = stickersUnlocked(stars);
   const toNext = STARS_PER_STICKER - (stars % STARS_PER_STICKER);
 
@@ -67,6 +74,55 @@ export function KidsProfile() {
         </View>
       </Card>
 
+      {albums.length > 0 ? (
+        <View style={styles.section}>
+          <AppText variant="headline">Mes albums</AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.albums}>
+            {albums.map((t, i) => {
+              const tone = ALBUM_TONES[i % ALBUM_TONES.length]!;
+              const complete = t.learnedCount >= t.imageCount;
+              return (
+                <Card
+                  key={t.id}
+                  onPress={() => router.push({ pathname: "/album/[themeId]", params: { themeId: t.id } })}
+                  style={styles.albumCard}
+                  accessibilityLabel={`Album ${t.title}, ${Math.min(t.learnedCount, t.imageCount)} images sur ${t.imageCount}`}>
+                  <View style={[styles.albumIcon, { backgroundColor: complete ? KIDS.sun : KID_TONES[tone].main }]}>
+                    <Ionicons name={complete ? "trophy" : "images"} size={22} color={complete ? KIDS.sunInk : KIDS.onHero} />
+                  </View>
+                  <AppText variant="bodyStrong" numberOfLines={2}>
+                    {t.title}
+                  </AppText>
+                  <AppText variant="caption" muted>
+                    {complete ? "Complet !" : `${Math.min(t.learnedCount, t.imageCount)} / ${t.imageCount}`}
+                  </AppText>
+                </Card>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      <View style={styles.section}>
+        <AppText variant="headline">Mes sourates par cœur</AppText>
+        {trophies.length === 0 ? (
+          <AppText variant="caption" muted>
+            Apprends une sourate en entier dans « Réciter » pour gagner ton premier trophée.
+          </AppText>
+        ) : (
+          <View style={styles.trophies}>
+            {trophies.map((p) => (
+              <View key={p.id} style={[styles.trophy, { backgroundColor: kc.sunSoft }]} accessibilityLabel={`${chapterName(p.chapterId)}, sue par cœur`}>
+                <Ionicons name="trophy" size={22} color={KIDS.sunStroke} />
+                <AppText variant="bodyStrong" color={kc.onSunSoft} numberOfLines={1}>
+                  {chapterName(p.chapterId)}
+                </AppText>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
       <Card onPress={() => router.push("/profiles")} style={styles.row}>
         <View style={[styles.rowIcon, { backgroundColor: kc.tint("blue").bg }]}>
           <Ionicons name="people" size={24} color={KID_TONES.blue.main} />
@@ -89,6 +145,9 @@ export function KidsProfile() {
   );
 }
 
+/** Couleurs des albums, dans l'ordre d'affichage. */
+const ALBUM_TONES: KidTone[] = ["violet", "green", "blue", "orange", "pink"];
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   identity: { alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
@@ -99,6 +158,12 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm + 2, borderRadius: 22, padding: spacing.sm },
   sticker: { width: "22%", flexGrow: 1, aspectRatio: 1, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   stickerImage: { width: "90%", height: "90%" },
+  section: { gap: spacing.sm },
+  albums: { gap: spacing.sm + 2, paddingRight: spacing.lg },
+  albumCard: { width: 132, gap: spacing.xs, padding: spacing.md, borderRadius: 22 },
+  albumIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
+  trophies: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  trophy: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: 24, paddingVertical: spacing.md },
   rowIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
 });

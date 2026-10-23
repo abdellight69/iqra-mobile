@@ -294,6 +294,8 @@ export type ThemeSummary = {
   group: string | null;
   wordCount: number;
   learnedCount: number;
+  /** Mots du thème qui ont une image (album enfant). */
+  imageCount: number;
   /** Dernière révision d'un mot du thème (ISO), ou null. */
   lastPracticedAt: string | null;
 };
