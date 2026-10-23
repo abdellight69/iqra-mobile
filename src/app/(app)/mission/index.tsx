@@ -7,6 +7,7 @@ import { ArabicText } from "@/components/ArabicText";
 import { BigButton, RoundButton } from "@/components/kids/KidButton";
 import { ParentNote } from "@/components/kids/ParentNote";
 import { RecitationRecorder } from "@/components/RecitationCheck";
+import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
@@ -16,7 +17,7 @@ import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useCompleteMissionStep, useTodayMission } from "@/lib/missions";
 import { KID_STEPS, versesLabel } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
-import { useChapterAudio, useRecitationAvailable, useVerse } from "@/lib/queries";
+import { useChapterAudio, useRecitationAvailable, useReviewVerse, useVerse } from "@/lib/queries";
 import { useRecitationCheck } from "@/lib/recitation";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { KidMission, MissionStep, RecitationCheck, VerseNote } from "@/lib/types";
@@ -83,17 +84,7 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
         </AppText>
         {step === "listen" ? <ListenStep mission={mission} onDone={onDone} saving={saving} /> : null}
         {step === "repeat" ? <RepeatStep mission={mission} onDone={onDone} saving={saving} /> : null}
-        {step === "memorize" ? (
-          <OpenSessionStep
-            title="Retiens le verset"
-            text="Écoute, cache le texte, puis récite de mémoire. Tu peux t’aider des premiers mots."
-            icon={KID_STEPS.memorize.icon}
-            tone="blue"
-            onPress={() =>
-              router.push({ pathname: "/memorize/session", params: { keys: mission.verses.join(","), missionPlanId: mission.planId, missionDay: String(mission.dayIndex) } })
-            }
-          />
-        ) : null}
+        {step === "memorize" ? <MemorizeStep mission={mission} onDone={onDone} saving={saving} /> : null}
         {step === "play" ? (
           <OpenSessionStep
             title="Joue avec les mots"
@@ -293,7 +284,158 @@ function VerseText({ verseKey }: { verseKey: string }) {
   );
 }
 
-// --- Retenir et jouer : séances existantes ---------------------------------------
+// --- Retenir --------------------------------------------------------------------
+
+/**
+ * Retenir : on écoute, puis on cache les mots un à un en partant de la fin, et on récite ce qui
+ * manque de mémoire. Quand tout est caché et récité, l'étape est gagnée ; la révision espacée
+ * (plans de mémorisation) est prévenue au passage.
+ */
+function MemorizeStep({ mission, onDone, saving }: { mission: KidMission; onDone: () => void; saving: boolean }) {
+  const colors = useColors();
+  const kc = useKidsColors();
+  const recitationId = useAuth((s) => s.user?.recitationId ?? null);
+  const chapterId = Number(mission.verses[0]!.split(":")[0]);
+  const audio = useChapterAudio(chapterId, recitationId);
+  const tracks = useMemo(
+    () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+    [audio.data, mission.verses],
+  );
+  const queue = useTrackQueue(tracks, { autoAdvance: true });
+  const word = useOneShot();
+  const review = useReviewVerse();
+  // `round` mots cachés à la fin de chaque verset ; `hints` mots révélés d'un doigt pendant la récitation.
+  const [round, setRound] = useState(0);
+  const [hints, setHints] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const onCount = useCallback((key: string, n: number) => setCounts((c) => (c[key] === n ? c : { ...c, [key]: n })), []);
+  const maxWords = Math.max(0, ...Object.values(counts));
+  const allHidden = maxWords > 0 && round >= maxWords;
+
+  function finish() {
+    for (const key of mission.verses) {
+      const [c, v] = key.split(":");
+      // Sans plan de mémorisation pour ce verset, l'API refuse : l'étape de mission compte quand même.
+      review.mutate({ chapterId: Number(c), verseNumber: Number(v), quality: hints === 0 ? 5 : 3 }, { onError: () => undefined });
+    }
+    onDone();
+  }
+
+  return (
+    <View style={styles.step}>
+      <AppText variant="display">Retiens le verset</AppText>
+      <AppText variant="bodyStrong" muted>
+        {round === 0 ? "Écoute, puis récite en lisant." : allHidden ? "Récite tout le verset de mémoire !" : "Récite : les mots cachés, dis-les de mémoire. Touche un mot caché si tu bloques."}
+      </AppText>
+      {mission.verses.map((key) => (
+        <HideVerse
+          key={key}
+          verseKey={key}
+          hidden={round}
+          activeWord={queue.currentKey === key ? queue.currentWord : null}
+          onCount={onCount}
+          onWord={(url, wasHidden) => {
+            if (wasHidden) setHints((h) => h + 1);
+            word.play(url);
+          }}
+        />
+      ))}
+      <View style={styles.hideProgress}>
+        <ProgressBar value={maxWords ? round / maxWords : 0} color={KID_TONES.blue.main} track={colors.border} height={10} />
+        <AppText variant="caption" color={kc.tint("blue").ink}>
+          {round} mot{round > 1 ? "s" : ""} caché{round > 1 ? "s" : ""} sur {maxWords}
+        </AppText>
+      </View>
+      <View style={styles.playRow}>
+        <BigButton title="Tout montrer" size="md" tone="white" disabled={round === 0} onPress={() => setRound(0)} />
+        <View style={styles.playCenter}>
+          {audio.isPending ? (
+            <View style={[styles.playMid, { backgroundColor: colors.surfaceMuted }]}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            <RoundButton icon={queue.playing ? "pause" : "play"} label={queue.playing ? "Mettre en pause" : "Écouter le verset"} tone="green" size={88} disabled={tracks.length === 0} onPress={queue.toggle} />
+          )}
+        </View>
+        <View style={styles.playSpacer} />
+      </View>
+      {allHidden ? (
+        <BigButton title="Je l’ai récité de mémoire !" icon="checkmark" tone="sun" disabled={saving} onPress={finish} />
+      ) : (
+        <BigButton title={round === 0 ? "Je cache un mot" : "Je cache un mot de plus"} icon="eye-off" tone="blue" disabled={maxWords === 0} onPress={() => setRound((r) => r + 1)} />
+      )}
+    </View>
+  );
+}
+
+/** Les mots d'un verset, les `hidden` derniers cachés ; un mot caché se révèle (et s'entend) d'un doigt. */
+function HideVerse({
+  verseKey,
+  hidden,
+  activeWord,
+  onWord,
+  onCount,
+}: {
+  verseKey: string;
+  hidden: number;
+  activeWord: number | null;
+  onWord: (url: string, wasHidden: boolean) => void;
+  onCount: (key: string, n: number) => void;
+}) {
+  const colors = useColors();
+  const kc = useKidsColors();
+  const verse = useVerse(verseKey, null);
+  const words = useMemo(() => verse.data?.words.filter((w) => w.type === "word") ?? [], [verse.data]);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (verse.data) onCount(verseKey, words.length);
+  }, [verse.data, words.length, verseKey, onCount]);
+  // Un nouveau tour de cache remet les indices à zéro.
+  const [lastHidden, setLastHidden] = useState(hidden);
+  if (lastHidden !== hidden) {
+    setLastHidden(hidden);
+    setRevealed(new Set());
+  }
+  if (verse.isPending) return <ActivityIndicator color={colors.primary} />;
+  if (!verse.data) return null;
+  const firstHidden = Math.max(0, words.length - hidden);
+  return (
+    <View style={[styles.verseCard, { backgroundColor: colors.surface }]}>
+      <View style={styles.words}>
+        {words.map((w, i) => {
+          const isHidden = i >= firstHidden && !revealed.has(w.location);
+          const active = activeWord === w.position;
+          return (
+            <Pressable
+              key={w.location}
+              accessibilityRole="button"
+              accessibilityLabel={isHidden ? "Mot caché : toucher pour le voir" : `Écouter le mot ${w.transliteration ?? ""}`}
+              onPress={() => {
+                if (isHidden) setRevealed((r) => new Set(r).add(w.location));
+                if (w.audioUrl) onWord(w.audioUrl, isHidden);
+              }}
+              style={[
+                styles.word,
+                isHidden
+                  ? { backgroundColor: kc.neutral, borderBottomColor: kc.edge }
+                  : { backgroundColor: active ? kc.sunSoft : colors.background, borderBottomColor: active ? KIDS.sun : kc.edge },
+              ]}>
+              {isHidden ? (
+                <ArabicText size="lg" color={kc.neutralInk}>
+                  •••
+                </ArabicText>
+              ) : (
+                <ArabicText size="lg">{w.textUthmani}</ArabicText>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// --- Jouer : séance existante -----------------------------------------------------
 
 function OpenSessionStep({ title, text, icon, tone, onPress }: { title: string; text: string; icon: keyof typeof Ionicons.glyphMap; tone: "blue" | "violet"; onPress: () => void }) {
   const kc = useKidsColors();
@@ -331,6 +473,8 @@ const styles = StyleSheet.create({
   meaning: { alignItems: "center", gap: 4 },
   playRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.lg, paddingVertical: spacing.sm },
   playCenter: { alignItems: "center", gap: spacing.sm },
+  playMid: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
+  hideProgress: { gap: spacing.xs, alignItems: "center" },
   playSpacer: { minWidth: 78 },
   playBig: { width: 104, height: 104, borderRadius: 52, alignItems: "center", justifyContent: "center" },
   bigIcon: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center" },
