@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
@@ -8,6 +8,8 @@ import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { errorMessage } from "@/lib/api";
+import { useKidsColors, useKidsMode } from "@/lib/kids";
+import { KIDS_SURAHS } from "@/lib/kids-quran";
 import { useChapters, useCreatePlan } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Chapter } from "@/lib/types";
@@ -24,6 +26,7 @@ export default function NewPlan() {
   const [from, setFrom] = useState("1");
   const [to, setTo] = useState("");
   const [query, setQuery] = useState("");
+  const kids = useKidsMode();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -32,6 +35,7 @@ export default function NewPlan() {
 
   if (chapters.isPending) return <LoadingState />;
   if (chapters.isError) return <ErrorState error={chapters.error} onRetry={() => void chapters.refetch()} />;
+  if (kids) return <KidsSurahPicker chapters={chapters.data} />;
 
   if (!chapter) {
     return (
@@ -149,4 +153,52 @@ const styles = StyleSheet.create({
   segmented: { flexDirection: "row", borderRadius: radius.pill, padding: 4 },
   segment: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: radius.pill },
   rangeRow: { flexDirection: "row", gap: spacing.md },
+  kidsContent: { padding: spacing.lg, gap: spacing.lg },
+  kidsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  kidsTile: { width: "47%", flexGrow: 1, minHeight: 112, borderRadius: radius.lg, padding: spacing.md, justifyContent: "space-between" },
+  kidsArabic: { textAlign: "right" },
 });
+
+/**
+ * Profil enfant : les petites sourates en grandes tuiles ; un appui crée le plan de la sourate
+ * entière et lance tout de suite la première séance.
+ */
+function KidsSurahPicker({ chapters }: { chapters: Chapter[] }) {
+  const colors = useColors();
+  const kc = useKidsColors();
+  const create = useCreatePlan();
+  const byId = new Map(chapters.map((c) => [c.id, c]));
+  return (
+    <ScrollView contentContainerStyle={styles.kidsContent}>
+      <AppText variant="title">Quelle sourate veux-tu apprendre ?</AppText>
+      {create.isError ? <AppText color={colors.danger}>{errorMessage(create.error)}</AppText> : null}
+      <View style={styles.kidsGrid}>
+        {KIDS_SURAHS.map((id, i) => {
+          const c = byId.get(id);
+          if (!c) return null;
+          return (
+            <Pressable
+              key={id}
+              accessibilityRole="button"
+              accessibilityLabel={`Apprendre ${c.nameSimple}, ${c.versesCount} versets`}
+              disabled={create.isPending}
+              onPress={() =>
+                create.mutate({ chapterId: c.id }, { onSuccess: ({ plan }) => router.replace({ pathname: "/memorize/session", params: { planId: plan.id } }) })
+              }
+              style={({ pressed }) => [styles.kidsTile, { backgroundColor: i % 2 === 0 ? colors.primarySoft : kc.sunSoft, opacity: pressed || create.isPending ? 0.7 : 1 }]}>
+              <AppText variant="caption" muted>
+                {c.versesCount} versets
+              </AppText>
+              <ArabicText size="md" style={styles.kidsArabic}>
+                {c.nameArabic}
+              </ArabicText>
+              <AppText variant="headline" numberOfLines={1}>
+                {c.nameSimple}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}

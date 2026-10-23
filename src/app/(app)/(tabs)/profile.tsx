@@ -3,7 +3,9 @@ import { router } from "expo-router";
 import { Alert, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
+import { KidsProfile } from "@/components/kids/KidsProfile";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { useKidsMode } from "@/lib/kids";
 import { ListGroup, ListRow } from "@/components/List";
 import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
@@ -18,7 +20,12 @@ import { radius, spacing, useColors } from "@/lib/theme";
 
 const WEEKDAYS = ["D", "L", "M", "M", "J", "V", "S"];
 
-export default function Profile() {
+/** Un profil enfant a son propre onglet « Moi » ; celui des adultes ne change pas. */
+export default function ProfileTab() {
+  return useKidsMode() ? <KidsProfile /> : <Profile />;
+}
+
+function Profile() {
   const colors = useColors();
   const me = useMe();
   const families = useFamilies();

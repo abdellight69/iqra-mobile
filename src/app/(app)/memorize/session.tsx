@@ -13,7 +13,8 @@ import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/compon
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useTrackQueue } from "@/lib/audio";
-import { KIDS_MAX_DUE_VERSES, useKidsMode } from "@/lib/kids";
+import { BigButton } from "@/components/kids/KidsHome";
+import { KIDS, KIDS_MAX_DUE_VERSES, useKidsMode } from "@/lib/kids";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { verseTransliteration } from "@/lib/quran-text";
 import { useRecitationCheck } from "@/lib/recitation";
@@ -44,6 +45,12 @@ const GRADES = [
   { quality: 3, label: "Difficile", icon: "alert-circle-outline" as const },
   { quality: 4, label: "Bien", icon: "checkmark" as const },
   { quality: 5, label: "Parfait", icon: "star" as const },
+];
+/** Profil enfant : trois choix simples au lieu de quatre notes. */
+const KIDS_GRADES = [
+  { quality: 1, label: "Pas encore", icon: "refresh" as const },
+  { quality: 3, label: "Presque", icon: "thumbs-up-outline" as const },
+  { quality: 5, label: "Je sais !", icon: "star" as const },
 ];
 
 /** Première lettre d'un mot, avec ses signes, pour l'indice de récitation. */
@@ -136,6 +143,28 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
   const [xp, setXp] = useState(0);
   const [finished, setFinished] = useState(false);
   const retried = useRef(new Set<string>());
+  const kids = useKidsMode();
+
+  if (finished && kids) {
+    return (
+      <SafeArea style={[styles.flex, styles.done, { backgroundColor: colors.background }]}>
+        <View style={styles.kidsStars}>
+          {[64, 88, 64].map((size, i) => (
+            <Ionicons key={i} name="star" size={size} color={KIDS.sun} />
+          ))}
+        </View>
+        <AppText variant="display" center>
+          Bravo !
+        </AppText>
+        <AppText variant="bodyStrong" muted center>
+          Tu as travaillé {initialKeys.length} verset{initialKeys.length > 1 ? "s" : ""}. Ils reviendront pour que tu ne les oublies pas.
+        </AppText>
+        <View style={styles.kidsCta}>
+          <BigButton title="Terminer" icon="checkmark" onPress={() => closeScreen("/memorize")} />
+        </View>
+      </SafeArea>
+    );
+  }
 
   if (finished) {
     return (
@@ -173,7 +202,7 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
           <Ionicons name="close" size={28} color={colors.textMuted} />
         </Pressable>
         <View style={styles.flex}>
-          <ProgressBar value={index / keys.length} height={6} color={colors.accent} />
+          <ProgressBar value={index / keys.length} height={kids ? 12 : 6} color={kids ? KIDS.sun : colors.accent} />
         </View>
         <AppText variant="caption" muted>
           {index + 1}/{keys.length}
@@ -205,6 +234,8 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
 
 function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: number, forgotten: boolean) => void }) {
   const colors = useColors();
+  const kids = useKidsMode();
+  const grades = kids ? KIDS_GRADES : GRADES;
   const me = useMe();
   const [chapterId, verseNumber] = verseKey.split(":").map(Number) as [number, number];
   const verse = useVerse(verseKey, me.data?.translationId ?? null);
@@ -349,12 +380,13 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                   )}
                 </Pressable>
                 <View style={styles.flex}>
-                  <AppText variant="bodyStrong">Écouter et répéter</AppText>
+                  <AppText variant="bodyStrong">{kids ? "Écoute et répète" : "Écouter et répéter"}</AppText>
                   <AppText variant="caption" muted>
                     {player.index !== null ? `Écoute ${player.plays}/${repeat}` : "Récitation verset par verset"}
                   </AppText>
                 </View>
               </View>
+              {kids ? null : (
               <View style={styles.audioRow}>
                 <AppText variant="caption" muted style={styles.flex}>
                   Répétitions et vitesse
@@ -384,6 +416,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                   </AppText>
                 </Pressable>
               </View>
+              )}
             </Card>
 
             <View style={styles.links}>
@@ -404,8 +437,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
         {stage === "recite" ? (
           <>
             <Card tone="accent">
-              <AppText variant="bodyStrong">Récitez le verset de mémoire</AppText>
-              <AppText muted>À voix basse ou à voix haute. Touchez un mot pour le révéler si vous bloquez.</AppText>
+              <AppText variant="bodyStrong">{kids ? "Récite le verset de mémoire" : "Récitez le verset de mémoire"}</AppText>
+              <AppText muted>{kids ? "Touche un mot si tu bloques." : "À voix basse ou à voix haute. Touchez un mot pour le révéler si vous bloquez."}</AppText>
             </Card>
             {recitationAvailable.data ? (
               <RecitationRecorder
@@ -427,7 +460,7 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
 
       {stage === "study" ? (
         <Button
-          title="Je suis prêt à réciter"
+          title={kids ? "Je suis prêt !" : "Je suis prêt à réciter"}
           icon="mic-outline"
           onPress={() => {
             player.stop();
@@ -436,22 +469,24 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           }}
         />
       ) : stage === "recite" ? (
-        busy ? null : <Button title="Vérifier" icon="eye-outline" onPress={() => setStage("grade")} />
+        busy ? null : <Button title={kids ? "Voir le verset" : "Vérifier"} icon="eye-outline" onPress={() => setStage("grade")} />
       ) : (
         <View style={styles.grades}>
           <AppText variant="headline" center>
-            Comment s’est passée la récitation ?
+            {kids ? "Tu as réussi ?" : "Comment s’est passée la récitation ?"}
           </AppText>
-          <AppText variant="caption" muted center>
-            « Oublié » : le verset revient en fin de séance. Réussi : prochaine révision dans 1 jour, puis 6, puis 2 à 3 semaines.
-          </AppText>
-          {result?.suggestedQuality ? (
+          {kids ? null : (
+            <AppText variant="caption" muted center>
+              « Oublié » : le verset revient en fin de séance. Réussi : prochaine révision dans 1 jour, puis 6, puis 2 à 3 semaines.
+            </AppText>
+          )}
+          {result?.suggestedQuality && !kids ? (
             <AppText variant="caption" muted center>
               Note proposée d’après la vérification : à vous de confirmer.
             </AppText>
           ) : null}
           <View style={styles.gradeRow}>
-            {GRADES.map((g) => (
+            {grades.map((g) => (
               <Pressable
                 key={g.quality}
                 accessibilityRole="button"
@@ -475,8 +510,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
                   { borderColor: colors.border, backgroundColor: colors.surface, transform: [{ scale: pressed ? 0.96 : 1 }] },
                   result?.suggestedQuality === g.quality && { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accentSoft },
                 ]}>
-                <Ionicons name={g.icon} size={22} color={g.quality < 3 ? colors.danger : g.quality === 5 ? colors.accent : colors.primary} />
-                <AppText variant="caption">{g.label}</AppText>
+                <Ionicons name={g.icon} size={kids ? 34 : 22} color={g.quality < 3 ? colors.danger : g.quality === 5 ? colors.accent : colors.primary} />
+                <AppText variant={kids ? "bodyStrong" : "caption"}>{g.label}</AppText>
               </Pressable>
             ))}
           </View>
@@ -488,6 +523,8 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  kidsStars: { flexDirection: "row", alignItems: "flex-end" },
+  kidsCta: { alignSelf: "stretch" },
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   body: { flex: 1, padding: spacing.lg, gap: spacing.md },
   scroll: { gap: spacing.lg, paddingBottom: spacing.lg },

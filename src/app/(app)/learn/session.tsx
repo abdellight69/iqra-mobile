@@ -26,6 +26,8 @@ import { annotateArabic } from "@/lib/transliterate";
 import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/types";
 import { closeScreen } from "@/lib/navigation";
 import { useCompleteMissionStep } from "@/lib/missions";
+import { BigButton } from "@/components/kids/KidsHome";
+import { KIDS, useKidsMode } from "@/lib/kids";
 
 type Answer = { wordId: string; correct: boolean };
 
@@ -96,6 +98,7 @@ function MissionWordsKnown({ mission }: { mission: MissionRef }) {
 function SessionRunner({ session, lessonId, mission }: { session: LearningSession; lessonId?: string; mission: MissionRef | null }) {
   const missionStep = useCompleteMissionStep();
   const colors = useColors();
+  const kids = useKidsMode();
   const byId = useMemo(() => new Map(session.words.map((w) => [w.id, w])), [session.words]);
   // Les petits jeux sont ajoutés une fois, à l'ouverture de la séance (tirage aléatoire).
   const [queue, setQueue] = useState<SessionExercise[]>(() => planSession(session));
@@ -135,7 +138,7 @@ function SessionRunner({ session, lessonId, mission }: { session: LearningSessio
     );
   }
 
-  if (result) return session.chapterId && !result.queued ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : <ResultScreen result={result} />;
+  if (result) return session.chapterId && !result.queued ? <VerseReview session={session} result={result} onDone={() => closeScreen("/learn")} /> : kids ? <KidsResult result={result} /> : <ResultScreen result={result} />;
   if (!started) return <SessionStart session={session} onStart={() => setStarted(true)} onClose={() => closeScreen("/learn")} />;
 
   const progress = step / Math.max(queue.length, 1);
@@ -148,7 +151,7 @@ function SessionRunner({ session, lessonId, mission }: { session: LearningSessio
           accessibilityLabel="Quitter la séance"
           hitSlop={10}
           onPress={() =>
-            Alert.alert("Quitter la séance ?", "Votre progression dans cette séance sera perdue.", [
+            Alert.alert(kids ? "Arrêter le jeu ?" : "Quitter la séance ?", kids ? "Ce que tu as fait dans ce jeu sera perdu." : "Votre progression dans cette séance sera perdue.", [
               { text: "Continuer", style: "cancel" },
               { text: "Quitter", style: "destructive", onPress: () => closeScreen("/learn") },
             ])
@@ -156,8 +159,13 @@ function SessionRunner({ session, lessonId, mission }: { session: LearningSessio
           <Ionicons name="close" size={28} color={colors.textMuted} />
         </Pressable>
         <View style={styles.flex}>
-          <ProgressBar value={progress} height={6} color={colors.accent} />
+          <ProgressBar value={progress} height={kids ? 12 : 6} color={kids ? KIDS.sun : colors.accent} />
         </View>
+        {kids ? (
+          <AppText variant="bodyStrong" muted>
+            {Math.min(step + 1, queue.length)} sur {queue.length}
+          </AppText>
+        ) : null}
       </View>
 
       {exercise ? (
@@ -192,6 +200,7 @@ function ExerciseView(props: ExerciseProps) {
 
 function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: VocabWord }) {
   const colors = useColors();
+  const kids = useKidsMode();
   if (!word) return null;
   const location = verseByWord?.[word.id];
   return (
@@ -206,19 +215,19 @@ function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: Vocab
         <Card style={styles.introCard}>
           <WordSummary word={word} size={48} />
           <ListenButton wordId={word.id} />
-          {word.arNote ? (
+          {word.arNote && !kids ? (
             <AppText muted center>
               {annotateArabic(word.arNote)}
             </AppText>
           ) : null}
-          {word.occurrences !== null ? (
+          {word.occurrences !== null && !kids ? (
             <AppText variant="caption" muted center>
               {word.occurrences} occurrence{word.occurrences > 1 ? "s" : ""} dans le Coran{/^p\d{2}-/.test(word.id) ? " (selon le livre)" : ""}
             </AppText>
           ) : null}
         </Card>
         {location ? <VerseContext location={location} /> : <QuranExample wordId={word.id} />}
-        {word.verb ? <VerbTable verb={word.verb} /> : null}
+        {word.verb && !kids ? <VerbTable verb={word.verb} /> : null}
       </ScrollView>
       <Button title="Continuer" onPress={onNext} />
     </View>
@@ -315,8 +324,33 @@ function ResultScreen({ result }: { result: SessionResult }) {
   );
 }
 
+/** Fin d'un jeu pour un enfant : des étoiles selon la réussite, pas d'XP ni de pourcentage. */
+function KidsResult({ result }: { result: SessionResult }) {
+  const stars = result.queued || result.score >= 90 ? 3 : result.score >= 60 ? 2 : 1;
+  return (
+    <SafeArea style={[styles.flex, styles.result]}>
+      <View style={styles.stars} accessibilityLabel={`${stars} étoile${stars > 1 ? "s" : ""}`}>
+        {[1, 2, 3].map((i) => (
+          <Ionicons key={i} name={i <= stars ? "star" : "star-outline"} size={i === 2 ? 88 : 64} color={KIDS.sun} />
+        ))}
+      </View>
+      <AppText variant="display" center>
+        {stars === 3 ? "Bravo !" : stars === 2 ? "Très bien !" : "Bien joué !"}
+      </AppText>
+      <AppText variant="bodyStrong" muted center>
+        {result.queued ? "Ton jeu est gardé sur le téléphone : il sera envoyé dès le retour du réseau." : "Tes nouveaux mots rejoignent « Mes mots ». Ils reviendront pour que tu ne les oublies pas."}
+      </AppText>
+      <View style={styles.kidsCta}>
+        <BigButton title="Terminer" icon="checkmark" onPress={() => closeScreen("/learn")} />
+      </View>
+    </SafeArea>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  stars: { flexDirection: "row", alignItems: "flex-end" },
+  kidsCta: { alignSelf: "stretch" },
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   newBadge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
   introCard: { gap: spacing.md, paddingVertical: spacing.xxxl },

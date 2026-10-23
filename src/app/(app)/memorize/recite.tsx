@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { RecitationRecorder, useStatusColors } from "@/components/RecitationCheck";
 import { Screen } from "@/components/Screen";
+import { KIDS, useKidsMode } from "@/lib/kids";
 import { MAX_PASSAGE_SECONDS, useRecitationCheck } from "@/lib/recitation";
 import { useChapter } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
@@ -15,6 +16,7 @@ import type { RecitationCheck } from "@/lib/types";
 /** Réciter tout un passage d'une traite, puis voir verset par verset les mots oubliés. */
 export default function RecitePassage() {
   const colors = useColors();
+  const kids = useKidsMode();
   const params = useLocalSearchParams<{ chapterId: string; from: string; to: string }>();
   const chapter = useChapter(Number(params.chapterId));
   const [result, setResult] = useState<RecitationCheck | null>(null);
@@ -29,8 +31,12 @@ export default function RecitePassage() {
         <AppText variant="label" muted>
           {chapter.data?.nameSimple ?? `Sourate ${params.chapterId}`} · {range}
         </AppText>
-        <AppText variant="title">Réciter le passage</AppText>
-        <AppText muted>Récitez de mémoire, d’une traite, sans regarder le texte. Les versets réapparaissent ensuite, mots oubliés en couleur.</AppText>
+        <AppText variant="title">{kids ? "Récite ta sourate" : "Réciter le passage"}</AppText>
+        <AppText muted>
+          {kids
+            ? "Récite de mémoire, sans regarder. Eqra t’écoute, puis te montre les mots à revoir."
+            : "Récitez de mémoire, d’une traite, sans regarder le texte. Les versets réapparaissent ensuite, mots oubliés en couleur."}
+        </AppText>
       </View>
       {result ? (
         <PassageResult
@@ -45,7 +51,7 @@ export default function RecitePassage() {
       )}
       {!result ? (
         <AppText variant="caption" color={colors.textMuted}>
-          Résultat indicatif : la reconnaissance automatique peut se tromper. Le tajwid n’est pas évalué.
+          {kids ? "Eqra peut parfois mal entendre : ce n’est pas grave." : "Résultat indicatif : la reconnaissance automatique peut se tromper. Le tajwid n’est pas évalué."}
         </AppText>
       ) : null}
     </Screen>
@@ -68,13 +74,31 @@ function Recorder({ from, to, onResult }: { from: string; to: string; onResult: 
 
 function PassageResult({ result, onRetry }: { result: RecitationCheck; onRetry: () => void }) {
   const colors = useColors();
+  const kids = useKidsMode();
   const statusColors = useStatusColors();
   const verseKeys = result.verseKeys ?? [result.verseKey];
   const toReview = (result.verses ?? []).filter((v) => v.ok < v.total).map((v) => v.verseKey);
   const { ok, total } = result.summary;
+  // Profil enfant : des étoiles plutôt qu'un décompte de mots.
+  const stars = total === 0 || ok / total >= 0.9 ? 3 : ok / total >= 0.6 ? 2 : 1;
 
   return (
     <View style={styles.result}>
+      {kids ? (
+        <Card style={styles.kidsSummary}>
+          <View style={styles.kidsStars} accessibilityLabel={`${stars} étoile${stars > 1 ? "s" : ""}`}>
+            {[1, 2, 3].map((i) => (
+              <Ionicons key={i} name={i <= stars ? "star" : "star-outline"} size={i === 2 ? 64 : 48} color={KIDS.sun} />
+            ))}
+          </View>
+          <AppText variant="title" center>
+            {toReview.length === 0 ? "Bravo, tout est juste !" : stars >= 2 ? "Très bien !" : "Bien essayé !"}
+          </AppText>
+          <AppText muted center>
+            {toReview.length === 0 ? "Tu connais ta sourate." : "Les mots en couleur sont à revoir."}
+          </AppText>
+        </Card>
+      ) : (
       <Card style={styles.summary}>
         <Ionicons name={toReview.length === 0 ? "checkmark-circle" : "alert-circle-outline"} size={28} color={toReview.length === 0 ? colors.success : colors.accent} />
         <View style={styles.flex}>
@@ -86,6 +110,7 @@ function PassageResult({ result, onRetry }: { result: RecitationCheck; onRetry: 
           </AppText>
         </View>
       </Card>
+      )}
 
       {verseKeys.map((key) => {
         const words = result.words.filter((w) => (w.verseKey ?? result.verseKey) === key);
@@ -112,12 +137,12 @@ function PassageResult({ result, onRetry }: { result: RecitationCheck; onRetry: 
 
       {toReview.length > 0 ? (
         <Button
-          title={`Réviser ${toReview.length === 1 ? "ce verset" : `ces ${toReview.length} versets`}`}
+          title={kids ? "Revoir ces versets" : `Réviser ${toReview.length === 1 ? "ce verset" : `ces ${toReview.length} versets`}`}
           icon="repeat"
           onPress={() => router.push({ pathname: "/memorize/session", params: { keys: toReview.join(",") } })}
         />
       ) : null}
-      <Button title="Réciter à nouveau" variant="secondary" icon="mic" onPress={onRetry} />
+      <Button title={kids ? "Recommencer" : "Réciter à nouveau"} variant="secondary" icon="mic" onPress={onRetry} />
     </View>
   );
 }
@@ -127,6 +152,8 @@ const styles = StyleSheet.create({
   header: { gap: spacing.xs },
   result: { gap: spacing.md },
   summary: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  kidsSummary: { alignItems: "center", gap: spacing.sm },
+  kidsStars: { flexDirection: "row", alignItems: "flex-end" },
   verse: { gap: spacing.xs },
   words: { flexDirection: "row-reverse", flexWrap: "wrap", columnGap: spacing.xs },
   word: { borderRadius: radius.sm, paddingHorizontal: 4 },

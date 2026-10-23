@@ -4,10 +4,13 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
+import { BigButton } from "@/components/kids/KidsHome";
+import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Screen } from "@/components/Screen";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState, LoadingState } from "@/components/States";
+import { KIDS, useKidsMode } from "@/lib/kids";
 import { useAlphabet } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { AlphabetLessonSummary } from "@/lib/types";
@@ -16,12 +19,88 @@ const start = (lessonId: string) => router.push({ pathname: "/reading/session", 
 
 export default function ReadingCourse() {
   const colors = useColors();
+  const kids = useKidsMode();
   const overview = useAlphabet();
   if (overview.isPending) return <LoadingState />;
   if (overview.isError) return <ErrorState error={overview.error} onRetry={() => void overview.refetch()} />;
   const { units, completedCount, lessonCount, nextLessonId, letters } = overview.data;
   const lessons = units.flatMap((u) => u.lessons);
   const next = lessons.find((l) => l.id === nextLessonId);
+
+  if (kids) {
+    return (
+      <Screen onRefresh={() => void overview.refetch()} refreshing={overview.isRefetching}>
+        <View>
+          <AppText variant="display">Apprendre les lettres</AppText>
+          <AppText variant="bodyStrong" muted>
+            Pour lire le Coran tout seul.
+          </AppText>
+        </View>
+        <Card tone="primary" style={styles.kidsHero}>
+          <AppText variant="label" color={KIDS.sun}>
+            {next ? (completedCount === 0 ? "On commence" : "On continue") : "Bravo !"}
+          </AppText>
+          {next && isArabicTitle(next.title) ? (
+            <ArabicText size={40} color={KIDS.onHero}>
+              {next.title}
+            </ArabicText>
+          ) : (
+            <AppText variant="title" color={KIDS.onHero}>
+              {next ? next.title : "Tu as fini toutes les leçons !"}
+            </AppText>
+          )}
+          <ProgressBar value={lessonCount ? completedCount / lessonCount : 0} color={KIDS.sun} track="rgba(255,255,255,0.25)" height={8} />
+          <AppText color={KIDS.onHero}>
+            {completedCount} leçon{completedCount > 1 ? "s" : ""} sur {lessonCount}
+          </AppText>
+          {next ? <BigButton title="C’est parti !" icon="play" onPress={() => start(next.id)} /> : null}
+        </Card>
+        <Card onPress={() => router.push("/reading/alphabet")} style={styles.alphabet}>
+          <View style={styles.flex}>
+            <AppText variant="headline">Toutes les lettres</AppText>
+            <AppText muted>Touche une lettre pour l’entendre</AppText>
+          </View>
+          <ArabicText size={28} color={colors.accent}>
+            ا ب ت
+          </ArabicText>
+        </Card>
+        {units.map((unit, i) => (
+          <View key={unit.id} style={styles.unit}>
+            <AppText variant="title">
+              {i + 1}. {unit.title}
+            </AppText>
+            <View style={styles.kidsGrid}>
+              {unit.lessons.map((lesson) => {
+                const current = lesson.id === nextLessonId;
+                return (
+                  <Pressable
+                    key={lesson.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${lesson.title}${lesson.completed ? ", terminée" : ""}`}
+                    onPress={() => start(lesson.id)}
+                    style={({ pressed }) => [
+                      styles.kidsTile,
+                      { backgroundColor: current ? KIDS.sun : colors.surface, opacity: pressed ? 0.8 : 1 },
+                    ]}>
+                    {lesson.completed ? <Ionicons name="star" size={22} color={current ? KIDS.sunInk : KIDS.sun} /> : <View style={styles.starSpace} />}
+                    {isArabicTitle(lesson.title) ? (
+                      <ArabicText size={30} color={current ? KIDS.sunInk : undefined}>
+                        {lesson.title}
+                      </ArabicText>
+                    ) : (
+                      <AppText variant="bodyStrong" center numberOfLines={2} color={current ? KIDS.sunInk : undefined}>
+                        {lesson.title}
+                      </AppText>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
+      </Screen>
+    );
+  }
 
   return (
     <Screen onRefresh={() => void overview.refetch()} refreshing={overview.isRefetching}>
@@ -128,4 +207,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg },
   status: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   arabicTitle: { textAlign: "left", lineHeight: 60 },
+  kidsHero: { gap: spacing.md, borderRadius: radius.xl },
+  kidsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  kidsTile: { width: "31%", flexGrow: 1, minHeight: 104, borderRadius: radius.lg, padding: spacing.sm, alignItems: "center", justifyContent: "center", gap: 2 },
+  starSpace: { height: 22 },
 });
