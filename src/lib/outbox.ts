@@ -9,6 +9,8 @@ import { api, ApiError } from "./api";
  */
 export type PendingReview = { chapterId: number; verseNumber: number; quality: number; playedAt?: string };
 export type PendingSession = { lessonId?: string; answers: { wordId: string; correct: boolean }[]; playedAt: string };
+/** Étape de mission réussie sans réseau (profil enfant), datée du jour où elle a été faite. */
+export type PendingMissionStep = { planId: string; dayIndex: number; step: string; playedAt: string };
 
 const supported = Platform.OS !== "web";
 
@@ -38,6 +40,7 @@ type Queue<T> = ReturnType<typeof fileQueue<T>>;
 
 const reviews = fileQueue<PendingReview>("pending-reviews.json");
 const sessions = fileQueue<PendingSession>("pending-sessions.json");
+const missionSteps = fileQueue<PendingMissionStep>("pending-mission-steps.json");
 
 export function queueReview(review: PendingReview) {
   reviews.write([...reviews.read(), { ...review, playedAt: review.playedAt ?? new Date().toISOString() }]);
@@ -47,9 +50,18 @@ export function queueSession(session: Omit<PendingSession, "playedAt"> & { playe
   sessions.write([...sessions.read(), { ...session, playedAt: session.playedAt ?? new Date().toISOString() }]);
 }
 
-/** Activités en attente d'envoi (évaluations et séances). */
+export function queueMissionStep(step: Omit<PendingMissionStep, "playedAt"> & { playedAt?: string }) {
+  missionSteps.write([...missionSteps.read(), { ...step, playedAt: step.playedAt ?? new Date().toISOString() }]);
+}
+
+/** Étapes de mission en attente, dans l'ordre : l'accueil enfant les montre comme déjà réussies. */
+export function pendingMissionSteps(): PendingMissionStep[] {
+  return missionSteps.read();
+}
+
+/** Activités en attente d'envoi (évaluations, séances et étapes de mission). */
 export function pendingReviewCount(): number {
-  return reviews.read().length + sessions.read().length;
+  return reviews.read().length + sessions.read().length + missionSteps.read().length;
 }
 
 export function pendingSessionCount(): number {
@@ -90,7 +102,9 @@ export function flushReviews(): Promise<number> {
       // Serveur injoignable : inutile d'essayer la seconde file.
       if (first.blocked) return first.sent;
       const second = await flushQueue(sessions, (body) => api("/vocabulary/sessions", { method: "POST", body }));
-      return first.sent + second.sent;
+      if (second.blocked) return first.sent + second.sent;
+      const third = await flushQueue(missionSteps, (body) => api("/me/missions/today/steps", { method: "POST", body }));
+      return first.sent + second.sent + third.sent;
     } finally {
       flushing = null;
     }
@@ -101,4 +115,5 @@ export function flushReviews(): Promise<number> {
 export function clearOutbox() {
   reviews.write([]);
   sessions.write([]);
+  missionSteps.write([]);
 }

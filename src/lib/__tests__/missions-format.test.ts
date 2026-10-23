@@ -1,3 +1,4 @@
+import { stepDoneLocally } from "../missions";
 import { countVerses, dayLabel, duration, kidMissionTitle, missionSummary, planTitle, STICKERS, stickersUnlocked, todayLine, versesLabel } from "../missions-format";
 import type { Chapter } from "../types";
 
@@ -76,5 +77,28 @@ describe("missions : côté enfant", () => {
     expect(stickersUnlocked(5)).toBe(1);
     expect(stickersUnlocked(23)).toBe(4);
     expect(stickersUnlocked(1000)).toBe(STICKERS.length);
+  });
+});
+
+describe("stepDoneLocally", () => {
+  const today = {
+    mission: {
+      planId: "p", dayIndex: 1, totalDays: 2, title: null, verses: ["112:1"], review: [], stars: 1, completed: false, sharedAt: null, message: null, notes: {},
+      steps: [{ kind: "listen" as const, done: true }, { kind: "repeat" as const, done: false }, { kind: "play" as const, done: false }],
+    },
+    reason: null,
+    nextMissionOn: null,
+    totalStars: 4,
+  };
+  it("coche l'étape, ajoute l'étoile et termine la mission à la dernière", () => {
+    const after = stepDoneLocally(today, "repeat");
+    expect(after.mission).toMatchObject({ stars: 2, completed: false });
+    expect(after.totalStars).toBe(5);
+    const done = stepDoneLocally(after, "play");
+    expect(done.mission).toMatchObject({ stars: 3, completed: true });
+    expect(done.totalStars).toBe(6);
+  });
+  it("ne compte pas deux fois une étape déjà faite", () => {
+    expect(stepDoneLocally(today, "listen").totalStars).toBe(4);
   });
 });

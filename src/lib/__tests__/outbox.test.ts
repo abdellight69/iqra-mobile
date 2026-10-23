@@ -40,7 +40,7 @@ jest.mock("../api", () => {
 });
 
 import { ApiError } from "../api";
-import { clearOutbox, flushReviews, pendingReviewCount, pendingSessionCount, queueReview, queueSession } from "../outbox";
+import { clearOutbox, flushReviews, pendingMissionSteps, pendingReviewCount, pendingSessionCount, queueMissionStep, queueReview, queueSession } from "../outbox";
 
 const review = (verseNumber: number) => ({ chapterId: 1, verseNumber, quality: 4 });
 
@@ -129,5 +129,30 @@ describe("séances de vocabulaire hors ligne", () => {
     queueSession(session("p23-01"));
     clearOutbox();
     expect(pendingSessionCount()).toBe(0);
+  });
+});
+
+describe("étapes de mission hors ligne", () => {
+  it("envoie les étapes après les évaluations et les séances, datées du jour où elles ont été faites", async () => {
+    queueReview(review(1));
+    queueMissionStep({ planId: "plan", dayIndex: 2, step: "listen", playedAt: "2026-10-19T18:00:00.000Z" });
+    queueMissionStep({ planId: "plan", dayIndex: 2, step: "repeat" });
+    expect(pendingMissionSteps().map((s) => s.step)).toEqual(["listen", "repeat"]);
+    expect(pendingReviewCount()).toBe(3);
+    mockApi.mockResolvedValue({});
+    await expect(flushReviews()).resolves.toBe(3);
+    expect(mockApi.mock.calls.map((c: unknown[]) => c[0])).toEqual(["/memorization/reviews", "/me/missions/today/steps", "/me/missions/today/steps"]);
+    expect((mockApi.mock.calls[1]![1] as { body: { playedAt: string } }).body.playedAt).toBe("2026-10-19T18:00:00.000Z");
+    expect(pendingReviewCount()).toBe(0);
+  });
+
+  it("abandonne une étape refusée (autre jour) et garde les suivantes en cas de panne", async () => {
+    queueMissionStep({ planId: "plan", dayIndex: 1, step: "play" });
+    queueMissionStep({ planId: "plan", dayIndex: 2, step: "listen" });
+    mockApi.mockRejectedValueOnce(new ApiError(409, "CONFLICT", "autre jour")).mockRejectedValueOnce(new ApiError(0, "NETWORK_ERROR", "hors ligne"));
+    await expect(flushReviews()).resolves.toBe(1);
+    expect(pendingMissionSteps().map((s) => s.dayIndex)).toEqual([2]);
+    clearOutbox();
+    expect(pendingMissionSteps()).toEqual([]);
   });
 });

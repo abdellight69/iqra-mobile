@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
+import { isNetworkError } from "./offline";
+import { queueMissionStep } from "./outbox";
 import type { KidToday, LearnedWord, MissionChild, MissionPlan, MissionPlanDetail, MissionRange, MissionStep, VerseNote } from "./types";
 
 /** Missions parent → enfant (backend : docs/missions-v1.md) : requêtes du profil actif. */
@@ -108,17 +110,40 @@ export function useTodayMission(enabled = true) {
   return useQuery({ queryKey: kidKeys.today, queryFn: () => api<KidToday>("/me/missions/today"), enabled });
 }
 
-/** Étape réussie : le serveur renvoie la mission du jour à jour (étoiles, mission réussie). */
+/**
+ * Étape réussie : le serveur renvoie la mission du jour à jour (étoiles, mission réussie). Sans
+ * réseau, l'étape est gardée sur l'appareil (envoyée à la reconnexion) et comptée tout de suite :
+ * l'enfant continue sa mission comme si de rien n'était.
+ */
 export function useCompleteMissionStep() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: { planId: string; dayIndex: number; step: MissionStep }) =>
-      api<KidToday>("/me/missions/today/steps", { method: "POST", body: { ...input, playedAt: new Date().toISOString() } }),
+    mutationFn: async (input: { planId: string; dayIndex: number; step: MissionStep }): Promise<KidToday & { queued?: boolean }> => {
+      const playedAt = new Date().toISOString();
+      try {
+        return await api<KidToday>("/me/missions/today/steps", { method: "POST", body: { ...input, playedAt } });
+      } catch (error) {
+        const current = client.getQueryData<KidToday>(kidKeys.today);
+        if (!isNetworkError(error) || !current?.mission) throw error;
+        queueMissionStep({ ...input, playedAt });
+        return { ...stepDoneLocally(current, input.step), queued: true };
+      }
+    },
     onSuccess: (today) => {
       client.setQueryData(kidKeys.today, today);
       void client.invalidateQueries({ queryKey: kidKeys.learned });
     },
   });
+}
+
+/** La mission du jour telle que le serveur la renverrait une fois l'étape enregistrée. */
+export function stepDoneLocally(today: KidToday, step: MissionStep): KidToday {
+  const mission = today.mission;
+  if (!mission) return today;
+  const steps = mission.steps.map((s) => (s.kind === step ? { ...s, done: true } : s));
+  const stars = steps.filter((s) => s.done).length;
+  const gained = stars - mission.stars;
+  return { ...today, totalStars: today.totalStars + gained, mission: { ...mission, steps, stars, completed: steps.every((s) => s.done) } };
 }
 
 /** « Le dire à Maman » : la mission du jour réussie est signalée à la famille. */
