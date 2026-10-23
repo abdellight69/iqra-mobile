@@ -31,6 +31,8 @@ type AppearanceState = {
   supporter: boolean;
   /** Fin du droit « soutien » vu par RevenueCat sur ce téléphone (ms), après un achat ou une restauration. */
   storeSupporterUntil: number | null;
+  /** Profil enfant actif : toute l'app prend le thème enfant (couleurs, police, tailles). */
+  kids: boolean;
   setMode: (mode: AppearanceMode) => void;
   setTheme: (theme: ThemeId) => void;
 };
@@ -67,6 +69,7 @@ export const useAppearance = create<AppearanceState>((set) => ({
   theme: "eqra",
   supporter: false,
   storeSupporterUntil: null,
+  kids: useAuth.getState().user?.isChild === true,
   setMode: (mode) => {
     apply(mode);
     set({ mode });
@@ -85,6 +88,11 @@ export function hasSupporterPerks(state: Pick<AppearanceState, "supporter" | "st
 
 export function useSupporterPerks(): boolean {
   return useAppearance((s) => hasSupporterPerks(s));
+}
+
+/** Vrai quand le profil actif est un profil enfant : thème enfant partout. */
+export function useKidsTheme(): boolean {
+  return useAppearance((s) => s.kids);
 }
 
 /** Thème appliqué à l'app (le thème par défaut si le thème choisi est réservé au Soutien). */
@@ -107,6 +115,9 @@ function setSupporter(supporter: boolean) {
 // L'abonnement suit le compte connecté : relu à chaque mise à jour de l'utilisateur (/me, connexion,
 // changement de profil), oublié à la déconnexion. Un serveur plus ancien (sans le champ) n'en a pas.
 useAuth.subscribe((state, previous) => {
+  // Thème enfant : suit le profil de la session (changement de profil compris).
+  const kids = state.status === "signedIn" && state.user?.isChild === true;
+  if (kids !== useAppearance.getState().kids) useAppearance.setState({ kids });
   if (state.status === "signedOut") {
     setSupporter(false);
     if (useAppearance.getState().storeSupporterUntil !== null) setStoreSupporterUntil(null);

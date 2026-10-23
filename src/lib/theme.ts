@@ -1,5 +1,5 @@
 import { Platform, useColorScheme, type ViewStyle } from "react-native";
-import { useActiveTheme } from "./appearance-store";
+import { useActiveTheme, useKidsTheme } from "./appearance-store";
 import { type Colors, isDarkPalette, palette } from "./palettes";
 
 export { darkColors, isDarkPalette, lightColors, type Colors } from "./palettes";
@@ -16,12 +16,18 @@ export const fonts = {
   serifSemibold: "Fraunces_600SemiBold",
   serifItalic: "Fraunces_400Regular_Italic",
   arabic: "AmiriQuran_400Regular",
+  /** Police ronde des profils enfants (Nunito). */
+  kidsRegular: "Nunito_600SemiBold",
+  kidsBold: "Nunito_700Bold",
+  kidsHeavy: "Nunito_800ExtraBold",
+  kidsBlack: "Nunito_900Black",
 } as const;
 
 /** Palette du thème choisi (Réglages > Apparence), en clair ou en sombre selon le téléphone ou le choix. */
 export function useColors(): Colors {
   const theme = useActiveTheme();
-  return palette(theme, useColorScheme() === "dark");
+  const kids = useKidsTheme();
+  return palette(theme, useColorScheme() === "dark", kids);
 }
 
 /** Ombre très douce en mode clair ; en mode sombre, une bordure fine remplace l'ombre. */

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
+import { useKidsTheme } from "@/lib/appearance-store";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
 
 export type CardProps = ViewProps & {
@@ -10,6 +11,7 @@ export type CardProps = ViewProps & {
 
 export function Card({ onPress, padded = true, tone = "default", style, children, ...props }: CardProps) {
   const colors = useColors();
+  const kids = useKidsTheme();
   const background = {
     default: colors.surface,
     flat: colors.surfaceMuted,
@@ -18,6 +20,8 @@ export function Card({ onPress, padded = true, tone = "default", style, children
   }[tone];
   const base: ViewStyle[] = [
     styles.card,
+    // Profil enfant : des cartes plus rondes, partout dans l'app.
+    kids ? styles.kidsCard : {},
     { backgroundColor: background },
     tone === "default" ? elevation(colors) : {},
     padded ? styles.padded : {},
@@ -43,5 +47,6 @@ export function Card({ onPress, padded = true, tone = "default", style, children
 
 const styles = StyleSheet.create({
   card: { borderRadius: radius.lg },
+  kidsCard: { borderRadius: radius.xl },
   padded: { padding: spacing.xl - 4 },
 });

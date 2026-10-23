@@ -1,4 +1,5 @@
 import { Text, type TextProps, type TextStyle } from "react-native";
+import { useKidsTheme } from "@/lib/appearance-store";
 import { fonts, useColors } from "@/lib/theme";
 
 type Variant = "display" | "title" | "headline" | "heading" | "body" | "bodyStrong" | "caption" | "label" | "serifBody";
@@ -13,6 +14,19 @@ const variants: Record<Variant, TextStyle> = {
   caption: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   label: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, letterSpacing: 1.4, textTransform: "uppercase" },
   serifBody: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 25 },
+};
+
+/** Profil enfant : police ronde (Nunito), plus grasse et plus grande, sans majuscules forcées. */
+const kidsVariants: Record<Variant, TextStyle> = {
+  display: { fontFamily: fonts.kidsBlack, fontSize: 34, lineHeight: 40 },
+  title: { fontFamily: fonts.kidsBlack, fontSize: 27, lineHeight: 33 },
+  headline: { fontFamily: fonts.kidsHeavy, fontSize: 21, lineHeight: 27 },
+  heading: { fontFamily: fonts.kidsHeavy, fontSize: 18, lineHeight: 24 },
+  body: { fontFamily: fonts.kidsRegular, fontSize: 17, lineHeight: 25 },
+  bodyStrong: { fontFamily: fonts.kidsBold, fontSize: 17, lineHeight: 24 },
+  caption: { fontFamily: fonts.kidsRegular, fontSize: 15, lineHeight: 21 },
+  label: { fontFamily: fonts.kidsHeavy, fontSize: 13, lineHeight: 17, letterSpacing: 1, textTransform: "uppercase" },
+  serifBody: { fontFamily: fonts.kidsBold, fontSize: 18, lineHeight: 26 },
 };
 
 /**
@@ -35,13 +49,14 @@ export type AppTextProps = TextProps & { variant?: Variant; muted?: boolean; fai
 
 export function AppText({ variant = "body", muted, faint, color, center, italic, style, ...props }: AppTextProps) {
   const colors = useColors();
+  const kids = useKidsTheme();
   return (
     <Text
       maxFontSizeMultiplier={maxScale[variant]}
       {...props}
       style={[
-        variants[variant],
-        italic && { fontFamily: fonts.serifItalic },
+        kids ? kidsVariants[variant] : variants[variant],
+        italic && !kids && { fontFamily: fonts.serifItalic },
         { color: color ?? (faint ? colors.textFaint : muted ? colors.textMuted : colors.text) },
         center && { textAlign: "center" },
         style,

@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import { useKidsTheme } from "@/lib/appearance-store";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -8,6 +9,7 @@ export type TextFieldProps = TextInputProps & { label: string; error?: string | 
 
 export function TextField({ label, error, secure, style, ...props }: TextFieldProps) {
   const colors = useColors();
+  const kids = useKidsTheme();
   const [hidden, setHidden] = useState(true);
   const [focused, setFocused] = useState(false);
 
@@ -38,7 +40,7 @@ export function TextField({ label, error, secure, style, ...props }: TextFieldPr
             setFocused(false);
             props.onBlur?.(e);
           }}
-          style={[styles.input, { color: colors.text }, style]}
+          style={[styles.input, kids && styles.kidsInput, { color: colors.text }, style]}
         />
         {secure && (
           <Pressable
@@ -71,4 +73,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   input: { flex: 1, fontFamily: fonts.regular, fontSize: 16, paddingVertical: spacing.md },
+  kidsInput: { fontFamily: fonts.kidsBold, fontSize: 18 },
 });

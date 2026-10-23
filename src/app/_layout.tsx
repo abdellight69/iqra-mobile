@@ -1,6 +1,7 @@
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from "@expo-google-fonts/inter";
 import { Fraunces_400Regular_Italic, Fraunces_500Medium, Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
+import { Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black } from "@expo-google-fonts/nunito";
 import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setAudioModeAsync } from "expo-audio";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -55,6 +56,11 @@ export default function RootLayout() {
     Fraunces_500Medium,
     Fraunces_600SemiBold,
     Fraunces_400Regular_Italic,
+    // Police des profils enfants.
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
   });
 
   useEffect(() => {

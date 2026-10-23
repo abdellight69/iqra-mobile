@@ -149,12 +149,43 @@ export function availableTheme(chosen: ThemeId, supporter: boolean): ThemeId {
   return theme && (!theme.supporter || supporter) ? chosen : "eqra";
 }
 
-export function palette(theme: ThemeId, dark: boolean): Colors {
+/**
+ * Palette d'un profil enfant, quel que soit le thème choisi : papier crème plus chaud, même vert
+ * profond, or plus lumineux. Jamais proposée dans les Réglages.
+ */
+const kidsLight: Colors = {
+  ...lightColors,
+  background: "#FBF4E6",
+  surfaceMuted: "#F4ECDC",
+  border: "#EBDFC8",
+  text: "#1F2A27",
+  textMuted: "#5F5C55",
+  textFaint: "#66625A",
+  accentSoft: "#FFF1CC",
+  arabic: "#14201C",
+};
+
+const kidsDark: Colors = {
+  ...darkColors,
+  background: "#12110D",
+  surface: "#1C1A14",
+  surfaceMuted: "#26231B",
+  border: "#353024",
+  text: "#F2ECDF",
+  textMuted: "#B3AA98",
+  textFaint: "#A39A88",
+  accent: "#E7C46F",
+  accentSoft: "#3A2F14",
+  arabic: "#F6EEE2",
+};
+
+export function palette(theme: ThemeId, dark: boolean, kids = false): Colors {
+  if (kids) return dark ? kidsDark : kidsLight;
   const definition = THEMES.find((t) => t.id === theme) ?? THEMES[0]!;
   return dark ? definition.dark : definition.light;
 }
 
-const DARK_PALETTES = new Set<Colors>(THEMES.map((t) => t.dark));
+const DARK_PALETTES = new Set<Colors>([...THEMES.map((t) => t.dark), kidsDark]);
 
 /** Palette sombre (quel que soit le thème) : sert aux réglages propres au mode sombre. */
 export function isDarkPalette(colors: Colors): boolean {
