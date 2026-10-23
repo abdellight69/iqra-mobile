@@ -263,6 +263,8 @@ export type VocabWord = {
   verb: VerbForms | null;
   isPatternRow: boolean;
   sourceUncertain: boolean;
+  /** Image du mot pour les enfants, relative à l'API (`/words/<id>.png`), ou null. */
+  imageUrl: string | null;
 };
 
 export type LessonSummary = {

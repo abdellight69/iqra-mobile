@@ -16,16 +16,25 @@ export type GameExercise =
   /** Un sens proposé pour le mot : vrai ou faux ? */
   | { type: "true_false"; wordId: string; proposed: string; isTrue: boolean }
   /** Retrouver le mot dans le verset où il apparaît. */
-  | { type: "in_verse"; wordId: string };
+  | { type: "in_verse"; wordId: string }
+  /** On entend et on lit le mot, on touche son image parmi quatre (mots illustrés seulement). */
+  | { type: "pick_image"; wordId: string; choices: Choice[]; answerId: string }
+  /** On voit l'image, on choisit le mot arabe parmi quatre. */
+  | { type: "image_to_ar"; wordId: string; choices: Choice[]; answerId: string };
 
 export type SessionExercise = Exercise | GameExercise;
 
 export const GAME_TYPES = ["listen", "missing_letter", "listen_ar", "true_false", "in_verse"] as const;
-export type GameType = (typeof GAME_TYPES)[number];
+/** Jeux avec les images des mots (profils enfants), intercalés en tête de la rotation. */
+export const IMAGE_GAME_TYPES = ["pick_image", "listen", "image_to_ar", "missing_letter", "listen_ar", "true_false", "in_verse"] as const;
+export type GameType = (typeof IMAGE_GAME_TYPES)[number];
 
 export function isGame(exercise: SessionExercise): exercise is GameExercise {
-  return (GAME_TYPES as readonly string[]).includes(exercise.type);
+  return (IMAGE_GAME_TYPES as readonly string[]).includes(exercise.type);
 }
+
+/** Distracteurs d'un jeu d'images : trois autres mots illustrés de la séance. */
+const IMAGE_CHOICES = 4;
 
 /** Case vide à la place de la lettre effacée (caractère neutre : les lettres voisines se détachent). */
 export const BLANK = "□";
@@ -64,7 +73,7 @@ export function missingLetter(headword: string, random: Random = Math.random): {
 }
 
 type MultipleChoice = Extract<Exercise, { choices: Choice[] }>;
-type Plan = { words: Map<string, VocabWord>; meaningChoices: Map<string, MultipleChoice>; formChoices: Map<string, MultipleChoice>; random: Random };
+type Plan = { words: Map<string, VocabWord>; meaningChoices: Map<string, MultipleChoice>; formChoices: Map<string, MultipleChoice>; random: Random; kinds: readonly GameType[] };
 
 function makeGame(kind: GameType, wordId: string, plan: Plan): GameExercise | null {
   const word = plan.words.get(wordId);
@@ -92,13 +101,25 @@ function makeGame(kind: GameType, wordId: string, plan: Plan): GameExercise | nu
     }
     case "in_verse":
       return { type: "in_verse", wordId };
+    case "pick_image": {
+      if (!word.imageUrl || !word.fr) return null;
+      const others = [...plan.words.values()].filter((w) => w.id !== wordId && w.imageUrl && w.fr);
+      if (others.length < IMAGE_CHOICES - 1) return null;
+      const distractors = shuffle(others, plan.random).slice(0, IMAGE_CHOICES - 1);
+      const choices = shuffle([word, ...distractors].map((w) => ({ id: w.id, text: w.fr! })), plan.random);
+      return { type: "pick_image", wordId, choices, answerId: wordId };
+    }
+    case "image_to_ar": {
+      const source = plan.formChoices.get(wordId);
+      return word.imageUrl && source ? { type: "image_to_ar", wordId, choices: shuffle(source.choices, plan.random), answerId: source.answerId } : null;
+    }
   }
 }
 
 /** Un jeu par mot, en tournant sur les types ; si un type n'est pas possible pour ce mot, le suivant. */
 function pickGame(wordId: string, plan: Plan, counter: { value: number }): GameExercise | null {
-  for (let i = 0; i < GAME_TYPES.length; i++) {
-    const kind = GAME_TYPES[counter.value % GAME_TYPES.length]!;
+  for (let i = 0; i < plan.kinds.length; i++) {
+    const kind = plan.kinds[counter.value % plan.kinds.length]!;
     counter.value++;
     const game = makeGame(kind, wordId, plan);
     if (game) return game;
@@ -110,10 +131,17 @@ function pickGame(wordId: string, plan: Plan, counter: { value: number }): GameE
  * Séance enrichie :
  * - leçon ou sélection de mots : après chaque groupe (présentations, sens, association), un jeu
  *   par mot du groupe, dans un ordre mélangé ; la phase finale « forme arabe » est inchangée ;
- * - révision : une question sur trois devient un jeu (même mot, même nombre de questions).
+ * - révision : une question sur trois devient un jeu (même mot, même nombre de questions) ;
+ * - `images` (profils enfants) : les jeux avec l'image du mot entrent dans la rotation.
  */
-export function planSession(session: Pick<LearningSession, "kind" | "words" | "exercises">, random: Random = Math.random): SessionExercise[] {
-  const plan: Plan = { words: new Map(session.words.map((w) => [w.id, w])), meaningChoices: new Map(), formChoices: new Map(), random };
+export function planSession(session: Pick<LearningSession, "kind" | "words" | "exercises">, random: Random = Math.random, options: { images?: boolean } = {}): SessionExercise[] {
+  const plan: Plan = {
+    words: new Map(session.words.map((w) => [w.id, w])),
+    meaningChoices: new Map(),
+    formChoices: new Map(),
+    random,
+    kinds: options.images ? IMAGE_GAME_TYPES : GAME_TYPES,
+  };
   for (const exercise of session.exercises) {
     if (exercise.type === "ar_to_fr") plan.meaningChoices.set(exercise.wordId, exercise);
     if (exercise.type === "fr_to_ar") plan.formChoices.set(exercise.wordId, exercise);

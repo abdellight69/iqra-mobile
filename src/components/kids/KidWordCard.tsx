@@ -1,12 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { api } from "@/lib/api";
 import { useOneShot } from "@/lib/audio";
-import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
+import { KID_TONES, KIDS, useKidsColors, wordImage } from "@/lib/kids";
 import { keys } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { transliterate } from "@/lib/transliterate";
@@ -58,6 +59,7 @@ export function KidWordCard({
   const colors = useColors();
   const kc = useKidsColors();
   const arabic = word.headword ?? word.ar ?? "";
+  const image = wordImage(word);
   return (
     <Pressable
       accessibilityRole="button"
@@ -68,7 +70,8 @@ export function KidWordCard({
         {status === "learned" ? <Ionicons name="star" size={22} color={KIDS.sun} accessibilityLabel="Appris" /> : <View />}
         {loading ? <ActivityIndicator color={KID_TONES.blue.main} /> : <Ionicons name="volume-high" size={22} color={KID_TONES.blue.main} />}
       </View>
-      <ArabicText size="xl" center>
+      {image ? <Image source={image} style={styles.image} contentFit="contain" accessibilityLabel={word.fr ?? undefined} /> : null}
+      <ArabicText size={image ? "lg" : "xl"} center>
         {arabic}
       </ArabicText>
       {arabic ? (
@@ -93,5 +96,6 @@ export function KidWordCard({
 const styles = StyleSheet.create({
   card: { width: "47%", flexGrow: 1, borderRadius: 24, padding: spacing.md, gap: spacing.xs, alignItems: "center", minHeight: 170, justifyContent: "center" },
   top: { alignSelf: "stretch", flexDirection: "row", justifyContent: "space-between" },
+  image: { width: 84, height: 84 },
   badge: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
 });

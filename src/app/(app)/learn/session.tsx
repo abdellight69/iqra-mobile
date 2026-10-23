@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
+import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -12,6 +13,7 @@ import { QuranExample } from "@/components/QuranExample";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { VerbTable } from "@/components/VerbTable";
 import { SessionStart, VerseContext, VerseReview } from "@/components/exercises/ChapterSession";
+import { ImageToArabicExercise, PickImageExercise } from "@/components/exercises/ImageExercises";
 import { InVerseExercise } from "@/components/exercises/InVerseExercise";
 import { ContrastExercise } from "@/components/exercises/ContrastExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
@@ -27,7 +29,7 @@ import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/
 import { closeScreen } from "@/lib/navigation";
 import { useCompleteMissionStep } from "@/lib/missions";
 import { BigButton } from "@/components/kids/KidButton";
-import { KIDS, useKidsMode } from "@/lib/kids";
+import { KIDS, useKidsMode, wordImage } from "@/lib/kids";
 
 type Answer = { wordId: string; correct: boolean };
 
@@ -101,7 +103,8 @@ function SessionRunner({ session, lessonId, mission }: { session: LearningSessio
   const kids = useKidsMode();
   const byId = useMemo(() => new Map(session.words.map((w) => [w.id, w])), [session.words]);
   // Les petits jeux sont ajoutés une fois, à l'ouverture de la séance (tirage aléatoire).
-  const [queue, setQueue] = useState<SessionExercise[]>(() => planSession(session));
+  // Profil enfant : les jeux avec l'image du mot entrent dans la rotation.
+  const [queue, setQueue] = useState<SessionExercise[]>(() => planSession(session, undefined, { images: kids }));
   const [step, setStep] = useState(0);
   const answers = useRef<Answer[]>([]);
   const retried = useRef(new Set<string>());
@@ -193,6 +196,10 @@ function ExerciseView(props: ExerciseProps) {
       return <TrueFalseExercise {...props} exercise={exercise} />;
     case "in_verse":
       return <InVerseExercise {...props} exercise={exercise} />;
+    case "pick_image":
+      return <PickImageExercise {...props} exercise={exercise} />;
+    case "image_to_ar":
+      return <ImageToArabicExercise {...props} exercise={exercise} />;
     default:
       return <MultipleChoice {...props} exercise={exercise} />;
   }
@@ -213,6 +220,7 @@ function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: Vocab
           </AppText>
         </View>
         <Card style={styles.introCard}>
+          {kids && wordImage(word) ? <ExpoImage source={wordImage(word)} style={styles.introImage} contentFit="contain" accessibilityLabel={word.fr ?? undefined} /> : null}
           <WordSummary word={word} size={48} />
           <ListenButton wordId={word.id} />
           {word.arNote && !kids ? (
@@ -351,6 +359,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   stars: { flexDirection: "row", alignItems: "flex-end" },
   kidsCta: { alignSelf: "stretch" },
+  introImage: { width: 140, height: 140, alignSelf: "center" },
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   newBadge: { flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill },
   introCard: { gap: spacing.md, paddingVertical: spacing.xxxl },

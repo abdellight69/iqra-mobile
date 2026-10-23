@@ -10,7 +10,7 @@ function seeded(seed: number) {
 }
 
 function word(id: string, ar: string, fr: string): VocabWord {
-  return { id, lessonId: "p23", ar, arNote: null, fr, headword: ar, groupTitleFr: null, groupTitleAr: null, sideLabel: null, occurrences: null, verb: null, isPatternRow: false, sourceUncertain: false };
+  return { id, lessonId: "p23", ar, arNote: null, fr, headword: ar, groupTitleFr: null, groupTitleAr: null, sideLabel: null, occurrences: null, verb: null, isPatternRow: false, sourceUncertain: false, imageUrl: null };
 }
 
 const WORDS = [word("p23-01", "هَذَا", "Ceci"), word("p23-02", "هَذِهِ", "Cette"), word("p23-03", "هَؤُلَاءِ", "Ceux-ci"), word("p23-04", "ذَلِكَ", "Cela"), word("p23-05", "تِلْكَ", "Celle-là")];
@@ -111,5 +111,36 @@ describe("planSession : révision", () => {
   it("le jeu porte sur le mot de la question remplacée", () => {
     const game = planned[2]!;
     expect(isGame(game) && game.wordId).toBe((exercises[2] as { wordId: string }).wordId);
+  });
+});
+
+describe("jeux d'images (profils enfants)", () => {
+  const illustrated = WORDS.map((w) => ({ ...w, imageUrl: `/words/${w.id}.png` }));
+  const session = { kind: "lesson" as const, words: illustrated, exercises: lessonExercises(illustrated) };
+
+  it("n'entre dans la rotation qu'avec l'option images", () => {
+    const types = planSession(session, seeded(3)).map((e) => e.type);
+    expect(types).not.toContain("pick_image");
+    expect(types).not.toContain("image_to_ar");
+  });
+
+  it("propose quatre images dont la bonne, et le mot arabe depuis une image", () => {
+    const planned = planSession(session, seeded(3), { images: true });
+    const pick = planned.find((e): e is Extract<SessionExercise, { type: "pick_image" }> => e.type === "pick_image");
+    expect(pick).toBeDefined();
+    expect(pick!.choices).toHaveLength(4);
+    expect(pick!.choices.map((c) => c.id)).toContain(pick!.answerId);
+    expect(new Set(pick!.choices.map((c) => c.id)).size).toBe(4);
+    expect(pick!.answerId).toBe(pick!.wordId);
+    const toAr = planned.find((e): e is Extract<SessionExercise, { type: "image_to_ar" }> => e.type === "image_to_ar");
+    expect(toAr).toBeDefined();
+    expect(toAr!.choices.map((c) => c.id)).toContain(toAr!.answerId);
+  });
+
+  it("saute les jeux d'images pour un mot sans image ou sans assez de mots illustrés", () => {
+    const few = { ...session, words: illustrated.map((w, i) => (i < 3 ? w : { ...w, imageUrl: null })) };
+    const planned = planSession(few, seeded(3), { images: true });
+    expect(planned.some((e) => e.type === "pick_image")).toBe(false);
+    for (const e of planned) if (e.type === "image_to_ar") expect(few.words.find((w) => w.id === e.wordId)?.imageUrl).toBeTruthy();
   });
 });

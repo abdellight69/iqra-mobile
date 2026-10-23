@@ -1,3 +1,4 @@
+import { API_URL } from "./api";
 import { useMe } from "./queries";
 import { isDarkPalette, useColors } from "./theme";
 
@@ -8,6 +9,11 @@ import { isDarkPalette, useColors } from "./theme";
  */
 export function useKidsMode(): boolean {
   return useMe().data?.isChild === true;
+}
+
+/** Image d'un mot du lexique (servie par l'API), prête pour expo-image ; null sans image. */
+export function wordImage(word: { imageUrl: string | null }): { uri: string } | null {
+  return word.imageUrl ? { uri: `${API_URL}${word.imageUrl}` } : null;
 }
 
 /** Versets au plus par séance de révision pour un enfant. */
