@@ -12,7 +12,7 @@ import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { kidPhonetic, useFinishedSurahs } from "@/lib/kids-quran";
 import { useVerseNotes } from "@/lib/missions";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
-import { useChapter, useChapterAudio, useMe, useRecordReading, useSaveReadingPosition, useVerses } from "@/lib/queries";
+import { useChapter, useChapterAudio, useKidMeanings, useMe, useRecordReading, useSaveReadingPosition, useVerses } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Verse } from "@/lib/types";
 
@@ -175,6 +175,9 @@ function VerseView({ verse, help, activeWord, onWord }: { verse: Verse; help: bo
   const kc = useKidsColors();
   const notes = useVerseNotes([verse.key]);
   const note = notes.data?.[verse.key];
+  // Le sens en mots d'enfant quand il existe, sinon la traduction du profil.
+  const kidMeanings = useKidMeanings();
+  const meaning = kidMeanings.data?.[verse.key] ?? verse.translation?.text ?? null;
   const words = verse.words.filter((w) => w.type === "word");
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -203,13 +206,13 @@ function VerseView({ verse, help, activeWord, onWord }: { verse: Verse; help: bo
           );
         })}
       </View>
-      {verse.translation ? (
+      {meaning ? (
         <View style={[styles.meaning, { borderColor: colors.surfaceMuted }]}>
           <AppText variant="label" color={colors.accent}>
             Ce que ça veut dire
           </AppText>
           <AppText variant="headline" center>
-            {verse.translation.text}
+            {meaning}
           </AppText>
         </View>
       ) : null}
