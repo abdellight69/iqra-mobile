@@ -27,6 +27,10 @@ export function TextField({ label, error, secure, style, ...props }: TextFieldPr
           },
         ]}>
         <TextInput
+          // iOS : `autoComplete="new-password"` déclenche la suggestion de mot de passe fort, dont le
+          // voile jaune bloque la saisie (simulateur, trousseau désactivé). On reste en « password » :
+          // le trousseau propose toujours les mots de passe enregistrés, sans forcer le sien.
+          textContentType={secure ? "password" : undefined}
           {...props}
           accessibilityLabel={label}
           secureTextEntry={secure && hidden}
