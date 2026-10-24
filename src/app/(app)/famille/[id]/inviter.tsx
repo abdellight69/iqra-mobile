@@ -9,21 +9,12 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { TextField } from "@/components/TextField";
-import { API_URL, errorMessage } from "@/lib/api";
+import { errorMessage } from "@/lib/api";
 import { useAddProfile, useFamily, useFamilyInvitations, useInvite, useRegenerateCode, useRevokeCode, useRevokeInvitation } from "@/lib/families";
 import { formatCode } from "@/lib/families-format";
+import { joinPageUrl } from "@/lib/legal";
 import { useProfiles } from "@/lib/profiles";
 import { radius, spacing, useColors } from "@/lib/theme";
-
-/** Page « rejoindre » du site, servie sur le même hôte que l’API (sans son port). */
-function joinPageUrl(code: string): string {
-  try {
-    const url = new URL(API_URL);
-    return `${url.protocol}//${url.hostname}/rejoindre/?c=${code}`;
-  } catch {
-    return "";
-  }
-}
 
 const dateFr = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
 

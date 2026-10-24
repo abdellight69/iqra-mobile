@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
-import { KidWordCard, useWordAudio } from "@/components/kids/KidWordCard";
+import { KidWordCard, useKidWordAudio } from "@/components/kids/KidWordCard";
 import { Screen } from "@/components/Screen";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useLearnedWords } from "@/lib/missions";
@@ -12,7 +12,7 @@ import { spacing } from "@/lib/theme";
  */
 export default function MyWords() {
   const words = useLearnedWords();
-  const audio = useWordAudio();
+  const audio = useKidWordAudio();
 
   if (words.isPending) return <LoadingState />;
   if (words.isError) return <ErrorState error={words.error} onRetry={() => void words.refetch()} />;

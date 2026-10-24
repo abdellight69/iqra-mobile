@@ -509,6 +509,11 @@ function MatchView({ step, onAnswer, onNext, busy }: StepProps & { step: Extract
   const [selected, setSelected] = useState<string | null>(null);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [wrong, setWrong] = useState<string | null>(null);
+  // Effacement du « faux » après un instant, annulé si l'exercice disparaît avant.
+  const wrongTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (wrongTimer.current) clearTimeout(wrongTimer.current);
+  }, []);
   const [mistakes, setMistakes] = useState(0);
   const done = matched.size === step.pairs.length;
 
@@ -524,7 +529,8 @@ function MatchView({ step, onAnswer, onNext, busy }: StepProps & { step: Extract
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setMistakes((m) => m + 1);
       setWrong(id);
-      setTimeout(() => setWrong(null), 500);
+      if (wrongTimer.current) clearTimeout(wrongTimer.current);
+      wrongTimer.current = setTimeout(() => setWrong(null), 500);
     }
   }
 

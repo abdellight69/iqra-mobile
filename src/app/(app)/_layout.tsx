@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useOffline } from "@/lib/offline";
+import { useKidsMode } from "@/lib/kids";
 import { takePendingInvite } from "@/lib/pending-invite";
 import { loadRememberedProfile } from "@/lib/profile-memory";
 import { refreshDailyReserve } from "@/lib/queries";
@@ -53,6 +54,9 @@ export const unstable_settings = { anchor: "(tabs)" };
 
 export default function AppLayout() {
   const colors = useColors();
+  // Profil enfant : les écrans réservés aux adultes (réglages, gestion des profils, missions côté
+  // parent, programmes, signets, recherche, Soutien…) sont retirés de la pile, même par lien profond.
+  const kids = useKidsMode();
   useReminderSync();
   useDailyReserve();
   useReminderTaps();
@@ -70,8 +74,8 @@ export default function AppLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerTitleStyle: {
-          fontFamily: fonts.medium,
-          fontSize: 16,
+          fontFamily: kids ? fonts.kidsTitleMedium : fonts.medium,
+          fontSize: kids ? 18 : 16,
           color: colors.text,
         },
         headerBackButtonDisplayMode: "minimal",
@@ -100,7 +104,9 @@ export default function AppLayout() {
           headerShown: false,
         }}
       />
-      <Stack.Screen name="learn/[lessonId]" options={{ title: "Fiche" }} />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="learn/[lessonId]" options={{ title: "Fiche" }} />
+      </Stack.Protected>
       <Stack.Screen name="learn/theme/[themeId]" options={{ title: "Thème" }} />
       <Stack.Screen
         name="learn/session"
@@ -118,10 +124,9 @@ export default function AppLayout() {
         name="memorize/[planId]"
         options={{ title: "Plan de mémorisation" }}
       />
-      <Stack.Screen
-        name="memorize/map"
-        options={{ title: "Carte de mémorisation" }}
-      />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="memorize/map" options={{ title: "Carte de mémorisation" }} />
+      </Stack.Protected>
       <Stack.Screen name="memorize/recite" options={{ title: "" }} />
       <Stack.Screen
         name="memorize/session"
@@ -131,7 +136,9 @@ export default function AppLayout() {
           gestureEnabled: false,
         }}
       />
-      <Stack.Screen name="settings" options={{ title: "Réglages" }} />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="settings" options={{ title: "Réglages" }} />
+      </Stack.Protected>
       <Stack.Screen
         name="profiles/index"
         options={{
@@ -140,12 +147,11 @@ export default function AppLayout() {
           animation: "fade",
         }}
       />
-      <Stack.Screen
-        name="profiles/manage"
-        options={{ title: "Profils de la famille" }}
-      />
-      <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
-      <Stack.Screen name="search" options={{ title: "Rechercher" }} />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="profiles/manage" options={{ title: "Profils de la famille" }} />
+        <Stack.Screen name="bookmarks" options={{ title: "Signets" }} />
+        <Stack.Screen name="search" options={{ title: "Rechercher" }} />
+      </Stack.Protected>
       <Stack.Screen name="famille/index" options={{ title: "Mes familles" }} />
       <Stack.Screen name="famille/nouvelle" options={{ presentation: "modal", title: "Nouvelle famille" }} />
       <Stack.Screen name="famille/rejoindre" options={{ title: "Rejoindre une famille" }} />
@@ -158,13 +164,15 @@ export default function AppLayout() {
       <Stack.Screen name="mission/bravo" options={{ presentation: "fullScreenModal", headerShown: false, gestureEnabled: false, animation: "fade" }} />
       <Stack.Screen name="mes-mots" options={{ title: "Mes mots" }} />
       <Stack.Screen name="album/[themeId]" options={{ title: "" }} />
-      <Stack.Screen name="missions/index" options={{ title: "Missions des enfants" }} />
-      <Stack.Screen name="missions/new" options={{ presentation: "modal", title: "Nouvelle mission" }} />
-      <Stack.Screen name="missions/[id]" options={{ title: "" }} />
-      <Stack.Screen name="missions/note" options={{ presentation: "modal", title: "Expliquer le verset" }} />
-      <Stack.Screen name="prayer" options={{ title: "" }} />
-      <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
-      <Stack.Screen name="soutien" options={{ title: "Soutien" }} />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="missions/index" options={{ title: "Missions des enfants" }} />
+        <Stack.Screen name="missions/new" options={{ presentation: "modal", title: "Nouvelle mission" }} />
+        <Stack.Screen name="missions/[id]" options={{ title: "" }} />
+        <Stack.Screen name="missions/note" options={{ presentation: "modal", title: "Expliquer le verset" }} />
+        <Stack.Screen name="prayer" options={{ title: "" }} />
+        <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />
+        <Stack.Screen name="soutien" options={{ title: "Soutien" }} />
+      </Stack.Protected>
       <Stack.Screen
         name="onboarding"
         options={{
@@ -173,8 +181,10 @@ export default function AppLayout() {
           animation: "fade",
         }}
       />
-      <Stack.Screen name="programs/index" options={{ title: "" }} />
-      <Stack.Screen name="programs/[id]" options={{ title: "" }} />
+      <Stack.Protected guard={!kids}>
+        <Stack.Screen name="programs/index" options={{ title: "" }} />
+        <Stack.Screen name="programs/[id]" options={{ title: "" }} />
+      </Stack.Protected>
       <Stack.Screen
         name="share/[key]"
         options={{ presentation: "modal", headerShown: false }}

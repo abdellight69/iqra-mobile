@@ -23,7 +23,22 @@ type RequestOptions = {
   auth?: boolean;
   /** Corps binaire (enregistrement audio) envoyé tel quel, à la place d'un corps JSON. */
   raw?: { data: ArrayBuffer | Blob; contentType: string };
+  /** Délai maximal (ms) ; par défaut 15 s, 90 s pour un corps audio (la transcription peut être longue). */
+  timeoutMs?: number;
 };
+
+/** Délais d'attente : une requête qui pend (réseau captif, serveur muet) ne doit jamais bloquer l'app. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+export const AUDIO_REQUEST_TIMEOUT_MS = 90_000;
+
+function timeoutSignal(ms: number): AbortSignal | undefined {
+  try {
+    return AbortSignal.timeout(ms);
+  } catch {
+    // Environnement sans AbortSignal.timeout (très ancien moteur) : pas de délai plutôt qu'un plantage.
+    return undefined;
+  }
+}
 
 function timeZone(): string | undefined {
   try {
@@ -40,21 +55,28 @@ async function send(path: string, options: RequestOptions, accessToken?: string)
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   const tz = timeZone();
   if (tz) headers["X-Timezone"] = tz;
+  const signal = timeoutSignal(options.timeoutMs ?? (options.raw ? AUDIO_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS));
   try {
     if (options.raw && Platform.OS !== "web") {
       // Le fetch de React Native n'envoie pas de corps binaire : celui d'Expo le fait.
-      const response = await expoFetch(`${API_URL}/api/v1${path}`, { method: options.method ?? "POST", headers, body: options.raw.data });
+      const response = await expoFetch(`${API_URL}/api/v1${path}`, { method: options.method ?? "POST", headers, body: options.raw.data, signal });
       return response as unknown as Response;
     }
     return await fetch(`${API_URL}/api/v1${path}`, {
       method: options.method ?? "GET",
       headers,
       body: options.raw ? options.raw.data : options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal,
     });
   } catch (error) {
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
     // En développement : adresse appelée et erreur d'origine, pour diagnostiquer.
     const where = __DEV__ ? ` (${API_URL} : ${error instanceof Error ? error.message : String(error)})` : "";
-    throw new ApiError(0, "NETWORK_ERROR", `Impossible de joindre le serveur${where}. Vérifiez votre connexion.`);
+    throw new ApiError(
+      0,
+      "NETWORK_ERROR",
+      timedOut ? `Le serveur met trop de temps à répondre${where}. Réessayez dans un instant.` : `Impossible de joindre le serveur${where}. Vérifiez votre connexion.`,
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { shufflePairs } from "@/lib/shuffle";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -21,6 +21,11 @@ export function MatchPairs({ exercise, byId, onAnswer, onNext, submitting }: Exe
   const [selected, setSelected] = useState<string | null>(null);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [wrong, setWrong] = useState<string | null>(null);
+  // Effacement du « faux » après un instant, annulé si l'exercice disparaît avant.
+  const wrongTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (wrongTimer.current) clearTimeout(wrongTimer.current);
+  }, []);
   const [mistakes, setMistakes] = useState<Set<string>>(new Set());
   const done = matched.size === exercise.wordIds.length;
 
@@ -38,7 +43,8 @@ export function MatchPairs({ exercise, byId, onAnswer, onNext, submitting }: Exe
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setMistakes((m) => new Set(m).add(selected));
       setWrong(id);
-      setTimeout(() => setWrong(null), 500);
+      if (wrongTimer.current) clearTimeout(wrongTimer.current);
+      wrongTimer.current = setTimeout(() => setWrong(null), 500);
     }
   }
 

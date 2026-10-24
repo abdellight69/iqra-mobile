@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./auth-store";
+import { consumeDailyReserve } from "./daily-reserve";
 import { flushReviews, pendingReviewCount } from "./outbox";
 import { rememberProfile } from "./profile-memory";
 import { clearQueryCache } from "./query-persistence";
 import type { AuthResponse, Profiles } from "./types";
+import { clearVoiceNoteCache } from "./voice-note";
+import { publishWidgetSnapshot } from "./widget";
 
 /** Couleurs des profils (mêmes identifiants que le serveur), lisibles en clair comme en sombre. */
 export const AVATAR_COLORS = {
@@ -109,19 +112,25 @@ export function useSwitchProfile() {
           "Des révisions faites hors ligne n’ont pas encore été envoyées. Reconnectez-vous à Internet, puis changez de profil.",
         );
       }
+      // Le serveur révoque la session quittée (refreshToken) en ouvrant la nouvelle ; par sûreté, un
+      // serveur plus ancien qui l'ignorerait est couvert par le /auth/logout qui suit.
+      const previous = useAuth.getState().tokens?.refreshToken;
       const response = await api<AuthResponse>(`/me/profiles/${id}/switch`, {
         method: "POST",
-        body: pin ? { pin } : {},
+        body: { ...(pin ? { pin } : {}), ...(previous ? { refreshToken: previous } : {}) },
       });
-      const previous = useAuth.getState().tokens?.refreshToken;
       if (previous)
         void api("/auth/logout", {
           method: "POST",
           body: { refreshToken: previous },
           auth: false,
         }).catch(() => undefined);
+      // Rien du profil quitté ne doit rester : cache des requêtes, séance du jour préparée, vocaux, widget.
       client.clear();
       clearQueryCache();
+      consumeDailyReserve();
+      clearVoiceNoteCache();
+      void publishWidgetSnapshot(null);
       await useAuth.getState().signIn(response);
       await rememberProfile(id);
       return response.user;

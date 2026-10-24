@@ -18,20 +18,26 @@ export function wordImage(word: { imageUrl: string | null }): { uri: string } | 
 
 /** Versets au plus par séance de révision pour un enfant. */
 export const KIDS_MAX_DUE_VERSES = 5;
+/** Exercices au plus dans une séance de mots pour un enfant (les reprises des erreurs s'y ajoutent). */
+export const KIDS_MAX_EXERCISES = 12;
+
+/** Encre marine de la charte « Ciel » : lisible sur toutes les teintes franches (contraste ≥ 5:1). */
+export const KIDS_INK = "#1E2A4A";
 
 /**
  * Teintes de l'interface enfant « Ciel » : chacune a sa couleur franche (`main`), son bord
  * (`edge`, l'ombre portée des boutons « tactiles ») et sa pastel (`soft`) avec le texte qui
- * se pose dessus (`onSoft`). Sur une teinte franche, le texte est `onMain`.
+ * se pose dessus (`onSoft`). Sur une teinte franche, le texte est `onMain` : l'encre marine, car
+ * le blanc n'atteint pas 3:1 sur ces couleurs vives (vérifié par `contrast.test.ts`).
  */
 export type KidTone = "sun" | "green" | "orange" | "blue" | "violet" | "pink";
 export const KID_TONES: Record<KidTone, { main: string; edge: string; soft: string; onSoft: string; onMain: string }> = {
-  sun: { main: "#FFC531", edge: "#D9A200", soft: "#FFF3CC", onSoft: "#7A5200", onMain: "#1E2A4A" },
-  green: { main: "#16B07E", edge: "#0E8F65", soft: "#DDF6EE", onSoft: "#0E6B4E", onMain: "#FFFFFF" },
-  orange: { main: "#FF8A3D", edge: "#D96A22", soft: "#FFEAD9", onSoft: "#9A4A12", onMain: "#FFFFFF" },
-  blue: { main: "#4C9BFF", edge: "#2F7BDB", soft: "#E3EEFF", onSoft: "#1F4F8F", onMain: "#FFFFFF" },
-  violet: { main: "#8F6CFF", edge: "#6C4DE0", soft: "#ECE6FF", onSoft: "#4B3A9E", onMain: "#FFFFFF" },
-  pink: { main: "#FF6FA3", edge: "#D94F82", soft: "#FFE4EE", onSoft: "#9E2F5C", onMain: "#FFFFFF" },
+  sun: { main: "#FFC531", edge: "#D9A200", soft: "#FFF3CC", onSoft: "#7A5200", onMain: KIDS_INK },
+  green: { main: "#16B07E", edge: "#0E8F65", soft: "#DDF6EE", onSoft: "#0E6B4E", onMain: KIDS_INK },
+  orange: { main: "#FF8A3D", edge: "#D96A22", soft: "#FFEAD9", onSoft: "#9A4A12", onMain: KIDS_INK },
+  blue: { main: "#4C9BFF", edge: "#2F7BDB", soft: "#E3EEFF", onSoft: "#1F4F8F", onMain: KIDS_INK },
+  violet: { main: "#A58BFF", edge: "#7A5CE8", soft: "#ECE6FF", onSoft: "#4B3A9E", onMain: KIDS_INK },
+  pink: { main: "#FF6FA3", edge: "#D94F82", soft: "#FFE4EE", onSoft: "#9E2F5C", onMain: KIDS_INK },
 };
 
 /** Pastels du mode sombre : la même teinte, profonde, sous le texte clair du thème. */
@@ -44,12 +50,16 @@ export const KIDS = {
   sunSoft: KID_TONES.sun.soft,
   sunStroke: KID_TONES.sun.edge,
   sunInk: KID_TONES.sun.onMain,
-  /** Texte posé sur une carte de couleur franche (`colors.hero` ou une teinte). */
-  onHero: "#FFFFFF",
+  /** Texte posé sur une carte de couleur franche (`colors.hero` ou une teinte) : l'encre marine. */
+  onHero: KIDS_INK,
+  /** Texte secondaire sur une carte de couleur franche (même encre, légèrement estompée). */
+  onHeroMuted: "#1E2A4ACC",
+  /** Voile clair posé sur une teinte franche (pastille de compte, fond d'icône). */
+  veil: "rgba(255,255,255,0.35)",
   /** Gris doux des étapes à venir (fond, bord, pictogramme). */
   neutral: "#EDF0F7",
   neutralEdge: "#D5DBE8",
-  neutralInk: "#9AA6BF",
+  neutralInk: "#5B6B8C",
 } as const;
 
 /**

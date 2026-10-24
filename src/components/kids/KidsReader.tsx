@@ -45,7 +45,13 @@ export function KidsReader() {
 
   const loaded = useMemo(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
   const tracks = useMemo(() => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })), [audio.data]);
-  const queue = useTrackQueue(tracks, { autoAdvance: false, rate: slow ? SLOW_RATE : 1, repeat: repeat ? REPEATS : 1 });
+  // Écran verrouillé et centre de contrôle : le verset en cours, comme dans le lecteur adulte.
+  const surahName = chapter.data?.nameSimple;
+  const nowPlaying = useCallback(
+    (track: { key: string }) => ({ title: `${surahName ?? `Sourate ${chapterId}`} · verset ${track.key.split(":")[1]}`, artist: "Récitation du Coran", albumTitle: "Eqra" }),
+    [surahName, chapterId],
+  );
+  const queue = useTrackQueue(tracks, { autoAdvance: false, rate: slow ? SLOW_RATE : 1, repeat: repeat ? REPEATS : 1, nowPlaying });
 
   // Versets vus et dernier verset, enregistrés en quittant l'écran (comme le lecteur adulte).
   const seen = useRef(new Set<number>());

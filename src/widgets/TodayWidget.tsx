@@ -1,17 +1,21 @@
 import { FlexWidget, TextWidget } from "react-native-android-widget";
+import { lightColors } from "@/lib/palettes";
 import type { WidgetSnapshot } from "@/lib/widget";
+
+/** Les couleurs de la palette sont des chaînes ; la bibliothèque du widget attend un `#RRGGBB` typé. */
+const hex = (color: string) => color as `#${string}`;
 
 /**
  * Widget Android « Aujourd'hui » : objectif du jour, série, révisions dues, reprise de lecture.
  * Mêmes couleurs que l'app (thème clair ; les widgets Android n'ont pas de thème sombre fiable).
  */
-const PAPER = "#F7F5F0";
-const INK = "#15171A";
-const MUTED = "#75726B";
-const GREEN = "#0F4F44";
-const GREEN_SOFT = "#E2EDE9";
-const GOLD = "#B08A3E";
-const TRACK = "#EFECE5";
+const PAPER = hex(lightColors.background);
+const INK = hex(lightColors.text);
+const MUTED = hex(lightColors.textMuted);
+const GREEN = hex(lightColors.primary);
+const GREEN_SOFT = hex(lightColors.primarySoft);
+const GOLD = hex(lightColors.accent);
+const TRACK = hex(lightColors.surfaceMuted);
 
 export function renderTodayWidget(snapshot: WidgetSnapshot | null) {
   if (!snapshot) {

@@ -17,7 +17,7 @@ import type { QuranExample, VocabWord } from "@/lib/types";
  * Son d'un mot du lexique, tel qu'il est récité dans le Coran (son occurrence-exemple). Hors
  * connexion, rien ne se passe : la carte reste lisible.
  */
-export function useWordAudio() {
+export function useKidWordAudio() {
   const audio = useOneShot();
   const client = useQueryClient();
   const [loadingId, setLoadingId] = useState<string | null>(null);

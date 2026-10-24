@@ -1,0 +1,24 @@
+# Intégration continue de l'application mobile Eqra : typecheck, lint, tests Jest et audit des
+# dépendances de production, sur chaque push et chaque pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --ci
+      # Les vulnérabilités restantes sont dans l'outillage de build (voir AUDIT) ; seules celles des
+      # dépendances embarquées dans l'app font échouer la CI.
+      - run: npm audit --omit=dev --audit-level=critical

@@ -12,7 +12,7 @@ import { Directory, File, Paths } from "expo-file-system";
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { api, API_URL, errorMessage } from "./api";
-import { PLAYBACK_MODE } from "./audio";
+import { claimPlayback, PLAYBACK_MODE, releasePlayback } from "./audio";
 import { useAuth } from "./auth-store";
 
 /** Le serveur accepte 90 secondes et 1,5 Mo : en AAC mono à 64 kbit/s, 90 s font environ 700 Ko. */
@@ -23,11 +23,24 @@ const RECORDING: RecordingOptions = { ...RecordingPresets.HIGH_QUALITY, numberOf
 export type VoiceNote = { id: string; durationMs: number };
 export type VoiceRecorderState = { phase: "idle" } | { phase: "recording" } | { phase: "uploading" } | { phase: "error"; message: string };
 
+const CACHE_DIR = () => new Directory(Paths.cache, "voice-notes");
+
 /** Les vocaux ne changent jamais : on les garde dans le cache de l'app, sous leur identifiant. */
 function cachedFile(id: string): File {
-  const dir = new Directory(Paths.cache, "voice-notes");
+  const dir = CACHE_DIR();
   if (!dir.exists) dir.create({ intermediates: true });
   return new File(dir, `${id}.m4a`);
+}
+
+/** Vide les vocaux gardés sur l'appareil (déconnexion, changement de profil ou de compte). */
+export function clearVoiceNoteCache() {
+  if (Platform.OS === "web") return;
+  try {
+    const dir = CACHE_DIR();
+    if (dir.exists) dir.delete();
+  } catch {
+    // Cache facultatif : une suppression ratée n'empêche rien.
+  }
 }
 
 /** Adresse lisible par le lecteur : fichier du cache, téléchargé avec la session du profil au besoin. */
@@ -161,6 +174,16 @@ export function useVoiceNotePlayer() {
   const [current, setCurrent] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [owner] = useState(() => Symbol("voice-note"));
+  useEffect(() => () => releasePlayback(owner), [owner]);
+  const claim = () =>
+    claimPlayback(owner, () => {
+      try {
+        player.pause();
+      } catch {
+        // Lecteur déjà libéré.
+      }
+    });
 
   async function toggle(id: string) {
     setError(null);
@@ -171,12 +194,15 @@ export function useVoiceNotePlayer() {
     if (current === id) {
       // Même vocal, en pause ou fini : on le reprend du début s'il est allé au bout.
       if (status.didJustFinish || (status.duration > 0 && status.currentTime >= status.duration - 0.1)) await player.seekTo(0);
+      claim();
       player.play();
       return;
     }
     setLoading(id);
     try {
-      player.replace({ uri: await playableUri(id) });
+      const uri = await playableUri(id);
+      claim();
+      player.replace({ uri });
       setCurrent(id);
       player.play();
     } catch {

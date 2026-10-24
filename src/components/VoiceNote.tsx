@@ -87,7 +87,12 @@ export function VoiceNoteField({
           </Pressable>
         </View>
       ) : (
-        <Button title={recordLabel} icon="mic-outline" variant="secondary" size="md" onPress={() => void recorder.start()} />
+        <>
+          <Button title={recordLabel} icon="mic-outline" variant="secondary" size="md" onPress={() => void recorder.start()} />
+          <AppText variant="caption" muted>
+            Le message est envoyé au serveur et conservé pour les enfants du compte, jusqu’à ce que vous le remplaciez ou que la mission se termine.
+          </AppText>
+        </>
       )}
       {state.phase === "error" ? (
         <AppText variant="caption" color={colors.danger}>

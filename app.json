@@ -14,10 +14,12 @@
         "com.apple.security.application-groups": ["group.app.eqra.mobile"]
       },
       "appleTeamId": "8TSDHC2926",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "config": { "usesNonExemptEncryption": false }
     },
     "android": {
       "package": "app.eqra.mobile",
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#0F5F4D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,8 +40,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-notifications",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Eqra n’utilise pas Face ID ; cette autorisation n’est jamais demandée."
+        }
+      ],
+      ["expo-notifications", { "enableBackgroundRemoteNotifications": false }],
       [
         "expo-audio",
         {
@@ -57,6 +65,8 @@
         }
       ],
       "expo-font",
+      "expo-image",
+      "expo-status-bar",
       "expo-sharing",
       "@bacons/apple-targets",
       [

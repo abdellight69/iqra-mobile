@@ -10,7 +10,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { QuranExample } from "@/components/QuranExample";
 import { ErrorState, LoadingState } from "@/components/States";
 import { BigButton } from "@/components/kids/KidButton";
-import { KidWordCard, useWordAudio } from "@/components/kids/KidWordCard";
+import { KidWordCard, useKidWordAudio } from "@/components/kids/KidWordCard";
 import { KID_TONES, KIDS, useKidsMode } from "@/lib/kids";
 import { useTheme } from "@/lib/queries";
 import { elevation, radius, spacing, useColors } from "@/lib/theme";
@@ -25,7 +25,7 @@ export default function ThemeDetail() {
   const theme = useTheme(themeId);
   // Profil enfant : séances plus courtes, et une grille de grandes cartes à écouter.
   const kids = useKidsMode();
-  const audio = useWordAudio();
+  const audio = useKidWordAudio();
 
   if (theme.isPending) return <LoadingState />;
   if (theme.isError) return <ErrorState error={theme.error} onRetry={() => void theme.refetch()} />;

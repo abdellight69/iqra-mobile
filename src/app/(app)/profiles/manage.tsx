@@ -46,14 +46,14 @@ export default function ManageProfiles() {
 
       {data.profiles.map((p) =>
         editing === p.id ? (
-          <ProfileForm key={p.id} profile={p} onDone={() => setEditing(null)} />
+          <ProfileForm key={p.id} profile={p} pinSet={data.pinSet} onDone={() => setEditing(null)} />
         ) : (
           <ProfileCard key={p.id} profile={p} onEdit={() => setEditing(p.id)} />
         ),
       )}
 
       {adding ? (
-        <ProfileForm onDone={() => setAdding(false)} />
+        <ProfileForm pinSet={data.pinSet} onDone={() => setAdding(false)} />
       ) : data.profiles.length < data.maxProfiles ? (
         <Button title="Ajouter un profil" icon="person-add-outline" variant="secondary" onPress={() => setAdding(true)} />
       ) : (
@@ -135,8 +135,11 @@ function Stat({ value, label }: { value: number | string; label: string }) {
   );
 }
 
-/** Création (sans `profile`) ou modification d'un profil. */
-function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => void }) {
+/**
+ * Création (sans `profile`) ou modification d'un profil. Un profil enfant exige un code parent :
+ * sans code, l'enfant passerait librement sur un profil adulte (le serveur le refuse aussi, 409 PIN_REQUIRED).
+ */
+function ProfileForm({ profile, pinSet, onDone }: { profile?: Profile; pinSet: boolean; onDone: () => void }) {
   const colors = useColors();
   const create = useCreateProfile();
   const update = useUpdateProfile();
@@ -145,6 +148,7 @@ function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => voi
   const [level, setLevel] = useState<ArabicLevel | null>(profile ? (profile.arabicLevel ?? null) : "none");
   const [isChild, setIsChild] = useState(profile ? profile.isChild === true : true);
   const mutation = profile ? update : create;
+  const childWithoutPin = isChild && !pinSet && !profile?.isOwner;
 
   function save() {
     const displayName = name.trim();
@@ -203,6 +207,11 @@ function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => voi
           <Switch value={isChild} onValueChange={setIsChild} trackColor={{ true: colors.primary }} accessibilityLabel="Profil enfant" />
         </View>
       )}
+      {childWithoutPin ? (
+        <AppText variant="caption" color={colors.danger}>
+          Définissez d’abord un code parent (ci-dessous) : sans lui, un enfant pourrait ouvrir votre profil et gérer le compte.
+        </AppText>
+      ) : null}
       {mutation.isError ? (
         <AppText variant="caption" color={colors.danger}>
           {errorMessage(mutation.error)}
@@ -210,7 +219,7 @@ function ProfileForm({ profile, onDone }: { profile?: Profile; onDone: () => voi
       ) : null}
       <View style={styles.actions}>
         <Button title="Annuler" size="md" variant="ghost" onPress={onDone} style={styles.flex} />
-        <Button title={profile ? "Enregistrer" : "Créer"} size="md" disabled={name.trim().length < 2} loading={mutation.isPending} onPress={save} style={styles.flex} />
+        <Button title={profile ? "Enregistrer" : "Créer"} size="md" disabled={name.trim().length < 2 || childWithoutPin} loading={mutation.isPending} onPress={save} style={styles.flex} />
       </View>
     </Card>
   );

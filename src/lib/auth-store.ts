@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { loadTokens, saveTokens } from "./session-storage";
+import { loadTokens, loadUser, saveTokens, saveUser } from "./session-storage";
 import type { AuthResponse, Tokens, User } from "./types";
 import { forgetProfile } from "./profile-memory";
 
@@ -19,12 +19,15 @@ export const useAuth = create<AuthState>((set) => ({
   tokens: null,
   user: null,
   async bootstrap() {
-    const tokens = await loadTokens();
-    set({ tokens, status: tokens ? "signedIn" : "signedOut" });
+    // L'utilisateur de la dernière session est relu avec les jetons : thème enfant, traduction et
+    // prénom sont justes dès le premier rendu, réseau ou pas ; `/me` le rafraîchit ensuite.
+    const [tokens, user] = await Promise.all([loadTokens(), loadUser()]);
+    set({ tokens, user: tokens ? user : null, status: tokens ? "signedIn" : "signedOut" });
   },
   async signIn({ user, accessToken, refreshToken }) {
     const tokens = { accessToken, refreshToken };
     await saveTokens(tokens);
+    await saveUser(user);
     set({ tokens, user, status: "signedIn" });
   },
   async setTokens(tokens) {
@@ -33,6 +36,7 @@ export const useAuth = create<AuthState>((set) => ({
   },
   setUser(user) {
     set({ user });
+    void saveUser(user);
   },
   async signOut() {
     await saveTokens(null);

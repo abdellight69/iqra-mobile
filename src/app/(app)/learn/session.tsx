@@ -29,7 +29,7 @@ import type { Exercise, LearningSession, SessionResult, VocabWord } from "@/lib/
 import { closeScreen } from "@/lib/navigation";
 import { useCompleteMissionStep } from "@/lib/missions";
 import { BigButton } from "@/components/kids/KidButton";
-import { KIDS, useKidsMode, wordImage } from "@/lib/kids";
+import { KIDS, KIDS_MAX_EXERCISES, useKidsMode, wordImage } from "@/lib/kids";
 
 type Answer = { wordId: string; correct: boolean };
 
@@ -104,7 +104,11 @@ function SessionRunner({ session, lessonId, mission }: { session: LearningSessio
   const byId = useMemo(() => new Map(session.words.map((w) => [w.id, w])), [session.words]);
   // Les petits jeux sont ajoutés une fois, à l'ouverture de la séance (tirage aléatoire).
   // Profil enfant : les jeux avec l'image du mot entrent dans la rotation.
-  const [queue, setQueue] = useState<SessionExercise[]>(() => planSession(session, undefined, { images: kids }));
+  // Profil enfant : une séance courte, quel que soit le nombre de mots proposés par le serveur.
+  const [queue, setQueue] = useState<SessionExercise[]>(() => {
+    const planned = planSession(session, undefined, { images: kids });
+    return kids ? planned.slice(0, KIDS_MAX_EXERCISES) : planned;
+  });
   const [step, setStep] = useState(0);
   const answers = useRef<Answer[]>([]);
   const retried = useRef(new Set<string>());
@@ -237,7 +241,7 @@ function IntroCard({ word, onNext, verseByWord }: ExerciseProps & { word?: Vocab
         {location ? <VerseContext location={location} /> : <QuranExample wordId={word.id} />}
         {word.verb && !kids ? <VerbTable verb={word.verb} /> : null}
       </ScrollView>
-      <Button title="Continuer" onPress={onNext} />
+      {kids ? <BigButton title="Continuer" icon="arrow-forward" onPress={onNext} /> : <Button title="Continuer" onPress={onNext} />}
     </View>
   );
 }

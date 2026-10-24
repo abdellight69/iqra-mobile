@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
-import { useWordAudio } from "@/components/kids/KidWordCard";
+import { useKidWordAudio } from "@/components/kids/KidWordCard";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
@@ -20,7 +20,7 @@ export default function Album() {
   const kc = useKidsColors();
   const { themeId } = useLocalSearchParams<{ themeId: string }>();
   const theme = useTheme(themeId);
-  const audio = useWordAudio();
+  const audio = useKidWordAudio();
 
   if (theme.isPending) return <LoadingState />;
   if (theme.isError) return <ErrorState error={theme.error} onRetry={() => void theme.refetch()} />;

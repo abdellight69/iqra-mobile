@@ -4,7 +4,12 @@
  * panne, réutilisation des jetons renouvelés entre-temps.
  */
 jest.mock("expo/fetch", () => ({ fetch: jest.fn() }));
-jest.mock("../session-storage", () => ({ loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => undefined) }));
+jest.mock("../session-storage", () => ({
+  loadTokens: jest.fn(async () => null),
+  saveTokens: jest.fn(async () => undefined),
+  loadUser: jest.fn(async () => null),
+  saveUser: jest.fn(async () => undefined),
+}));
 
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth-store";

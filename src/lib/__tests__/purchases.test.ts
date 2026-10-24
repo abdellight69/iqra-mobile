@@ -1,6 +1,6 @@
 /* eslint-disable import/first -- les mocks Jest doivent précéder les imports */
 jest.mock("expo/fetch", () => ({ fetch: jest.fn() }));
-jest.mock("../session-storage", () => ({ loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => undefined) }));
+jest.mock("../session-storage", () => ({ loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => undefined), loadUser: jest.fn(async () => null), saveUser: jest.fn(async () => undefined) }));
 
 import type { PurchasesPackage, PurchasesStoreProduct } from "react-native-purchases";
 import { isCancelled, purchasesEnabled, supporterUntil, supportOffers } from "../purchases";

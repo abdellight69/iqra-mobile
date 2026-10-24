@@ -7,12 +7,27 @@ import { api, ApiError } from "./api";
  * répond : auto-évaluations de mémorisation et séances de vocabulaire. Chacune porte sa date
  * (`playedAt`) pour compter le jour où elle a été faite (XP du jour, série).
  */
-export type PendingReview = { chapterId: number; verseNumber: number; quality: number; playedAt?: string };
-export type PendingSession = { lessonId?: string; answers: { wordId: string; correct: boolean }[]; playedAt: string };
+export type PendingReview = { chapterId: number; verseNumber: number; quality: number; playedAt?: string; clientId?: string };
+export type PendingSession = { lessonId?: string; answers: { wordId: string; correct: boolean }[]; playedAt: string; clientId?: string };
 /** Étape de mission réussie sans réseau (profil enfant), datée du jour où elle a été faite. */
-export type PendingMissionStep = { planId: string; dayIndex: number; step: string; playedAt: string };
+export type PendingMissionStep = { planId: string; dayIndex: number; step: string; playedAt: string; clientId?: string };
 
 const supported = Platform.OS !== "web";
+
+/**
+ * Identifiant d'idempotence : le serveur ignore une activité qu'il a déjà reçue sous cet identifiant.
+ * Ainsi une réponse perdue après traitement (coupure juste après l'envoi) ne compte pas deux fois.
+ */
+export function newClientId(): string {
+  const native = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto?.randomUUID;
+  if (typeof native === "function") return native.call(globalThis.crypto);
+  // UUID v4 de repli, suffisant pour dédoublonner (pas un secret).
+  const hex = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16));
+  hex[12] = "4";
+  hex[16] = ((parseInt(hex[16]!, 16) & 0x3) | 0x8).toString(16);
+  const s = hex.join("");
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`;
+}
 
 /** Une file persistée dans un fichier JSON (un tableau), lue et réécrite à chaque opération. */
 function fileQueue<T>(name: string) {
@@ -43,15 +58,15 @@ const sessions = fileQueue<PendingSession>("pending-sessions.json");
 const missionSteps = fileQueue<PendingMissionStep>("pending-mission-steps.json");
 
 export function queueReview(review: PendingReview) {
-  reviews.write([...reviews.read(), { ...review, playedAt: review.playedAt ?? new Date().toISOString() }]);
+  reviews.write([...reviews.read(), { ...review, playedAt: review.playedAt ?? new Date().toISOString(), clientId: review.clientId ?? newClientId() }]);
 }
 
 export function queueSession(session: Omit<PendingSession, "playedAt"> & { playedAt?: string }) {
-  sessions.write([...sessions.read(), { ...session, playedAt: session.playedAt ?? new Date().toISOString() }]);
+  sessions.write([...sessions.read(), { ...session, playedAt: session.playedAt ?? new Date().toISOString(), clientId: session.clientId ?? newClientId() }]);
 }
 
 export function queueMissionStep(step: Omit<PendingMissionStep, "playedAt"> & { playedAt?: string }) {
-  missionSteps.write([...missionSteps.read(), { ...step, playedAt: step.playedAt ?? new Date().toISOString() }]);
+  missionSteps.write([...missionSteps.read(), { ...step, playedAt: step.playedAt ?? new Date().toISOString(), clientId: step.clientId ?? newClientId() }]);
 }
 
 /** Étapes de mission en attente, dans l'ordre : l'accueil enfant les montre comme déjà réussies. */

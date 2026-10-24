@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { isNetworkError } from "./offline";
-import { queueMissionStep } from "./outbox";
+import { newClientId, queueMissionStep } from "./outbox";
 import type { KidToday, LearnedWord, MissionChild, MissionPlan, MissionPlanDetail, MissionRange, MissionStep, VerseNote } from "./types";
 
 /** Missions parent → enfant (backend : docs/missions-v1.md) : requêtes du profil actif. */
@@ -120,12 +120,13 @@ export function useCompleteMissionStep() {
   return useMutation({
     mutationFn: async (input: { planId: string; dayIndex: number; step: MissionStep }): Promise<KidToday & { queued?: boolean }> => {
       const playedAt = new Date().toISOString();
+      const clientId = newClientId();
       try {
-        return await api<KidToday>("/me/missions/today/steps", { method: "POST", body: { ...input, playedAt } });
+        return await api<KidToday>("/me/missions/today/steps", { method: "POST", body: { ...input, playedAt, clientId } });
       } catch (error) {
         const current = client.getQueryData<KidToday>(kidKeys.today);
         if (!isNetworkError(error) || !current?.mission) throw error;
-        queueMissionStep({ ...input, playedAt });
+        queueMissionStep({ ...input, playedAt, clientId });
         return { ...stepDoneLocally(current, input.step), queued: true };
       }
     },

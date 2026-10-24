@@ -1,8 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Constants from "expo-constants";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -23,6 +25,7 @@ import { type AppearanceMode, useActiveTheme, useAppearance, useSupporterPerks }
 import { useAuth } from "@/lib/auth-store";
 import { router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
+import { PRIVACY_URL, TERMS_URL } from "@/lib/legal";
 import { palette, THEMES, type ThemeDefinition } from "@/lib/palettes";
 import { useProfiles } from "@/lib/profiles";
 import {
@@ -77,6 +80,10 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   if (!user)
     return (
@@ -118,27 +125,19 @@ export default function Settings() {
     }
   }
 
-  function deleteAccount() {
-    Alert.prompt?.(
-      "Supprimer le compte",
-      "Cette action est définitive : toute votre progression sera effacée. Saisissez votre mot de passe pour confirmer.",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: async (password?: string) => {
-            try {
-              await api("/me", { method: "DELETE", body: { password } });
-              await signOut();
-            } catch (e) {
-              Alert.alert("Suppression impossible", errorMessage(e));
-            }
-          },
-        },
-      ],
-      "secure-text",
-    );
+  // Suppression du compte : confirmation par le mot de passe dans un formulaire de l'écran (et non
+  // `Alert.prompt`, qui n'existe que sur iOS et ne faisait rien sur Android).
+  async function deleteAccount() {
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await api("/me", { method: "DELETE", body: { password: deletePassword } });
+      await signOut();
+    } catch (e) {
+      setDeleteError(errorMessage(e));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const all = translations.data ?? [];
@@ -487,12 +486,53 @@ export default function Settings() {
             />
           </Card>
 
-          <Button
-            title="Supprimer mon compte"
-            variant="danger"
-            icon="trash-outline"
-            onPress={deleteAccount}
-          />
+          {confirmDelete ? (
+            <Card style={styles.group}>
+              <AppText variant="headline">Supprimer le compte</AppText>
+              <AppText muted>
+                Cette action est définitive : tous les profils du compte, leur progression et leurs missions seront effacés.
+                Saisissez votre mot de passe pour confirmer.
+              </AppText>
+              <TextField
+                label="Mot de passe"
+                value={deletePassword}
+                onChangeText={setDeletePassword}
+                secure
+                autoComplete="current-password"
+                error={deleteError}
+              />
+              <View style={styles.profileActions}>
+                <Button
+                  title="Annuler"
+                  size="md"
+                  variant="ghost"
+                  style={styles.flex}
+                  onPress={() => {
+                    setConfirmDelete(false);
+                    setDeletePassword("");
+                    setDeleteError(null);
+                  }}
+                />
+                <Button
+                  title="Supprimer définitivement"
+                  size="md"
+                  variant="danger"
+                  icon="trash-outline"
+                  style={styles.flex}
+                  disabled={!deletePassword}
+                  loading={deleting}
+                  onPress={() => void deleteAccount()}
+                />
+              </View>
+            </Card>
+          ) : (
+            <Button
+              title="Supprimer mon compte"
+              variant="danger"
+              icon="trash-outline"
+              onPress={() => setConfirmDelete(true)}
+            />
+          )}
         </>
       ) : (
         <AppText variant="caption" muted>
@@ -500,6 +540,23 @@ export default function Settings() {
           profil du titulaire.
         </AppText>
       )}
+
+      <SectionHeader title="À propos" />
+      <Card style={styles.group}>
+        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(TERMS_URL)} style={styles.linkRow}>
+          <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+          <AppText style={styles.flex}>Conditions d’utilisation</AppText>
+          <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(PRIVACY_URL)} style={styles.linkRow}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+          <AppText style={styles.flex}>Politique de confidentialité</AppText>
+          <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+        <AppText variant="caption" muted>
+          Eqra {Constants.expoConfig?.version ?? ""} · l’application reste entièrement gratuite.
+        </AppText>
+      </Card>
     </Screen>
   );
 }
@@ -713,6 +770,7 @@ const styles = StyleSheet.create({
   profileRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   profileActions: { flexDirection: "row", gap: spacing.sm },
   flex: { flex: 1 },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: 44 },
   group: { gap: spacing.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   themes: { flexDirection: "row", gap: spacing.sm },

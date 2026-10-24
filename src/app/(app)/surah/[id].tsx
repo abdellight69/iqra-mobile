@@ -112,6 +112,11 @@ function SurahReader() {
   );
 
   const listRef = useRef<FlatList<Verse>>(null);
+  // Nouvel essai de défilement (liste pas encore mesurée), annulé si l'écran disparaît entre-temps.
+  const retryScroll = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (retryScroll.current) clearTimeout(retryScroll.current);
+  }, []);
   const seen = useRef(new Set<number>());
   const topVerse = useRef<number | null>(null);
   const scrolledToTarget = useRef(false);
@@ -183,6 +188,67 @@ function SurahReader() {
     settings.setArabicSize(ARABIC_SIZES[(i + 1) % ARABIC_SIZES.length] ?? 32);
   };
 
+  // Actions des cartes, stables d'un rendu à l'autre : la liste ne re-rend pas ses 286 cartes à chaque
+  // mise à jour du lecteur (dix fois par seconde pendant la récitation). Le lecteur est lu via une
+  // référence pour la même raison.
+  const queueRef = useRef(queue);
+  useEffect(() => {
+    queueRef.current = queue;
+  });
+  const onPlay = useCallback((verse: Verse) => {
+    const q = queueRef.current;
+    if (q.currentKey === verse.key) q.toggle();
+    else q.playKey(verse.key);
+  }, []);
+  const onBookmark = useCallback(
+    (verse: Verse) => toggleBookmark.mutate({ chapterId, verseNumber: verse.verseNumber, existingId: bookmarkByKey.get(verse.verseNumber) }),
+    [toggleBookmark, chapterId, bookmarkByKey],
+  );
+  const onShare = useCallback((verse: Verse) => router.push({ pathname: "/share/[key]", params: { key: verse.key } }), []);
+  const onTafsir = useCallback((verse: Verse) => router.push({ pathname: "/tafsir/[key]", params: { key: verse.key } }), []);
+  const onLearn = useCallback(
+    (verse: Verse) => router.push({ pathname: "/learn/session", params: { chapterId: String(chapterId), verse: String(verse.verseNumber), size: "12" } }),
+    [chapterId],
+  );
+  const known = settings.showKnownWords ? knownWords.data : undefined;
+  const renderVerse = useCallback(
+    ({ item }: { item: Verse }) => (
+      <VerseCard
+        verse={item}
+        arabicSize={settings.arabicSize}
+        showTranslation={settings.showTranslation}
+        showTransliteration={settings.showTransliteration}
+        showWordByWord={settings.showWordByWord}
+        showTajweed={settings.showTajweed}
+        knownWords={known}
+        bookmarked={bookmarkByKey.has(item.verseNumber)}
+        onWordPress={openWord}
+        onPlay={onPlay}
+        onBookmark={onBookmark}
+        onMemorize={memorizeVerse}
+        onShare={onShare}
+        onTafsir={onTafsir}
+        onLearn={onLearn}
+      />
+    ),
+    [
+      settings.arabicSize,
+      settings.showTranslation,
+      settings.showTransliteration,
+      settings.showWordByWord,
+      settings.showTajweed,
+      known,
+      bookmarkByKey,
+      openWord,
+      onPlay,
+      onBookmark,
+      memorizeVerse,
+      onShare,
+      onTafsir,
+      onLearn,
+    ],
+  );
+
   const title = chapter.data?.nameSimple ?? "";
 
   return (
@@ -244,34 +310,11 @@ function SurahReader() {
           ListFooterComponent={verses.isFetchingNextPage ? <ActivityIndicator style={{ margin: spacing.lg }} color={colors.primary} /> : undefined}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-          onScrollToIndexFailed={({ index }) =>
-            setTimeout(() => listRef.current?.scrollToIndex({ index, animated: false }), 250)
-          }
-          renderItem={({ item }) => (
-            <VerseCard
-              verse={item}
-              arabicSize={settings.arabicSize}
-              showTranslation={settings.showTranslation}
-              showTransliteration={settings.showTransliteration}
-              showWordByWord={settings.showWordByWord}
-              showTajweed={settings.showTajweed}
-              knownWords={settings.showKnownWords ? knownWords.data : undefined}
-              active={queue.currentKey === item.key}
-              recitedWord={queue.currentKey === item.key ? queue.currentWord : null}
-              bookmarked={bookmarkByKey.has(item.verseNumber)}
-              onWordPress={openWord}
-              onPlay={() => (queue.currentKey === item.key ? queue.toggle() : queue.playKey(item.key))}
-              onBookmark={() =>
-                toggleBookmark.mutate({ chapterId, verseNumber: item.verseNumber, existingId: bookmarkByKey.get(item.verseNumber) })
-              }
-              onMemorize={() => memorizeVerse(item)}
-              onShare={() => router.push({ pathname: "/share/[key]", params: { key: item.key } })}
-              onTafsir={() => router.push({ pathname: "/tafsir/[key]", params: { key: item.key } })}
-              onLearn={() =>
-                router.push({ pathname: "/learn/session", params: { chapterId: String(chapterId), verse: String(item.verseNumber), size: "12" } })
-              }
-            />
-          )}
+          onScrollToIndexFailed={({ index }) => {
+            if (retryScroll.current) clearTimeout(retryScroll.current);
+            retryScroll.current = setTimeout(() => listRef.current?.scrollToIndex({ index, animated: false }), 250);
+          }}
+          renderItem={renderVerse}
         />
       )}
 

@@ -36,7 +36,9 @@ function translationSize(text: string) {
 
 export default function ShareVerse() {
   const colors = useColors();
-  const { key } = useLocalSearchParams<{ key: string }>();
+  const params = useLocalSearchParams<{ key: string }>();
+  // Lien profond : une clé mal formée ne déclenche aucun appel.
+  const key = /^\d{1,3}:\d{1,3}$/.test(params.key ?? "") ? params.key : "";
   const [chapterId] = key.split(":").map(Number) as [number, number];
   const me = useMe();
   const verse = useVerse(key, me.data?.translationId ?? null);

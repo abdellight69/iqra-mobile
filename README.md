@@ -27,7 +27,7 @@ cp .env.example .env        # puis renseigner EXPO_PUBLIC_API_URL
 npx expo start              # Expo Go, ou un development build
 ```
 
-Le backend (`../backend`) doit tourner et être joignable depuis le téléphone.
+Le backend (`../iqra-backend`) doit tourner et être joignable depuis le téléphone.
 
 `npm run ios` / `npm run android` ouvrent l'app dans **Expo Go**, qui contient déjà tous les modules utilisés (audio, fichiers, notifications locales). Un *development build* (`npx expo run:ios`) n'est utile que pour publier ; avec Expo SDK 58 il exige **Xcode 26** (Swift 6.2). Il génère les dossiers `ios/` et `android/` (ignorés par git) et remplace les scripts `ios` / `android` de `package.json` : ne pas valider ce changement.
 
@@ -36,8 +36,18 @@ Le backend (`../backend`) doit tourner et être joignable depuis le téléphone.
 ```bash
 npm run typecheck
 npm run lint
+npm test                             # tests Jest (lib/__tests__ : réseau, outbox, thèmes, contrastes…)
 npx expo export --platform android   # vérifie que le bundle se construit
 ```
+
+Les trois premières commandes tournent aussi en intégration continue (`.github/workflows/ci.yml`) sur
+chaque push et pull request, avec `npm audit --omit=dev --audit-level=high`.
+
+**Patch `patches/expo-router+<version>.patch`** (appliqué par `patch-package` à l'installation) : sur
+Android, le système peut recréer l'activité et monter une nouvelle racine expo-router avant de démonter
+l'ancienne ; sans ce correctif, `router.push` lève « Attempted to navigate from a component rendered outside
+the Expo Router root ». À chaque montée d'`expo-router`, relancer `npx patch-package expo-router` (qui
+renomme le fichier) et vérifier que le correctif est toujours nécessaire.
 
 ## Structure
 
@@ -58,8 +68,13 @@ src/
 
 `eas.json` contient des profils `development`, `preview` et `production` : `npx eas-cli@latest build --profile preview --platform android`.
 
-Build local Android (APK installée sur un téléphone de test) : `npx expo prebuild --platform android` puis
+Build local Android (APK installée sur un téléphone de test) : `npx expo prebuild --platform android --clean` puis
 `cd android && ./gradlew assembleRelease` → `android/app/build/outputs/apk/release/app-release.apk`.
+
+**Toujours `prebuild --clean` avant une livraison**, avec `EXPO_PUBLIC_API_URL` en `https://` et `EQRA_RELEASE=1`
+(`app.config.ts` refuse alors toute adresse absente ou en `http://`). Un dossier `ios/` ou `android/` généré
+plus tôt peut contenir une exception au trafic en clair (`NSAllowsArbitraryLoads`, `usesCleartextTraffic`)
+ou un ancien numéro de build : il ne doit jamais servir tel quel.
 
 **Signature Android.** Les builds release sont signés avec le keystore d'Eqra, qui vit **hors du dépôt** :
 `~/.eqra/eqra-release.keystore` et `~/.eqra/eqra-release.properties` (`storeFile`, `storePassword`,
@@ -69,6 +84,8 @@ chaque `prebuild` ; sans ce fichier, le build release échoue (plus jamais d'APK
 à jour ne pourra être installée par-dessus l'app existante. Empreinte SHA-256 du certificat :
 `95:E6:4F:35:DD:6C:82:63:60:41:41:D3:5F:F9:B1:61:0F:2C:95:9E:62:CB:8C:07:43:D7:81:A4:FD:4C:FB:8D`.
 
-**Versions.** Incrémenter `android.versionCode` et `ios.buildNumber` dans `app.json` à chaque livraison
-(Android refuse d'installer un APK dont le `versionCode` n'augmente pas), `version` quand l'app change
-visiblement.
+**Versions.** Deux cas : en **build local** (`prebuild` + Gradle/Xcode), `android.versionCode` et
+`ios.buildNumber` d'`app.json` font foi et doivent être incrémentés à chaque livraison (Android refuse
+d'installer un APK dont le `versionCode` n'augmente pas). En **build EAS** (profil `production`),
+`eas.json` déclare `appVersionSource: "remote"` et `autoIncrement: true` : EAS gère le compteur lui-même
+et ignore ceux d'`app.json`. `version` (`1.0.0`) change quand l'app change visiblement, dans les deux cas.

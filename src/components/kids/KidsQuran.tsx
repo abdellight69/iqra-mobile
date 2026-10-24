@@ -49,16 +49,16 @@ export function KidsQuran() {
       {current && position.data ? (
         <Card style={[styles.resume, { backgroundColor: KID_TONES.blue.main }]} onPress={() => openSurah(current.id, position.data!.verseNumber)}>
           <View style={styles.flex}>
-            <AppText variant="label" color="#DCEBFF">
+            <AppText variant="label" color={KIDS.onHeroMuted}>
               Continuer
             </AppText>
             <AppText variant="title" color={KIDS.onHero}>
               {current.nameSimple}
             </AppText>
-            <AppText variant="caption" color="#EAF2FF">
+            <AppText variant="caption" color={KIDS.onHeroMuted}>
               Verset {position.data.verseNumber} sur {current.versesCount}
             </AppText>
-            <ProgressBar value={position.data.verseNumber / current.versesCount} color={KIDS.sun} track="rgba(255,255,255,0.3)" height={8} />
+            <ProgressBar value={position.data.verseNumber / current.versesCount} color={KIDS.sun} track={KIDS.veil} height={8} />
           </View>
           <View style={[styles.play, { backgroundColor: KIDS.sun, borderBottomColor: KIDS.sunStroke }]} aria-hidden>
             <Ionicons name="play" size={32} color={KIDS.sunInk} />

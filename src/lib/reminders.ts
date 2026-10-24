@@ -78,6 +78,12 @@ export const useReminders = create<ReminderStore>((set, get) => ({
   },
 }));
 
+/** À la déconnexion : les rappels sont ceux d'un compte, un autre compte repart des réglages par défaut. */
+export async function resetReminders(): Promise<void> {
+  useReminders.setState({ ...DEFAULT, loaded: true });
+  if (!isWeb) await SecureStore.deleteItemAsync(KEY).catch(() => undefined);
+}
+
 /** Demande l'autorisation d'envoyer des notifications ; renvoie false si elle est refusée. */
 export async function requestReminderPermission(): Promise<boolean> {
   if (isWeb) return false;

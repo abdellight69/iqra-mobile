@@ -14,8 +14,11 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ApiError } from "@/lib/api";
 import { PLAYBACK_MODE } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
+import { consumeDailyReserve } from "@/lib/daily-reserve";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
+import { resetReminders } from "@/lib/reminders";
+import { clearVoiceNoteCache } from "@/lib/voice-note";
 import { publishWidgetSnapshot } from "@/lib/widget";
 import { watchInvites } from "@/lib/pending-invite";
 import "@/lib/appearance-store";
@@ -74,12 +77,16 @@ export default function RootLayout() {
 
   useEffect(() => persistQueryCache(queryClient), [queryClient]);
 
-  // À la déconnexion, on vide le cache pour ne rien laisser du compte précédent.
+  // À la déconnexion, on vide tout ce qui vient du compte précédent : cache des requêtes, file hors
+  // ligne, réserve de la séance du jour, vocaux téléchargés, réglages des rappels, widget.
   useEffect(() => {
     if (status !== "signedOut") return;
     queryClient.clear();
     clearQueryCache();
     clearOutbox();
+    consumeDailyReserve();
+    clearVoiceNoteCache();
+    void resetReminders();
     void publishWidgetSnapshot(null);
   }, [status, queryClient]);
 

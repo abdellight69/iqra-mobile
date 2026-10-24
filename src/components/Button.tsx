@@ -25,7 +25,8 @@ export function Button({ title, onPress, variant = "primary", icon, loading, dis
     secondary: { bg: colors.surfaceMuted, fg: colors.text, border: colors.surfaceMuted },
     ghost: { bg: "transparent", fg: colors.primary, border: "transparent" },
     danger: { bg: colors.dangerSoft, fg: colors.danger, border: colors.dangerSoft },
-    light: { bg: "#FFFFFF", fg: "#0F4F44", border: "#FFFFFF" },
+    // Sur une carte héro : fond blanc, texte dans le vert profond du thème (et non le vert sapin en dur).
+    light: { bg: "#FFFFFF", fg: colors.primaryStrong, border: "#FFFFFF" },
     onDark: { bg: "transparent", fg: "#FFFFFF", border: "#FFFFFF55" },
   };
   const { bg, fg, border } = palette[variant];

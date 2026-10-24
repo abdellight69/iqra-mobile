@@ -102,6 +102,9 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
   );
 }
 
+/** Écran verrouillé pendant la mission : le verset en cours, pour que l'enfant puisse remettre la lecture. */
+const missionNowPlaying = (track: { key: string }) => ({ title: `Ma mission · verset ${track.key}`, artist: "Récitation du Coran", albumTitle: "Eqra" });
+
 // --- Écouter --------------------------------------------------------------------
 
 function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: () => void; saving: boolean }) {
@@ -121,7 +124,7 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
   }, [audio.data, keys]);
   // « Lent » : la récitation à trois quarts de sa vitesse, pour suivre mot à mot.
   const [slow, setSlow] = useState(false);
-  const queue = useTrackQueue(tracks, { autoAdvance: true, rate: slow ? 0.75 : 1 });
+  const queue = useTrackQueue(tracks, { autoAdvance: true, rate: slow ? 0.75 : 1, nowPlaying: missionNowPlaying });
   const word = useOneShot();
   // Écouté jusqu'au bout : la file s'arrête après le dernier verset.
   const [heard, setHeard] = useState(false);
@@ -303,7 +306,7 @@ function MemorizeStep({ mission, onDone, saving }: { mission: KidMission; onDone
     () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
     [audio.data, mission.verses],
   );
-  const queue = useTrackQueue(tracks, { autoAdvance: true });
+  const queue = useTrackQueue(tracks, { autoAdvance: true, nowPlaying: missionNowPlaying });
   const word = useOneShot();
   const review = useReviewVerse();
   // `round` mots cachés à la fin de chaque verset ; `hints` mots révélés d'un doigt pendant la récitation.

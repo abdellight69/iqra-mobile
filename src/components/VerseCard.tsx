@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { memo, type ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { useIsPlayingVerse, useRecitedWord } from "@/lib/audio";
 import { verseTransliteration } from "@/lib/quran-text";
 import { tajweedColor } from "@/lib/tajweed";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
@@ -19,18 +20,20 @@ export type VerseCardProps = {
   showTajweed?: boolean;
   /** Positions « verset:mot » des mots reconnus, surlignés quand le mode est actif. */
   knownWords?: Set<string>;
-  active: boolean;
-  /** Position du mot en cours de récitation, surligné pour suivre l'audio. */
-  recitedWord?: number | null;
   bookmarked: boolean;
+  /**
+   * Les actions reçoivent le verset : les fonctions restent les mêmes d'un rendu à l'autre, donc la
+   * carte (mémoïsée) ne se re-rend pas quand le lecteur avance. Verset actif et mot récité viennent
+   * du lecteur partagé (`useNowPlaying`), auquel chaque carte s'abonne pour sa propre clé.
+   */
   onWordPress: (word: Word) => void;
-  onPlay: () => void;
-  onBookmark: () => void;
-  onMemorize: () => void;
-  onShare: () => void;
-  onTafsir: () => void;
+  onPlay: (verse: Verse) => void;
+  onBookmark: (verse: Verse) => void;
+  onMemorize: (verse: Verse) => void;
+  onShare: (verse: Verse) => void;
+  onTafsir: (verse: Verse) => void;
   /** Séance sur les mots du livre présents dans ce verset (absent : pas de bouton). */
-  onLearn?: () => void;
+  onLearn?: (verse: Verse) => void;
 };
 
 /** Un verset en pleine largeur : arabe, phonétique, traduction puis actions discrètes. */
@@ -42,8 +45,6 @@ function VerseCardBase({
   showWordByWord,
   showTajweed,
   knownWords,
-  active,
-  recitedWord,
   bookmarked,
   onWordPress,
   onPlay,
@@ -55,6 +56,8 @@ function VerseCardBase({
 }: VerseCardProps) {
   const colors = useColors();
   const dark = useColorScheme() === "dark";
+  const active = useIsPlayingVerse(verse.key);
+  const recitedWord = useRecitedWord(verse.key);
   const words = verse.words.filter((w) => w.type === "word");
   const transliteration = showTransliteration ? verseTransliteration(verse) : null;
 
@@ -124,12 +127,12 @@ function VerseCardBase({
       <View style={styles.footer}>
         <VerseBadge value={verse.verseNumber} size={30} />
         <View style={styles.flex} />
-        <Action icon={active ? "pause" : "play-outline"} label={active ? "Mettre en pause" : "Écouter le verset"} onPress={onPlay} active={active} />
-        <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label={bookmarked ? "Retirer le signet" : "Ajouter un signet"} onPress={onBookmark} active={bookmarked} />
-        <Action icon="reader-outline" label="Tafsir de ce verset" onPress={onTafsir} />
-        {onLearn ? <Action icon="sparkles-outline" label="Apprendre les mots de ce verset" onPress={onLearn} /> : null}
-        <Action icon="repeat-outline" label="Mémoriser ce verset" onPress={onMemorize} />
-        <Action icon="share-outline" label="Partager ce verset en image" onPress={onShare} />
+        <Action icon={active ? "pause" : "play-outline"} label={active ? "Mettre en pause" : "Écouter le verset"} onPress={() => onPlay(verse)} active={active} />
+        <Action icon={bookmarked ? "bookmark" : "bookmark-outline"} label={bookmarked ? "Retirer le signet" : "Ajouter un signet"} onPress={() => onBookmark(verse)} active={bookmarked} />
+        <Action icon="reader-outline" label="Tafsir de ce verset" onPress={() => onTafsir(verse)} />
+        {onLearn ? <Action icon="sparkles-outline" label="Apprendre les mots de ce verset" onPress={() => onLearn(verse)} /> : null}
+        <Action icon="repeat-outline" label="Mémoriser ce verset" onPress={() => onMemorize(verse)} />
+        <Action icon="share-outline" label="Partager ce verset en image" onPress={() => onShare(verse)} />
       </View>
     </View>
   );

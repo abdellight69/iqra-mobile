@@ -198,7 +198,7 @@ function Home() {
         ) : null}
       </Card>
 
-      {me.data?.isChild ? null : (
+      {/* Cet accueil n'est rendu que pour un adulte : pas de branche enfant ici. */}
       <Card tone="accent" onPress={() => router.push("/prayer")} style={styles.resume}>
         <View style={styles.flex}>
           <AppText variant="label" color={colors.accent}>
@@ -211,9 +211,8 @@ function Home() {
         </View>
         <Ionicons name="arrow-forward" size={18} color={colors.accent} />
       </Card>
-      )}
 
-{me.data?.isChild || (step?.programId && step.programId === activeProgram?.id) ? null : (
+      {step?.programId && step.programId === activeProgram?.id ? null : (
               <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
           <View style={styles.flex}>
             <AppText variant="label" muted>

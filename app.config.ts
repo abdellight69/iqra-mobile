@@ -10,6 +10,15 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 export default ({ config }: ConfigContext): ExpoConfig => {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
   const insecureApi = apiUrl.startsWith("http://");
+  // Compilation de production (EAS `production`, ou `gradlew assembleRelease` / archive Xcode avec
+  // EQRA_RELEASE=1) : l'adresse de l'API doit exister et être en https, sinon le binaire embarquerait
+  // l'adresse locale de développement ou une exception au trafic en clair.
+  const production = process.env.EAS_BUILD_PROFILE === "production" || process.env.EQRA_RELEASE === "1";
+  if (production && (!apiUrl || insecureApi)) {
+    throw new Error(
+      `EXPO_PUBLIC_API_URL doit être une adresse https en production (valeur actuelle : « ${apiUrl || "absente"} »).`,
+    );
+  }
   if (!insecureApi) return config as ExpoConfig;
   const expoBuildProperties = "expo-build-properties";
   const plugins = (config.plugins ?? []).map(

@@ -80,7 +80,10 @@ export default function MemorizationSession() {
   const due = useDueVerses();
   const kids = useKidsMode();
 
+  // Sans programme, sans révisions ni plan : rien à travailler (lien profond ou route restaurée).
+  const nothingToDo = !params.keys && !params.due && !params.planId;
   const keys = useMemo<string[] | null>(() => {
+    if (nothingToDo) return [];
     // Étape d'un programme guidé : les versets du jour.
     if (params.keys) return params.keys.split(",").filter((k) => /^\d{1,3}:\d{1,3}$/.test(k));
     // Enfant : des séances courtes ; le reste des révisions attend la prochaine.
@@ -90,10 +93,13 @@ export default function MemorizationSession() {
     const dueKeys = plan.data.verses.filter((v) => v.due).map((v) => v.key);
     const fresh = plan.data.verses.filter((v) => v.status === "new").slice(0, MAX_NEW_VERSES).map((v) => v.key);
     const selection = [...dueKeys, ...fresh];
-    return selection.length > 0 ? selection : plan.data.verses.map((v) => v.key);
-    // La sélection est figée au démarrage de la séance.
+    const all = selection.length > 0 ? selection : plan.data.verses.map((v) => v.key);
+    // Enfant : jamais plus de quelques versets par séance, quel que soit le plan.
+    return kids ? all.slice(0, KIDS_MAX_DUE_VERSES) : all;
+    // La sélection est figée au premier chargement réussi de la séance (date de la donnée, pas un booléen
+    // qui pourrait déjà être vrai avec un cache périmé).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.due ? due.isSuccess : plan.isSuccess]);
+  }, [params.due ? due.dataUpdatedAt : plan.dataUpdatedAt, nothingToDo]);
 
   // Journée du programme : si le serveur ne répond pas (hors ligne), on le dit et on propose de réessayer.
   const completeDay = (day: number) =>
@@ -110,11 +116,23 @@ export default function MemorizationSession() {
 
   const source = params.due ? due : plan;
   if (!params.keys && source.isError) return <ErrorState error={source.error} onRetry={() => closeScreen("/memorize")} />;
-  if (!keys) return <LoadingState label="Préparation de la séance…" />;
+  if (!keys) {
+    return (
+      <SafeArea style={{ flex: 1 }}>
+        <LoadingState label="Préparation de la séance…" />
+        <Button title="Fermer" variant="ghost" size="md" onPress={() => closeScreen("/memorize")} />
+      </SafeArea>
+    );
+  }
   if (keys.length === 0) {
     return (
       <SafeArea style={{ flex: 1 }}>
-        <EmptyState icon="checkmark-done" title="Tout est à jour" message="Aucun verset à réviser pour le moment." action={{ title: "Fermer", onPress: () => closeScreen("/memorize") }} />
+        <EmptyState
+          icon="checkmark-done"
+          title={nothingToDo ? "Aucune séance" : "Tout est à jour"}
+          message={nothingToDo ? "Choisissez un plan ou des révisions pour commencer." : "Aucun verset à réviser pour le moment."}
+          action={{ title: "Fermer", onPress: () => closeScreen("/memorize") }}
+        />
       </SafeArea>
     );
   }
@@ -469,7 +487,11 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           }}
         />
       ) : stage === "recite" ? (
-        busy ? null : <Button title={kids ? "Voir le verset" : "Vérifier"} icon="eye-outline" onPress={() => setStage("grade")} />
+        busy ? null : kids ? (
+          <BigButton title="Voir le verset" icon="eye" onPress={() => setStage("grade")} />
+        ) : (
+          <Button title="Vérifier" icon="eye-outline" onPress={() => setStage("grade")} />
+        )
       ) : (
         <View style={styles.grades}>
           <AppText variant="headline" center>

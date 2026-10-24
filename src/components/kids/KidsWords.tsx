@@ -63,13 +63,13 @@ export function KidsWords() {
       <Card style={[styles.game, { backgroundColor: KID_TONES.violet.main }]}>
         <View style={styles.row}>
           <View style={styles.flex}>
-            <AppText variant="label" color="#E4DCFF">
+            <AppText variant="label" color={KIDS.onHeroMuted}>
               Le jeu du jour
             </AppText>
             <AppText variant="title" color={KIDS.onHero}>
               De nouveaux mots
             </AppText>
-            <AppText variant="caption" color="#EFEAFF">
+            <AppText variant="caption" color={KIDS.onHeroMuted}>
               {due > 0 ? `Environ 3 minutes · ${due} mot${due > 1 ? "s" : ""} à revoir` : "Environ 3 minutes"}
             </AppText>
           </View>
@@ -131,7 +131,7 @@ export function KidsWords() {
 function ThemeTile({ theme, tone }: { theme: ThemeSummary; tone: KidTone }) {
   const t = KID_TONES[tone];
   const icon = (theme.icon && theme.icon in Ionicons.glyphMap ? theme.icon : "book-outline") as Icon;
-  const veil = tone === "sun" ? "rgba(30,42,74,0.12)" : "rgba(255,255,255,0.22)";
+  const veil = tone === "sun" ? "rgba(30,42,74,0.12)" : KIDS.veil;
   return (
     <Pressable
       accessibilityRole="button"
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   game: { gap: spacing.lg, borderRadius: radius.xl },
-  gameIcon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.18)" },
+  gameIcon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", backgroundColor: KIDS.veil },
   square: { width: 52, height: 52, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   chip: { borderRadius: radius.sm, paddingHorizontal: spacing.sm },
   count: { borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },

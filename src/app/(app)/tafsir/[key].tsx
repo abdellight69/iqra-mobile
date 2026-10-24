@@ -19,7 +19,9 @@ import { radius, spacing, useColors } from "@/lib/theme";
 /** Tafsir d'un verset : le commentaire choisi (en français par défaut s'il en existe un). */
 export default function TafsirSheet() {
   const colors = useColors();
-  const { key } = useLocalSearchParams<{ key: string }>();
+  const params = useLocalSearchParams<{ key: string }>();
+  // Lien profond : une clé de verset mal formée ouvre simplement un tafsir vide, sans appel insensé.
+  const key = /^\d{1,3}:\d{1,3}$/.test(params.key ?? "") ? params.key : "";
   const me = useMe();
   const kids = useKidsMode();
   const tafsir = useVerseTafsir(key, me.data?.tafsirId ?? null);
@@ -109,15 +111,17 @@ export default function TafsirSheet() {
                   : `Version non numérotée par ${t.source.name} : texte du ${new Date(t.source.fetchedAt).toLocaleDateString("fr-FR")}.`}{" "}
                 Texte reproduit sans modification.
               </AppText>
-              <Pressable
-                accessibilityRole="link"
-                onPress={() => void Linking.openURL(t.source!.url)}
-                style={styles.link}
-              >
-                <AppText variant="caption" color={colors.primary}>
-                  Signaler une erreur à {t.source.name}
-                </AppText>
-              </Pressable>
+              {kids ? null : (
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => void Linking.openURL(t.source!.url)}
+                  style={styles.link}
+                >
+                  <AppText variant="caption" color={colors.primary}>
+                    Signaler une erreur à {t.source.name}
+                  </AppText>
+                </Pressable>
+              )}
             </>
           ) : (
             <AppText variant="caption" faint>

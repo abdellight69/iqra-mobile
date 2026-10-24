@@ -60,14 +60,14 @@ export function KidsRecite() {
       {dueCount > 0 ? (
         <Card style={[styles.due, { backgroundColor: KID_TONES.orange.main }]}>
           <View>
-            <AppText variant="label" color="#FFE1CC">
+            <AppText variant="label" color={KIDS.onHeroMuted}>
               À revoir aujourd’hui
             </AppText>
             <AppText variant="title" color={KIDS.onHero}>
               {dueCount} verset{dueCount > 1 ? "s t’attendent" : " t’attend"}
             </AppText>
             {dueNames ? (
-              <AppText variant="caption" color="#FFEFE3">
+              <AppText variant="caption" color={KIDS.onHeroMuted}>
                 {dueNames}
               </AppText>
             ) : null}
@@ -81,7 +81,7 @@ export function KidsRecite() {
             <AppText variant="headline" color={KIDS.onHero}>
               Tout est révisé !
             </AppText>
-            <AppText variant="caption" color="#DDF6EE">
+            <AppText variant="caption" color={KIDS.onHeroMuted}>
               Reviens demain pour la suite.
             </AppText>
           </View>

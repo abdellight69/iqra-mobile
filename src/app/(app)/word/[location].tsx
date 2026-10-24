@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useColorSch
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
+import { API_URL } from "@/lib/api";
 import { useOneShot } from "@/lib/audio";
 import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
@@ -15,6 +16,17 @@ import { radius, spacing, useColors } from "@/lib/theme";
 import type { Label, Segment } from "@/lib/types";
 
 const LANGUAGES: Record<string, string> = { french: "français", english: "anglais", arabic: "arabe" };
+const WORD_LOCATION = /^\d{1,3}:\d{1,3}:\d{1,3}$/;
+/** Hôtes d'où l'app accepte de lire un audio reçu en paramètre : l'API, et les CDN de Quran.com. */
+function isTrustedAudioUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== "https:" && !(protocol === "http:" && API_URL.startsWith("http://"))) return false;
+    return hostname === new URL(API_URL).hostname || hostname.endsWith(".qurancdn.com") || hostname.endsWith(".quran.com") || hostname === "verses.quran.com";
+  } catch {
+    return false;
+  }
+}
 const POSITIONS: Record<Segment["position"], string> = { prefix: "Préfixe", stem: "Mot", suffix: "Suffixe" };
 
 export default function WordSheet() {
@@ -42,12 +54,16 @@ export default function WordSheet() {
   // Tajwid activé dans le lecteur : le mot de la fiche garde les mêmes couleurs.
   const tajweedOn = useReaderSettings((r) => r.showTajweed);
   const colorHero = tajweedOn && segments.length > 0;
-  const details = useWordDetails(params.location);
+  // Lien profond : la position doit avoir la forme sourate:verset:mot, et l'audio venir de l'API ou du CDN
+  // de Quran.com (jamais une adresse arbitraire).
+  const location = WORD_LOCATION.test(params.location ?? "") ? params.location : "";
+  const audioUrl = params.audio && isTrustedAudioUrl(params.audio) ? params.audio : null;
+  const details = useWordDetails(location);
   const sound = useOneShot();
   const [showOccurrences, setShowOccurrences] = useState(false);
   const morphology = details.data?.morphology;
   const occurrences = useRootOccurrences(showOccurrences ? (morphology?.root ?? null) : null);
-  const [chapter, verse, position] = params.location.split(":");
+  const [chapter, verse, position] = location.split(":");
   const language = params.language ? (isFrench(params.language) ? "français" : (LANGUAGES[params.language.toLowerCase()] ?? params.language)) : null;
 
   return (
@@ -65,11 +81,11 @@ export default function WordSheet() {
               ))
             : params.text}
         </ArabicText>
-        {params.audio ? (
+        {audioUrl ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Écouter la prononciation"
-            onPress={() => sound.play(params.audio!)}
+            onPress={() => sound.play(audioUrl)}
             style={({ pressed }) => [styles.listen, { backgroundColor: colors.surfaceMuted, opacity: pressed ? 0.7 : 1 }]}>
             <Ionicons name={sound.playing ? "volume-high" : "play"} size={15} color={colors.text} />
             <AppText variant="caption">Écouter</AppText>

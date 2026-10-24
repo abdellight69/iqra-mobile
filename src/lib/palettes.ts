@@ -150,10 +150,11 @@ export function availableTheme(chosen: ThemeId, supporter: boolean): ThemeId {
 }
 
 /**
- * Palette d'un profil enfant, quel que soit le thème choisi : papier crème plus chaud, même vert
- * profond, or plus lumineux. Jamais proposée dans les Réglages.
+ * Palette d'un profil enfant, quel que soit le thème choisi (direction « Ciel ») : fond bleu très
+ * pâle, encre marine, vert franc, teintes vives. Jamais proposée dans les Réglages. Les couleurs
+ * de texte respectent 4,5:1 sur leurs fonds (`contrast.test.ts`) ; le texte posé sur `hero`
+ * est l'encre marine (`KIDS.onHero`), pas le blanc.
  */
-/** Profils enfants, direction « Ciel » : fond bleu très pâle, encre marine, vert franc, teintes vives. */
 const kidsLight: Colors = {
   ...lightColors,
   background: "#F4F7FF",
@@ -163,16 +164,16 @@ const kidsLight: Colors = {
   text: "#1E2A4A",
   textMuted: "#5B6B8C",
   textFaint: "#5B6B8C",
-  primary: "#0E8F65",
+  primary: "#0B7A56",
   primaryStrong: "#0B6E4E",
   primarySoft: "#DDF6EE",
   onPrimary: "#FFFFFF",
   hero: "#16B07E",
   accent: "#0B7A56",
   accentSoft: "#DDF6EE",
-  danger: "#D94F82",
-  dangerSoft: "#FFE4EE",
-  success: "#0E8F65",
+  danger: "#BE3568",
+  dangerSoft: "#FFEBF2",
+  success: "#0B7A56",
   successSoft: "#DDF6EE",
   arabic: "#1E2A4A",
   shadow: "#1E2A4A",
@@ -191,7 +192,8 @@ const kidsDark: Colors = {
   primaryStrong: "#7EE3BF",
   primarySoft: "#163B31",
   onPrimary: "#06231A",
-  hero: "#13825F",
+  // Même vert franc qu'en clair : l'encre marine posée dessus reste lisible dans les deux modes.
+  hero: "#16B07E",
   accent: "#5FD9AD",
   accentSoft: "#163B31",
   danger: "#FF7FAE",

@@ -32,6 +32,16 @@ export default function ProfilePicker() {
     else router.replace("/");
   }
 
+  /**
+   * Le code parent est demandé (comme le serveur l'exige) pour ouvrir le profil du titulaire depuis un
+   * autre profil, et, depuis un profil enfant, pour ouvrir tout profil qui n'est pas un profil enfant.
+   */
+  function locked(profile: Profile): boolean {
+    const data = profiles.data;
+    if (!data?.pinSet || profile.current) return false;
+    return profile.isOwner ? !data.isOwner : kids && !profile.isChild;
+  }
+
   function choose(profile: Profile, code?: string) {
     setError(null);
     if (profile.current) {
@@ -123,7 +133,7 @@ export default function ProfilePicker() {
                 {kids ? (
                   <View style={[styles.ring, { backgroundColor: p.current ? KIDS.sun : colors.surface }, elevation(colors, 2)]}>
                     <ProfileAvatar name={p.displayName} avatar={p.avatar} size={96} />
-                    {p.isOwner && profiles.data.pinSet && !profiles.data.isOwner ? (
+                    {locked(p) ? (
                       <View style={[styles.lock, { backgroundColor: colors.surface }, elevation(colors)]}>
                         <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
                       </View>
@@ -135,7 +145,7 @@ export default function ProfilePicker() {
                 <AppText variant={kids ? "headline" : "bodyStrong"} center numberOfLines={1}>
                   {p.displayName}
                 </AppText>
-                {!kids && p.isOwner && profiles.data.pinSet && !profiles.data.isOwner ? <Ionicons name="lock-closed" size={14} color={colors.textMuted} /> : null}
+                {!kids && locked(p) ? <Ionicons name="lock-closed" size={14} color={colors.textMuted} /> : null}
               </Pressable>
             ))}
           </View>
@@ -150,7 +160,7 @@ export default function ProfilePicker() {
           ) : null}
           {kids && profiles.data.pinSet ? (
             <AppText variant="caption" muted center>
-              Le profil avec un cadenas a un code : demande à un parent avant de l’ouvrir.
+              Les profils avec un cadenas ont un code : demande à un parent avant de les ouvrir.
             </AppText>
           ) : null}
         </>

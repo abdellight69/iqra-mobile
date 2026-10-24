@@ -1,7 +1,7 @@
 import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
 import { consumeDailyReserve, loadDailyReserve, reserveNeedsRefresh, reserveVerseKeys, saveDailyReserve } from "./daily-reserve";
-import { queueReview, queueSession } from "./outbox";
+import { newClientId, queueReview, queueSession } from "./outbox";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
 import type {
@@ -219,6 +219,7 @@ export function useWordDetails(location: string) {
     queryKey: keys.word(location),
     queryFn: () => api<WordDetails>(`/quran/words/${location}`),
     staleTime: DAY,
+    enabled: Boolean(location),
   });
 }
 
@@ -252,6 +253,7 @@ export function useVerseTafsir(verseKey: string, tafsirId: number | null) {
     queryKey: ["tafsir", verseKey, tafsirId],
     queryFn: () => api<VerseTafsir>(`/quran/verses/${verseKey}/tafsir${tafsirId ? `?tafsirId=${tafsirId}` : ""}`),
     staleTime: DAY,
+    enabled: Boolean(verseKey),
   });
 }
 
@@ -471,12 +473,14 @@ export function useSubmitSession() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: async (input: { lessonId?: string; answers: { wordId: string; correct: boolean }[] }): Promise<SessionResult> => {
+      // Même identifiant en ligne et dans la file : une réponse perdue ne fait pas compter la séance deux fois.
+      const clientId = newClientId();
       try {
-        return await api<SessionResult>("/vocabulary/sessions", { method: "POST", body: input });
+        return await api<SessionResult>("/vocabulary/sessions", { method: "POST", body: { ...input, clientId } });
       } catch (error) {
         if (!isNetworkError(error)) throw error;
         // Sans réseau : la séance est gardée et sera envoyée à la reconnexion, avec sa date.
-        queueSession(input);
+        queueSession({ ...input, clientId });
         const correctAnswers = input.answers.filter((a) => a.correct).length;
         const totalAnswers = input.answers.length;
         return { xpGained: 0, score: totalAnswers ? Math.round((correctAnswers / totalAnswers) * 100) : 0, correctAnswers, totalAnswers, queued: true };
@@ -587,12 +591,13 @@ export function useReviewVerse() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: async (input: { chapterId: number; verseNumber: number; quality: number }): Promise<ReviewResult & { queued?: boolean }> => {
+      const clientId = newClientId();
       try {
-        return await api<ReviewResult>("/memorization/reviews", { method: "POST", body: input });
+        return await api<ReviewResult>("/memorization/reviews", { method: "POST", body: { ...input, clientId } });
       } catch (error) {
         if (!isNetworkError(error)) throw error;
         // Sans réseau : l'évaluation sera envoyée à la reconnexion.
-        queueReview(input);
+        queueReview({ ...input, clientId });
         return { key: `${input.chapterId}:${input.verseNumber}`, status: "learning", dueAt: "", intervalDays: 0, xpGained: 0, queued: true };
       }
     },
