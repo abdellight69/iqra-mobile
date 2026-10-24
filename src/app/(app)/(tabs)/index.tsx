@@ -1,10 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
+import { ProgressBar } from "@/components/ProgressBar";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Screen } from "@/components/Screen";
 import { SearchBar } from "@/components/SearchBar";
@@ -15,7 +16,9 @@ import { useKidsMode } from "@/lib/kids";
 import { useAuth } from "@/lib/auth-store";
 import { useFamilies, useReceivedInvitations } from "@/lib/families";
 import { familiesSummary } from "@/lib/families-format";
+import { track } from "@/lib/events";
 import { nextStep } from "@/lib/next-step";
+import { nextMilestone, nextPlanStep, type Plan, planSteps, progressLabel, progressRatio, remainingMinutes, usePlan } from "@/lib/plan";
 import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats, useCourse } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 import { buildSnapshot, publishWidgetSnapshot } from "@/lib/widget";
@@ -54,7 +57,14 @@ function Home() {
   const familyLine = families.data ? familiesSummary(families.data, invitationCount) : null;
   const familyAlert = invitationCount > 0 || (families.data ?? []).some((f) => f.pendingGoals > 0 || f.unseenEncouragements > 0);
   const course = useCourse(me.data?.goal === "understand");
-  const step = nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data, course: course.data, chapters: chapters.data });
+  // Le plan personnel (serveur) ; à défaut (hors ligne sans copie, serveur plus ancien), la prochaine action calculée ici.
+  const plan = usePlan();
+  const fallbackStep = plan.data ? null : nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data, course: course.data, chapters: chapters.data });
+  useEffect(() => {
+    if (plan.data) track("plan_viewed", { goal: plan.data.goal ?? "", percent: Math.round(progressRatio(plan.data.target) * 100) });
+    // Une fois par ouverture de l'accueil avec un plan chargé.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan.data !== undefined && plan.data !== null]);
   const s = stats.data;
   const lastChapter = position.data ? chapters.data?.find((c) => c.id === position.data?.chapterId) : undefined;
 
@@ -76,6 +86,7 @@ function Home() {
         void me.refetch();
         void comprehension.refetch();
         void programs.refetch();
+        void plan.refetch();
       }}>
       <View style={styles.header}>
         <AppText variant="label" muted>
@@ -88,17 +99,19 @@ function Home() {
       </View>
       <SearchBar />
 
-      {step ? (
-        <Card tone="primary" onPress={() => router.push(step.href)} style={styles.resume}>
+      {plan.data ? (
+        <PlanCard plan={plan.data} />
+      ) : fallbackStep ? (
+        <Card tone="primary" onPress={() => router.push(fallbackStep.href)} style={styles.resume}>
           <View style={styles.flex}>
             <AppText variant="label" color="#FFFFFF99">
-              {step.eyebrow}
+              {fallbackStep.eyebrow}
             </AppText>
             <AppText variant="title" color="#FFFFFF">
-              {step.title}
+              {fallbackStep.title}
             </AppText>
             <AppText variant="caption" color="#FFFFFFCC">
-              {step.detail}
+              {fallbackStep.detail}
             </AppText>
           </View>
           <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
@@ -106,7 +119,7 @@ function Home() {
       ) : null}
 
       <Card style={styles.goalCard}>
-        <ProgressRing value={goal} size={88} stroke={6} color={colors.accent}>
+        <ProgressRing value={goal} size={72} stroke={6} color={colors.accent}>
           <AppText variant="headline">{Math.round(Math.min(goal, 1) * 100)}%</AppText>
         </ProgressRing>
         <View style={styles.goalText}>
@@ -212,7 +225,7 @@ function Home() {
         <Ionicons name="arrow-forward" size={18} color={colors.accent} />
       </Card>
 
-      {step?.programId && step.programId === activeProgram?.id ? null : (
+      {fallbackStep?.programId && fallbackStep.programId === activeProgram?.id ? null : (
               <Card onPress={() => router.push(activeProgram ? { pathname: "/programs/[id]", params: { id: activeProgram.id } } : "/programs")} style={styles.resume}>
           <View style={styles.flex}>
             <AppText variant="label" muted>
@@ -229,6 +242,8 @@ function Home() {
         </Card>
       )}
 
+      {plan.data ? null : (
+        <>
       <SectionHeader title="Aujourd’hui" />
       <View style={styles.row}>
         <Card style={styles.flex} onPress={() => router.push("/memorize")}>
@@ -248,6 +263,8 @@ function Home() {
           </AppText>
         </Card>
       </View>
+        </>
+      )}
 
       <View style={[styles.reflection, { borderColor: colors.accent }]}>
         <ArabicText size={24} center>
@@ -261,9 +278,105 @@ function Home() {
   );
 }
 
+/**
+ * Mon plan : la cible choisie au premier lancement et sa progression, puis la séance du jour en une
+ * liste courte (mots, versets, lettres, lecture). Un seul grand bouton : la prochaine étape non faite.
+ */
+function PlanCard({ plan }: { plan: Plan }) {
+  const colors = useColors();
+  const steps = planSteps(plan);
+  const next = nextPlanStep(plan);
+  const minutes = remainingMinutes(plan);
+  const milestone = nextMilestone(plan);
+  const ratio = progressRatio(plan.target);
+  return (
+    <Card tone="primary" style={styles.plan}>
+      <View style={styles.planHeader}>
+        <View style={styles.flex}>
+          <AppText variant="label" color="#FFFFFF99">
+            Mon plan
+          </AppText>
+          <AppText variant="title" color="#FFFFFF">
+            {plan.target.title}
+          </AppText>
+          <AppText variant="caption" color="#FFFFFFCC">
+            {plan.target.detail}
+          </AppText>
+        </View>
+        <AppText variant="headline" color="#FFFFFF">
+          {Math.round(ratio * 100)}%
+        </AppText>
+      </View>
+      <ProgressBar value={ratio} color={colors.accent} track="#FFFFFF33" height={8} />
+      <AppText variant="caption" color="#FFFFFFCC">
+        {progressLabel(plan.target)}
+        {milestone ? ` · prochain jalon : ${milestone}` : " · cible atteinte"}
+      </AppText>
+
+      {steps.length > 0 ? (
+        <View style={styles.planSteps}>
+          {steps.map((step) => (
+            <Pressable
+              key={step.kind}
+              accessibilityRole="button"
+              accessibilityLabel={`${step.title}, ${step.detail}`}
+              accessibilityState={{ checked: step.done }}
+              onPress={() => router.push(step.href)}
+              style={({ pressed }) => [styles.planStep, { opacity: pressed ? 0.7 : step.done ? 0.65 : 1 }]}>
+              <Ionicons name={step.done ? "checkmark-circle" : "ellipse-outline"} size={22} color={step.done ? colors.accent : "#FFFFFFCC"} />
+              <View style={styles.flex}>
+                <AppText variant="bodyStrong" color="#FFFFFF">
+                  {step.title}
+                </AppText>
+                <AppText variant="caption" color="#FFFFFFCC">
+                  {step.detail}
+                </AppText>
+              </View>
+              {!step.done ? (
+                <AppText variant="caption" color="#FFFFFF99">
+                  {Math.round(step.minutes)} min
+                </AppText>
+              ) : null}
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <AppText variant="caption" color="#FFFFFFCC">
+          Rien n’attend aujourd’hui : lisez, ou avancez dans un programme.
+        </AppText>
+      )}
+
+      {next ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(next.href)}
+          style={({ pressed }) => [styles.planCta, { backgroundColor: "#FFFFFF", opacity: pressed ? 0.85 : 1 }]}>
+          <Ionicons name="play" size={18} color={colors.primaryStrong} />
+          <AppText variant="bodyStrong" color={colors.primaryStrong}>
+            {steps.some((s) => s.done) ? "Continuer la séance du jour" : "Commencer la séance du jour"}
+            {minutes > 0 ? ` · ${minutes} min` : ""}
+          </AppText>
+        </Pressable>
+      ) : steps.length > 0 ? (
+        <View style={[styles.planCta, { backgroundColor: "#FFFFFF22" }]}>
+          <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
+          <AppText variant="bodyStrong" color="#FFFFFF">
+            Séance du jour terminée
+          </AppText>
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { gap: spacing.sm, marginTop: spacing.sm },
+  plan: { gap: spacing.md, paddingVertical: spacing.xl },
+  planHeader: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
+  planSteps: { gap: spacing.xs, marginTop: spacing.xs },
+  planStep: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: 48, paddingVertical: spacing.xs },
+  planCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, minHeight: 50, borderRadius: 999, paddingHorizontal: spacing.lg, marginTop: spacing.xs },
   goalCard: { flexDirection: "row", alignItems: "center", gap: spacing.xl },
   goalText: { flex: 1, gap: 4 },
   streak: { flexDirection: "row", alignItems: "center", gap: 6 },

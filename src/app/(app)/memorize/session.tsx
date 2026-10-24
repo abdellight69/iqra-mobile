@@ -11,6 +11,8 @@ import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
 import { RecitationRecorder, RecitationSummary, useStatusColors } from "@/components/RecitationCheck";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { FillVerseExercise } from "@/components/exercises/FillVerseExercise";
+import { VerseOrderExercise } from "@/components/exercises/VerseOrderExercise";
 import { errorMessage } from "@/lib/api";
 import { useTrackQueue } from "@/lib/audio";
 import { BigButton } from "@/components/kids/KidButton";
@@ -33,6 +35,7 @@ import {
 } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Word } from "@/lib/types";
+import { errorsLabel, neighbourVerseKey, offerFill, verseWords } from "@/lib/verse-exercises";
 import { closeScreen } from "@/lib/navigation";
 import { useCompleteMissionStep } from "@/lib/missions";
 
@@ -101,6 +104,12 @@ export default function MemorizationSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.due ? due.dataUpdatedAt : plan.dataUpdatedAt, nothingToDo]);
 
+  // Versets à réviser ou déjà travaillés (deuxième séance ou plus) : l'étape « Compléter » leur est proposée.
+  const reviewKeys = useMemo<Set<string>>(() => {
+    if (params.due) return new Set(keys ?? []);
+    return new Set(plan.data?.verses.filter((v) => v.due || v.repetitions > 0).map((v) => v.key));
+  }, [params.due, keys, plan.data]);
+
   // Journée du programme : si le serveur ne répond pas (hors ligne), on le dit et on propose de réessayer.
   const completeDay = (day: number) =>
     programAction.mutate(
@@ -139,6 +148,7 @@ export default function MemorizationSession() {
   return (
     <SessionRunner
       keys={keys}
+      reviewKeys={reviewKeys}
       onFinished={() => {
         if (params.programId && params.day) completeDay(Number(params.day));
         // Étape « Retenir » de la mission du jour d'un enfant.
@@ -153,7 +163,7 @@ export default function MemorizationSession() {
   );
 }
 
-function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFinished: () => void }) {
+function SessionRunner({ keys: initialKeys, reviewKeys, onFinished }: { keys: string[]; reviewKeys: Set<string>; onFinished: () => void }) {
   const colors = useColors();
   // Un verset oublié est remis en fin de séance : il est retravaillé avant « Séance terminée ».
   const [keys, setKeys] = useState(initialKeys);
@@ -229,6 +239,7 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
       <VerseDrill
         key={keys[index]}
         verseKey={keys[index]!}
+        review={reviewKeys.has(keys[index]!)}
         onDone={(gained, forgotten) => {
           setXp((x) => x + gained);
           const key = keys[index]!;
@@ -250,7 +261,8 @@ function SessionRunner({ keys: initialKeys, onFinished }: { keys: string[]; onFi
   );
 }
 
-function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: number, forgotten: boolean) => void }) {
+/** `review` : verset à réviser ou déjà travaillé ; l'étape « Compléter » n'est proposée à l'adulte que dans ce cas. */
+function VerseDrill({ verseKey, review: isReview, onDone }: { verseKey: string; review: boolean; onDone: (xp: number, forgotten: boolean) => void }) {
   const colors = useColors();
   const kids = useKidsMode();
   const grades = kids ? KIDS_GRADES : GRADES;
@@ -263,7 +275,10 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const [repeat, setRepeat] = useState(3);
   const [hide, setHide] = useState<HideLevel>(0);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
-  const [stage, setStage] = useState<"study" | "recite" | "grade">("study");
+  // Après l'étude : « Recomposer » (toujours), puis « Compléter » (selon le profil et le verset), puis la récitation.
+  const [stage, setStage] = useState<"study" | "order" | "fill" | "recite" | "grade">("study");
+  // Erreurs des exercices de recomposition : affichées à la note, sans effet sur la planification SM-2.
+  const [drillErrors, setDrillErrors] = useState<{ order?: number; fill?: number }>({});
   const [showTranslation, setShowTranslation] = useState(false);
   const [showTransliteration, setShowTransliteration] = useState(true);
 
@@ -295,6 +310,10 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const result = check.state.phase === "done" ? check.state.result : null;
   const statusByLocation = useMemo(() => new Map(result?.words.map((w) => [w.location, w.status])), [result]);
   const busy = check.state.phase === "recording" || check.state.phase === "checking";
+  // « Compléter » : ses distracteurs de secours viennent d'un verset voisin (chargé seulement si l'étape est proposée).
+  const wordCount = verseData ? verseWords(verseData.words).length : 0;
+  const withFill = offerFill({ kids, wordCount, review: isReview });
+  const neighbour = useVerse((withFill && neighbourVerseKey(chapterId, verseNumber, chapter.data?.versesCount)) || "", me.data?.translationId ?? null);
 
   if (!verseData && verse.isError) return <ErrorState error={verse.error} onRetry={() => void verse.refetch()} />;
   if (!verseData) return <LoadingState />;
@@ -302,6 +321,43 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
   const effectiveHide: HideLevel = stage === "recite" ? 2 : stage === "grade" ? 0 : hide;
   // La phonétique accompagne le texte visible ; elle disparaît dès qu'on masque pour réciter.
   const transliteration = showTransliteration && effectiveHide === 0 ? verseTransliteration(verseData) : null;
+  const afterOrder = () => setStage(withFill ? "fill" : "recite");
+
+  if (stage === "order") {
+    return (
+      <View style={styles.flex}>
+        <AppText variant="label" muted style={styles.drillLabel}>
+          Sourate {chapterId} · verset {verseNumber}
+        </AppText>
+        <VerseOrderExercise
+          words={words}
+          onDone={(errors) => {
+            setDrillErrors((d) => ({ ...d, order: errors }));
+            afterOrder();
+          }}
+          onSkip={afterOrder}
+        />
+      </View>
+    );
+  }
+  if (stage === "fill") {
+    return (
+      <View style={styles.flex}>
+        <AppText variant="label" muted style={styles.drillLabel}>
+          Sourate {chapterId} · verset {verseNumber}
+        </AppText>
+        <FillVerseExercise
+          words={words}
+          neighbours={neighbour.data ? verseWords(neighbour.data.words).map((w) => w.textUthmani) : []}
+          onDone={(errors) => {
+            setDrillErrors((d) => ({ ...d, fill: errors }));
+            setStage("recite");
+          }}
+          onSkip={() => setStage("recite")}
+        />
+      </View>
+    );
+  }
 
   function renderWord(word: Word) {
     const visible = effectiveHide === 0 || revealed.has(word.location);
@@ -478,12 +534,12 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
 
       {stage === "study" ? (
         <Button
-          title={kids ? "Je suis prêt !" : "Je suis prêt à réciter"}
-          icon="mic-outline"
+          title={kids ? "Je suis prêt !" : "Je suis prêt"}
+          icon="arrow-forward"
           onPress={() => {
             player.stop();
             setRevealed(new Set());
-            setStage("recite");
+            setStage("order");
           }}
         />
       ) : stage === "recite" ? (
@@ -497,6 +553,13 @@ function VerseDrill({ verseKey, onDone }: { verseKey: string; onDone: (xp: numbe
           <AppText variant="headline" center>
             {kids ? "Tu as réussi ?" : "Comment s’est passée la récitation ?"}
           </AppText>
+          {drillErrors.order !== undefined || drillErrors.fill !== undefined ? (
+            <AppText variant="caption" muted center>
+              {[drillErrors.order !== undefined ? `Recomposer : ${errorsLabel(drillErrors.order)}` : null, drillErrors.fill !== undefined ? `Compléter : ${errorsLabel(drillErrors.fill)}` : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </AppText>
+          ) : null}
           {kids ? null : (
             <AppText variant="caption" muted center>
               « Oublié » : le verset revient en fin de séance. Réussi : prochaine révision dans 1 jour, puis 6, puis 2 à 3 semaines.
@@ -549,6 +612,7 @@ const styles = StyleSheet.create({
   kidsCta: { alignSelf: "stretch" },
   topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   body: { flex: 1, padding: spacing.lg, gap: spacing.md },
+  drillLabel: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   scroll: { gap: spacing.lg, paddingBottom: spacing.lg },
   verseCard: { gap: spacing.md },
   words: { flexDirection: "row-reverse", flexWrap: "wrap", columnGap: spacing.sm, rowGap: spacing.xs },

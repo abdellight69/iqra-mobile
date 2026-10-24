@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { ProgressBar } from "@/components/ProgressBar";
 import { api, errorMessage } from "@/lib/api";
 import { useUpdateMe } from "@/lib/queries";
+import { track } from "@/lib/events";
 import { useReaderSettings } from "@/lib/reader-store";
 import { formatTime, REMINDER_TIMES, requestReminderPermission, useReminders } from "@/lib/reminders";
 import { radius, spacing, useColors } from "@/lib/theme";
@@ -63,6 +64,7 @@ export default function Onboarding() {
   async function finish(goTo?: () => void, skipped = false) {
     try {
       await update.mutateAsync(skipped ? { onboarded: true } : { goal, arabicLevel: level, dailyGoalXp, onboarded: true });
+      track("onboarding_done", { skipped, goal: goal ?? "", level: level ?? "" });
       // Sans lecture de l'arabe : le mot à mot (phonétique et sens sous chaque mot) est activé.
       if (level === "none") useReaderSettings.setState({ showWordByWord: true, showTransliteration: true });
       if (reminder && (await requestReminderPermission())) await reminders.update({ enabled: true, ...reminder });

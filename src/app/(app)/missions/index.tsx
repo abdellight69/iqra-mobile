@@ -84,6 +84,13 @@ function ChildCard({ child }: { child: MissionChild }) {
           <Button title="Préparer une mission" icon="add" size="md" onPress={() => router.push({ pathname: "/missions/new", params: { childId: child.id } })} />
         </View>
       )}
+      <Button
+        title={`Ce que ${child.displayName} sait`}
+        icon="sparkles-outline"
+        variant="secondary"
+        size="md"
+        onPress={() => router.push({ pathname: "/missions/enfant/[id]", params: { id: child.id } })}
+      />
     </Card>
   );
 }

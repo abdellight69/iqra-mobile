@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Switch, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Button } from "@/components/Button";
@@ -13,11 +13,12 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { VoiceNoteField } from "@/components/VoiceNote";
 import { ApiError, errorMessage } from "@/lib/api";
+import { type MissionTemplate, templateSummary, useMissionTemplates } from "@/lib/child-insights";
 import { type MissionPlanInput, useCreateMissionPlan, useMissionChildren } from "@/lib/missions";
-import { MAX_MISSION_VERSES, missionSummary, SHORT_SURAHS, STEPS, WEEKDAYS } from "@/lib/missions-format";
+import { countVerses, MAX_MISSION_VERSES, missionSummary, SHORT_SURAHS, STEPS, WEEKDAYS } from "@/lib/missions-format";
 import { useChapters, useMe } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
-import type { Chapter, MissionStep } from "@/lib/types";
+import type { Chapter, MissionRange, MissionStep } from "@/lib/types";
 import type { VoiceNote } from "@/lib/voice-note";
 
 /** Préparer une mission pour un enfant : versets, étapes, rythme et un mot du parent. */
@@ -27,26 +28,35 @@ export default function NewMission() {
   const chapters = useChapters();
   const children = useMissionChildren();
   const create = useCreateMissionPlan();
-  const params = useLocalSearchParams<{ childId?: string }>();
+  const templates = useMissionTemplates();
+  // chapterId/fromVerse/toVerse : plage pré-remplie depuis la fiche de l'enfant (« En faire une mission »).
+  const params = useLocalSearchParams<{ childId?: string; chapterId?: string; fromVerse?: string; toVerse?: string }>();
 
   const [pickedChild, setChild] = useState<string | null>(null);
-  const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [pickedChapter, setChapter] = useState<Chapter | null>(null);
   const [picking, setPicking] = useState(false);
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState<"whole" | "range">("whole");
-  const [from, setFrom] = useState("1");
-  const [to, setTo] = useState("");
+  const [mode, setMode] = useState<"whole" | "range">(params.fromVerse || params.toVerse ? "range" : "whole");
+  const [from, setFrom] = useState(params.fromVerse ?? "1");
+  const [to, setTo] = useState(params.toVerse ?? "");
   const [steps, setSteps] = useState<MissionStep[]>(["listen", "repeat", "play"]);
   const [versesPerDay, setVersesPerDay] = useState(1);
   const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [message, setMessage] = useState("");
   const [voice, setVoice] = useState<VoiceNote | null>(null);
   const [pinRequired, setPinRequired] = useState(false);
+  // Mission prête à plusieurs sourates : le formulaire ne sait choisir qu'une sourate, on garde les plages du modèle telles quelles.
+  const [templateRanges, setTemplateRanges] = useState<MissionRange[] | null>(null);
+  const [templateId, setTemplateId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (chapters.data ?? []).filter((c) => !q || String(c.id) === q || c.nameSimple.toLowerCase().includes(q));
   }, [chapters.data, query]);
+
+  // Sourate venue de l'URL : elle sert tant que le parent n'en choisit pas une autre.
+  const urlChapter = useMemo(() => (params.chapterId ? (chapters.data?.find((c) => c.id === Number(params.chapterId)) ?? null) : null), [chapters.data, params.chapterId]);
+  const chapter = pickedChapter ?? urlChapter;
 
   if (chapters.isPending || children.isPending) return <LoadingState />;
   if (chapters.isError) return <ErrorState error={chapters.error} onRetry={() => void chapters.refetch()} />;
@@ -59,16 +69,41 @@ export default function NewMission() {
   const fromN = Number(from);
   const toN = Number(to);
   const rangeValid = chapter !== null && Number.isInteger(fromN) && Number.isInteger(toN) && fromN >= 1 && toN <= chapter.versesCount && fromN <= toN;
-  const total = chapter ? (mode === "whole" ? chapter.versesCount : rangeValid ? toN - fromN + 1 : 0) : 0;
+  const total = templateRanges ? countVerses(templateRanges) : chapter ? (mode === "whole" ? chapter.versesCount : rangeValid ? toN - fromN + 1 : 0) : 0;
   const tooLong = total > MAX_MISSION_VERSES;
-  const ready = child !== null && chapter !== null && total > 0 && !tooLong && steps.length > 0 && weekdays.length > 0;
+  const ready = child !== null && (chapter !== null || templateRanges !== null) && total > 0 && !tooLong && steps.length > 0 && weekdays.length > 0;
 
   function choose(c: Chapter) {
     setChapter(c);
     setTo(String(c.versesCount));
     setFrom("1");
+    setMode("whole");
     setPicking(false);
     setQuery("");
+    setTemplateRanges(null);
+    setTemplateId(null);
+  }
+
+  /** Une mission prête : sourate(s), plage, rythme, jours et étapes du modèle remplissent le formulaire. */
+  function applyTemplate(t: MissionTemplate) {
+    setTemplateId(t.id);
+    setSteps(t.steps);
+    setVersesPerDay(t.versesPerDay);
+    setWeekdays(t.weekdays);
+    setPicking(false);
+    setQuery("");
+    const [first] = t.ranges;
+    const single = t.ranges.length === 1 && first ? chapters.data?.find((c) => c.id === first.chapterId) : undefined;
+    if (single && first) {
+      setChapter(single);
+      setFrom(String(first.fromVerse));
+      setTo(String(first.toVerse));
+      setMode(first.fromVerse === 1 && first.toVerse === single.versesCount ? "whole" : "range");
+      setTemplateRanges(null);
+    } else {
+      setChapter(null);
+      setTemplateRanges(t.ranges);
+    }
   }
 
   function toggle<T>(list: T[], value: T): T[] {
@@ -76,10 +111,16 @@ export default function NewMission() {
   }
 
   function submit(replace = false) {
-    if (!ready || !child || !chapter) return;
+    if (!ready || !child || (!chapter && !templateRanges)) return;
+    const ranges: MissionRange[] = templateRanges
+      ? templateRanges
+      : chapter
+        ? [{ chapterId: chapter.id, fromVerse: mode === "whole" ? 1 : fromN, toVerse: mode === "whole" ? chapter.versesCount : toN }]
+        : [];
+    if (ranges.length === 0) return;
     const input: MissionPlanInput = {
       childId: child.id,
-      ranges: [{ chapterId: chapter.id, fromVerse: mode === "whole" ? 1 : fromN, toVerse: mode === "whole" ? chapter.versesCount : toN }],
+      ranges,
       versesPerDay,
       weekdays: [...weekdays].sort((a, b) => a - b),
       // Toujours dans l'ordre où l'enfant les fait.
@@ -123,8 +164,66 @@ export default function NewMission() {
         </Card>
       ) : null}
 
+      {templates.data && templates.data.length > 0 ? (
+        <>
+          <SectionHeader title="Missions prêtes" />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templatesScroll} contentContainerStyle={styles.templates}>
+            {templates.data.map((t) => {
+              const selected = t.id === templateId;
+              return (
+                <Card
+                  key={t.id}
+                  tone={selected ? "accent" : "flat"}
+                  onPress={() => applyTemplate(t)}
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${t.title}. ${t.description}`}
+                  style={[styles.template, { borderColor: selected ? colors.accent : "transparent" }]}>
+                  <View style={styles.templateHeader}>
+                    <AppText variant="bodyStrong" style={styles.flex} numberOfLines={2}>
+                      {t.title}
+                    </AppText>
+                    {selected ? <Ionicons name="checkmark-circle" size={18} color={colors.accent} /> : null}
+                  </View>
+                  <AppText variant="caption" muted numberOfLines={3}>
+                    {t.description}
+                  </AppText>
+                  <AppText variant="caption" color={colors.primary}>
+                    {missionSummary(countVerses(t.ranges), t.versesPerDay, t.weekdays)}
+                  </AppText>
+                </Card>
+              );
+            })}
+          </ScrollView>
+        </>
+      ) : null}
+
       <SectionHeader title={child ? `Ce que ${child.displayName} va apprendre` : "Ce qu’il va apprendre"} />
-      {chapter && !picking ? (
+      {templateRanges ? (
+        <Card style={styles.gap}>
+          <View style={styles.row}>
+            <View style={styles.flex}>
+              <AppText variant="headline">{templateSummary(templateRanges, chapters.data)}</AppText>
+              <AppText variant="caption" muted>
+                {templateRanges.length} passages, dans l’ordre du modèle
+              </AppText>
+            </View>
+          </View>
+          {tooLong ? (
+            <AppText variant="caption" color={colors.danger}>
+              {MAX_MISSION_VERSES} versets au plus par mission.
+            </AppText>
+          ) : null}
+          <Button
+            title="Choisir moi-même"
+            variant="ghost"
+            size="md"
+            onPress={() => {
+              setTemplateRanges(null);
+              setTemplateId(null);
+            }}
+          />
+        </Card>
+      ) : chapter && !picking ? (
         <Card style={styles.gap}>
           <View style={styles.row}>
             <View style={styles.flex}>
@@ -345,6 +444,11 @@ const styles = StyleSheet.create({
   gapSm: { gap: spacing.sm },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  // La rangée déborde des marges de l'écran pour que les cartes défilent bord à bord.
+  templatesScroll: { marginHorizontal: -spacing.lg },
+  templates: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  template: { width: 240, gap: spacing.sm, borderWidth: 1.5 },
+  templateHeader: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   chip: { minHeight: 40, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, justifyContent: "center" },
   search: { borderRadius: radius.pill, paddingHorizontal: spacing.lg, minHeight: 48, fontFamily: fonts.regular, fontSize: 15 },
   chapterRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, gap: spacing.md },

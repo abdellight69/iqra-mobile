@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { isNetworkError } from "./offline";
+import { track } from "./events";
 import { newClientId, queueMissionStep } from "./outbox";
 import type { KidToday, LearnedWord, MissionChild, MissionPlan, MissionPlanDetail, MissionRange, MissionStep, VerseNote } from "./types";
 
@@ -130,9 +131,11 @@ export function useCompleteMissionStep() {
         return { ...stepDoneLocally(current, input.step), queued: true };
       }
     },
-    onSuccess: (today) => {
+    onSuccess: (today, input) => {
       client.setQueryData(kidKeys.today, today);
       void client.invalidateQueries({ queryKey: kidKeys.learned });
+      track("session_done", { kind: "mission", step: input.step, queued: today.queued === true });
+      if (today.mission?.completed) track("mission_done");
     },
   });
 }

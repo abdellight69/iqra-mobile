@@ -16,7 +16,8 @@ export default function Programs() {
   if (programs.isPending) return <LoadingState />;
   if (programs.isError) return <ErrorState error={programs.error} onRetry={() => void programs.refetch()} />;
   const started = programs.data.filter((p) => p.progress);
-  const others = programs.data.filter((p) => !p.progress);
+  // Le programme de saison (Ramadan) passe en tête des programmes à choisir.
+  const others = programs.data.filter((p) => !p.progress).sort((a, b) => Number(Boolean(b.season)) - Number(Boolean(a.season)));
 
   return (
     <Screen onRefresh={() => void programs.refetch()} refreshing={programs.isRefetching}>
@@ -58,10 +59,15 @@ function ProgramCard({ program }: { program: ProgramSummary }) {
         </ProgressRing>
       ) : (
         <View style={[styles.icon, { backgroundColor: program.kind === "memorize" ? colors.accentSoft : colors.primarySoft }]}>
-          <Ionicons name={program.kind === "memorize" ? "repeat" : "book-outline"} size={22} color={program.kind === "memorize" ? colors.accent : colors.primary} />
+          <Ionicons name={program.season === "ramadan" ? "moon" : program.kind === "memorize" ? "repeat" : "book-outline"} size={22} color={program.kind === "memorize" ? colors.accent : colors.primary} />
         </View>
       )}
       <View style={styles.flex}>
+        {program.season === "ramadan" && !program.progress ? (
+          <AppText variant="label" color={colors.accent}>
+            Programme du Ramadan
+          </AppText>
+        ) : null}
         <AppText variant="headline">{program.title}</AppText>
         <AppText variant="caption" muted>
           {program.progress

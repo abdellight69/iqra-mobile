@@ -8,6 +8,7 @@ import { Platform } from "react-native";
  */
 const PERSISTED = new Set([
   "me",
+  "me-plan",
   "stats",
   "chapters",
   "plans",

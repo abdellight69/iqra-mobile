@@ -15,6 +15,7 @@ import { ApiError } from "@/lib/api";
 import { PLAYBACK_MODE } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
 import { consumeDailyReserve } from "@/lib/daily-reserve";
+import { clearEvents, flushEvents, trackAppOpen } from "@/lib/events";
 import { clearOutbox, flushReviews } from "@/lib/outbox";
 import { clearQueryCache, persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
 import { resetReminders } from "@/lib/reminders";
@@ -84,6 +85,7 @@ export default function RootLayout() {
     queryClient.clear();
     clearQueryCache();
     clearOutbox();
+    clearEvents();
     consumeDailyReserve();
     clearVoiceNoteCache();
     void resetReminders();
@@ -96,10 +98,13 @@ export default function RootLayout() {
   // Connecté, au démarrage et à chaque retour au premier plan : envoi des évaluations faites hors ligne.
   useEffect(() => {
     if (status !== "signedIn") return;
-    const flush = () =>
+    const flush = () => {
+      trackAppOpen();
+      void flushEvents();
       void flushReviews().then((sent) => {
         if (sent > 0) void queryClient.invalidateQueries();
       });
+    };
     flush();
     const subscription = AppState.addEventListener("change", (state) => state === "active" && flush());
     return () => subscription.remove();

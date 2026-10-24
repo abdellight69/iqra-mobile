@@ -1,7 +1,9 @@
 import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
 import { consumeDailyReserve, loadDailyReserve, reserveNeedsRefresh, reserveVerseKeys, saveDailyReserve } from "./daily-reserve";
+import { track } from "./events";
 import { newClientId, queueReview, queueSession } from "./outbox";
+import { planKey } from "./plan";
 import { isNetworkError, loadChaptersCache, readOfflineChapter, saveChaptersCache, useOffline } from "./offline";
 import { useAuth } from "./auth-store";
 import type {
@@ -467,6 +469,7 @@ export async function refreshDailyReserve(translationId: number | null): Promise
 /** La séance du jour est faite : la réserve sera reconstituée au prochain passage en ligne. */
 export function markDailyDone() {
   consumeDailyReserve();
+  track("daily_done");
 }
 
 export function useSubmitSession() {
@@ -486,7 +489,9 @@ export function useSubmitSession() {
         return { xpGained: 0, score: totalAnswers ? Math.round((correctAnswers / totalAnswers) * 100) : 0, correctAnswers, totalAnswers, queued: true };
       }
     },
-    onSuccess: () => {
+    onSuccess: (result, input) => {
+      track("session_done", { kind: "words", queued: result.queued === true, lesson: Boolean(input.lessonId) });
+      void client.invalidateQueries({ queryKey: planKey });
       void client.invalidateQueries({ queryKey: keys.lessons });
       void client.invalidateQueries({ queryKey: keys.stats });
       void client.invalidateQueries({ queryKey: keys.comprehension });
@@ -602,6 +607,7 @@ export function useReviewVerse() {
       }
     },
     onSuccess: () => {
+      void client.invalidateQueries({ queryKey: planKey });
       void client.invalidateQueries({ queryKey: keys.plans });
       void client.invalidateQueries({ queryKey: ["plan"] });
       void client.invalidateQueries({ queryKey: keys.due });

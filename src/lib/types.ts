@@ -126,6 +126,8 @@ export type Verse = {
     resourceName: string | null;
     text: string;
   } | null;
+  /** Sens du verset en une phrase simple, à côté de la traduction (absent sur un serveur plus ancien ou sans sens rédigé). */
+  meaning?: string | null;
   /** Translittération du verset entier fournie par Quran.com. */
   transliteration: { resourceId: number; text: string } | null;
 };
@@ -418,6 +420,8 @@ export type ProgramProgress = {
 export type ProgramSummary = {
   id: string;
   kind: "memorize" | "read";
+  /** Programme de saison (mis en avant pendant le Ramadan ; absent sur un serveur plus ancien). */
+  season?: "ramadan";
   title: string;
   description: string;
   dayCount: number;

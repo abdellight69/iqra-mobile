@@ -168,6 +168,7 @@ export default function AppLayout() {
         <Stack.Screen name="missions/index" options={{ title: "Missions des enfants" }} />
         <Stack.Screen name="missions/new" options={{ presentation: "modal", title: "Nouvelle mission" }} />
         <Stack.Screen name="missions/[id]" options={{ title: "" }} />
+        <Stack.Screen name="missions/enfant/[id]" options={{ title: "" }} />
         <Stack.Screen name="missions/note" options={{ presentation: "modal", title: "Expliquer le verset" }} />
         <Stack.Screen name="prayer" options={{ title: "" }} />
         <Stack.Screen name="downloads" options={{ title: "Téléchargements" }} />

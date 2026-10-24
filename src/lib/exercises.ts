@@ -1,5 +1,6 @@
 import { shuffle, type Random } from "./shuffle";
 import type { Choice, Exercise, LearningSession, VocabWord } from "./types";
+import { composeLetters, orderTiles, type Tile } from "./verse-exercises";
 
 /**
  * Petits jeux ajoutés côté app à la séance reçue de l'API. Chaque jeu donne une réponse
@@ -13,6 +14,8 @@ export type GameExercise =
   | { type: "listen_ar"; wordId: string; choices: Choice[]; answerId: string }
   /** Le mot avec une lettre effacée : laquelle manque ? */
   | { type: "missing_letter"; wordId: string; masked: string; answer: string; choices: string[] }
+  /** Les lettres isolées du mot, mélangées en tuiles : on les remet dans l'ordre. */
+  | { type: "compose"; wordId: string; letters: string[]; tiles: Tile[] }
   /** Un sens proposé pour le mot : vrai ou faux ? */
   | { type: "true_false"; wordId: string; proposed: string; isTrue: boolean }
   /** Retrouver le mot dans le verset où il apparaît. */
@@ -24,9 +27,9 @@ export type GameExercise =
 
 export type SessionExercise = Exercise | GameExercise;
 
-export const GAME_TYPES = ["listen", "missing_letter", "listen_ar", "true_false", "in_verse"] as const;
+export const GAME_TYPES = ["listen", "missing_letter", "listen_ar", "compose", "true_false", "in_verse"] as const;
 /** Jeux avec les images des mots (profils enfants), intercalés en tête de la rotation. */
-export const IMAGE_GAME_TYPES = ["pick_image", "listen", "image_to_ar", "missing_letter", "listen_ar", "true_false", "in_verse"] as const;
+export const IMAGE_GAME_TYPES = ["pick_image", "listen", "image_to_ar", "missing_letter", "compose", "listen_ar", "true_false", "in_verse"] as const;
 export type GameType = (typeof IMAGE_GAME_TYPES)[number];
 
 export function isGame(exercise: SessionExercise): exercise is GameExercise {
@@ -90,6 +93,11 @@ function makeGame(kind: GameType, wordId: string, plan: Plan): GameExercise | nu
     case "missing_letter": {
       const puzzle = word.headword ? missingLetter(word.headword, plan.random) : null;
       return puzzle ? { type: "missing_letter", wordId, ...puzzle } : null;
+    }
+    case "compose": {
+      // Mot déjà vu une fois (le jeu vient après sa présentation), comme la lettre manquante.
+      const letters = composeLetters(word.ar ?? word.headword);
+      return letters ? { type: "compose", wordId, letters, tiles: orderTiles(letters, plan.random) } : null;
     }
     case "true_false": {
       if (!word.fr) return null;

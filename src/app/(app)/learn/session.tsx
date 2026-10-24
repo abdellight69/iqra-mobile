@@ -15,6 +15,7 @@ import { VerbTable } from "@/components/VerbTable";
 import { SessionStart, VerseContext, VerseReview } from "@/components/exercises/ChapterSession";
 import { ImageToArabicExercise, PickImageExercise } from "@/components/exercises/ImageExercises";
 import { InVerseExercise } from "@/components/exercises/InVerseExercise";
+import { ComposeWordExercise } from "@/components/exercises/ComposeWordExercise";
 import { ContrastExercise } from "@/components/exercises/ContrastExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchPairs } from "@/components/exercises/MatchPairs";
@@ -196,6 +197,8 @@ function ExerciseView(props: ExerciseProps) {
       return <ListenExercise {...props} exercise={exercise} />;
     case "missing_letter":
       return <MissingLetterExercise {...props} exercise={exercise} />;
+    case "compose":
+      return <ComposeWordExercise {...props} exercise={exercise} />;
     case "true_false":
       return <TrueFalseExercise {...props} exercise={exercise} />;
     case "in_verse":
