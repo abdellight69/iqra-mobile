@@ -14,7 +14,7 @@
         "com.apple.security.application-groups": ["group.app.eqra.mobile"]
       },
       "appleTeamId": "8TSDHC2926",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "config": { "usesNonExemptEncryption": false }
     },
     "android": {
@@ -27,7 +27,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 2,
+      "versionCode": 3,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
