@@ -11,7 +11,7 @@ import { isFrench } from "@/lib/language";
 import { useRootOccurrences, useWordDetails } from "@/lib/queries";
 import { useReaderSettings } from "@/lib/reader-store";
 import { explainLabel, explainSegment, LEMMA_HELP, ROOT_HELP, SEGMENTS_INTRO } from "@/lib/grammar-help";
-import { TAJWEED_GLOSSARY, TAJWEED_RULES, tajweedColor, type TajweedRule } from "@/lib/tajweed";
+import { joinTajweedPieces, TAJWEED_GLOSSARY, TAJWEED_RULES, tajweedColor, type TajweedRule } from "@/lib/tajweed";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Label, Segment } from "@/lib/types";
 
@@ -47,6 +47,8 @@ export default function WordSheet() {
     .map((code) => TAJWEED_RULES[code])
     .filter((rule): rule is TajweedRule => rule !== undefined);
   const segments = parseSegments(params.segments);
+  // Morceaux recollés : le mot coloré reste attaché comme sans couleur.
+  const coloredPieces = joinTajweedPieces(segments);
   // Termes du glossaire cités par les règles présentes sur ce mot.
   const tajweedText = tajweedRules.map((r) => `${r.name} ${r.description} ${r.how}`).join(" ").toLowerCase();
   const glossary = TAJWEED_GLOSSARY.filter((g) => tajweedText.includes(g.term.split(" ")[0]!.toLowerCase()));
@@ -74,7 +76,7 @@ export default function WordSheet() {
         </AppText>
         <ArabicText size={60} center accessibilityLabel={params.text}>
           {colorHero
-            ? segments.map((segment, i) => (
+            ? coloredPieces.map((segment, i) => (
                 <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
                   {segment.text}
                 </Text>
@@ -119,7 +121,7 @@ export default function WordSheet() {
           </AppText>
           {segments.length > 0 && !colorHero ? (
             <ArabicText size={40} center accessibilityLabel={params.text}>
-              {segments.map((segment, i) => (
+              {coloredPieces.map((segment, i) => (
                 <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
                   {segment.text}
                 </Text>

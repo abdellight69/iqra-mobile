@@ -3,7 +3,7 @@ import { memo, type ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { useIsPlayingVerse, useRecitedWord } from "@/lib/audio";
 import { verseTransliteration } from "@/lib/quran-text";
-import { tajweedColor } from "@/lib/tajweed";
+import { joinTajweedPieces, tajweedColor } from "@/lib/tajweed";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
 import type { Verse, Word } from "@/lib/types";
 import { AppText } from "./AppText";
@@ -88,9 +88,11 @@ function VerseCardBase({
                 color: recited ? colors.accent : known ? colors.primary : colors.arabic,
               }}>
               {showTajweed && word.tajweed
-                ? word.tajweed.map((segment, i) => (
+                ? joinTajweedPieces(word.tajweed).map((segment, i) => (
                     // Text natif : hérite de la police, de la taille et de la couleur du mot (récité,
-                    // connu) ; seuls les segments d'une règle de tajwid prennent leur couleur.
+                    // connu) ; seuls les segments d'une règle de tajwid prennent leur couleur. Les
+                    // morceaux sont recollés (voyelles avec leur lettre, liants invisibles) pour que
+                    // le mot reste attaché comme sans couleur.
                     <Text key={i} style={{ color: tajweedColor(segment.rule, dark) }}>
                       {segment.text}
                     </Text>

@@ -54,3 +54,121 @@ export function tajweedColor(rule: string | null, dark: boolean): string | undef
   const known = rule ? TAJWEED_RULES[rule] : undefined;
   return known ? (dark ? known.dark : known.light) : undefined;
 }
+
+// --- Mots colorés sans lettres détachées ------------------------------------------------------
+//
+// Le texte tajwid de Quran.com coupe souvent un mot au milieu d'une lettre : la lettre colorée
+// d'un côté, sa voyelle ou son signe de madd de l'autre. Chaque morceau coloré est un <Text>
+// imbriqué ; sur Android, chaque morceau est mis en forme à part, si bien que les lettres ne
+// s'attachent plus et que les voyelles « flottent » sans leur lettre. On corrige deux choses :
+// 1. aucun morceau ne commence par un signe (voyelle, chadda, madd…) : le signe rejoint sa lettre ;
+//    un signe coloré seul (madd) emmène au contraire sa lettre dans sa couleur ;
+// 2. aux coupures entre deux lettres qui se lient, un liant invisible (ZWJ, U+200D) est placé de
+//    part et d'autre, pour que chaque morceau garde la forme attachée de ses lettres.
+
+export type TajweedPiece = { text: string; rule: string | null };
+
+/** Liant invisible : demande la forme attachée de la lettre voisine, sans rien afficher. */
+export const ZWJ = "‍";
+
+/** Signe qui se pose sur la lettre précédente : voyelles, chadda, soukoun, madd, petits signes coraniques. */
+export function isCombiningMark(char: string): boolean {
+  return /\p{M}/u.test(char);
+}
+
+/** Lettres arabes qui ne se lient jamais à la lettre suivante (alif, dal, ra, waw, ta marbouta…). */
+const RIGHT_JOINING = new Set([..."آأؤإاةدذرزوٱٲٳٵۀۄۅۆۇۈۉۊۋۍۏےۓەۮۯ"]);
+/** Caractères qui ne se lient à rien (hamza seule, petits waw/ya coraniques…). */
+const NON_JOINING = new Set([..."ءۥۦٴ"]);
+const ARABIC_LETTER = /[ؠ-يٮ-ۓۺ-ۿ]/u;
+
+/** Une lettre arabe (ou le trait d'allongement ـ) qui peut se lier à la lettre suivante. */
+function joinsToNext(char: string): boolean {
+  if (char === "ـ") return true;
+  return ARABIC_LETTER.test(char) && !RIGHT_JOINING.has(char) && !NON_JOINING.has(char);
+}
+
+/** Une lettre arabe (ou le trait d'allongement) qui peut se lier à la lettre précédente. */
+function joinsToPrevious(char: string): boolean {
+  if (char === "ـ") return true;
+  return ARABIC_LETTER.test(char) && !NON_JOINING.has(char);
+}
+
+/** Dernière lettre de base d'un morceau (en sautant les signes qui la suivent). */
+function lastBase(text: string): string | undefined {
+  const chars = [...text];
+  for (let i = chars.length - 1; i >= 0; i--) if (!isCombiningMark(chars[i]!) && chars[i] !== ZWJ) return chars[i];
+  return undefined;
+}
+
+/** Sépare le dernier groupe « lettre + ses signes » du reste du morceau. */
+function splitLastCluster(text: string): [rest: string, cluster: string] {
+  const chars = [...text];
+  let i = chars.length - 1;
+  while (i > 0 && isCombiningMark(chars[i]!)) i--;
+  return [chars.slice(0, i).join(""), chars.slice(i).join("")];
+}
+
+/** Sépare les signes en tête d'un morceau du reste. */
+function splitLeadingMarks(text: string): [marks: string, rest: string] {
+  const chars = [...text];
+  let i = 0;
+  while (i < chars.length && isCombiningMark(chars[i]!)) i++;
+  return [chars.slice(0, i).join(""), chars.slice(i).join("")];
+}
+
+/**
+ * Morceaux colorés d'un mot, prêts à être affichés en <Text> imbriqués sans détacher les lettres :
+ * mêmes couleurs, même texte (au liant invisible près), aucun morceau ne commence par un signe.
+ */
+export function joinTajweedPieces(pieces: readonly TajweedPiece[]): TajweedPiece[] {
+  // 1. Les signes en tête d'un morceau rejoignent leur lettre.
+  const out: TajweedPiece[] = [];
+  for (const piece of pieces) {
+    if (!piece.text) continue;
+    const previous = out.at(-1);
+    const [marks, rest] = splitLeadingMarks(piece.text);
+    if (!previous || !marks) {
+      out.push({ ...piece });
+      continue;
+    }
+    const coloredMarkOnly = rest === "" && piece.rule !== null && piece.rule !== previous.rule;
+    if (coloredMarkOnly) {
+      // Signe coloré seul (madd) : sa lettre prend la couleur de la règle, avec le signe.
+      const [before, cluster] = splitLastCluster(previous.text);
+      if (before !== "") {
+        previous.text = before;
+        out.push({ text: cluster + marks, rule: piece.rule });
+      } else if (previous.rule === null) {
+        previous.text += marks;
+        previous.rule = piece.rule;
+      } else {
+        // La lettre a déjà sa propre règle : elle la garde, le signe la rejoint.
+        previous.text += marks;
+      }
+    } else {
+      // Le signe reste avec sa lettre, dans la couleur de celle-ci.
+      previous.text += marks;
+      if (rest) out.push({ text: rest, rule: piece.rule });
+    }
+  }
+  // Morceaux voisins de même couleur : un seul.
+  const merged: TajweedPiece[] = [];
+  for (const piece of out) {
+    const last = merged.at(-1);
+    if (last && last.rule === piece.rule) last.text += piece.text;
+    else merged.push({ ...piece });
+  }
+  // 2. Liants invisibles aux coupures entre deux lettres qui se lient.
+  for (let i = 0; i + 1 < merged.length; i++) {
+    const left = merged[i]!;
+    const right = merged[i + 1]!;
+    const before = lastBase(left.text);
+    const after = [...right.text][0];
+    if (before && after && joinsToNext(before) && joinsToPrevious(after)) {
+      left.text += ZWJ;
+      right.text = ZWJ + right.text;
+    }
+  }
+  return merged;
+}
