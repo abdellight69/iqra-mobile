@@ -7,9 +7,11 @@ import { errorMessage } from "@/lib/api";
 import { SLEEP_TIMER_CHOICES, sleepRemaining } from "@/lib/listening";
 import { formatRate, usePlayback } from "@/lib/playback-store";
 import { useMe, useRecitations } from "@/lib/queries";
+import { groupRecitations } from "@/lib/recitations";
 import { useReaderSettings } from "@/lib/reader-store";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
+import { RecitationGroupHeader } from "./RecitationGroupHeader";
 
 /** Options du lecteur de sourate : lecture continue, minuteur de sommeil, récitateur de cette sourate, vitesse. */
 export function PlayerSheet({ visible, chapterId, onClose }: { visible: boolean; chapterId: number; onClose: () => void }) {
@@ -90,14 +92,19 @@ export function PlayerSheet({ visible, chapterId, onClose }: { visible: boolean;
                   selected={chosen === null}
                   onPress={() => settings.setSurahRecitation(chapterId, null)}
                 />
-                {(recitations.data ?? []).map((r) => (
-                  <ReciterRow
-                    key={r.id}
-                    title={r.translatedName ?? r.reciterName}
-                    subtitle={r.style ?? undefined}
-                    selected={chosen === r.id}
-                    onPress={() => settings.setSurahRecitation(chapterId, r.id)}
-                  />
+                {groupRecitations(recitations.data ?? []).map((group) => (
+                  <View key={group.key}>
+                    <RecitationGroupHeader group={group} />
+                    {group.recitations.map((r) => (
+                      <ReciterRow
+                        key={r.id}
+                        title={r.translatedName ?? r.reciterName}
+                        subtitle={r.style ?? undefined}
+                        selected={chosen === r.id}
+                        onPress={() => settings.setSurahRecitation(chapterId, r.id)}
+                      />
+                    ))}
+                  </View>
                 ))}
               </View>
             )}

@@ -17,6 +17,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Screen } from "@/components/Screen";
+import { RecitationGroupHeader } from "@/components/RecitationGroupHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/States";
 import { TextField } from "@/components/TextField";
@@ -27,6 +28,7 @@ import { useAuth } from "@/lib/auth-store";
 import { type Href, router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/legal";
+import { groupRecitations } from "@/lib/recitations";
 import { palette, THEMES, type ThemeDefinition } from "@/lib/palettes";
 import { useProfiles } from "@/lib/profiles";
 import {
@@ -451,14 +453,19 @@ export default function Settings() {
               selected={user.recitationId === null}
               onPress={() => update.mutate({ recitationId: null })}
             />
-            {(recitations.data ?? []).map((r) => (
-              <Option
-                key={r.id}
-                label={r.translatedName ?? r.reciterName}
-                detail={r.style ?? undefined}
-                selected={user.recitationId === r.id}
-                onPress={() => update.mutate({ recitationId: r.id })}
-              />
+            {groupRecitations(recitations.data ?? []).map((group) => (
+              <View key={group.key}>
+                <RecitationGroupHeader group={group} />
+                {group.recitations.map((r) => (
+                  <Option
+                    key={r.id}
+                    label={r.translatedName ?? r.reciterName}
+                    detail={r.style ?? undefined}
+                    selected={user.recitationId === r.id}
+                    onPress={() => update.mutate({ recitationId: r.id })}
+                  />
+                ))}
+              </View>
             ))}
           </>
         )}

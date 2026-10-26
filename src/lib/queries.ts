@@ -61,8 +61,8 @@ export const keys = {
   word: (location: string) => ["word", location] as const,
   root: (root: string) => ["root", root] as const,
   translations: ["translations"] as const,
-  // « v2 » : liste avec les voix publiées en piste par sourate (l'ancienne est gardée un jour en cache).
-  recitations: ["recitations", "v2"] as const,
+  // « v3 » : liste avec les voix par sourate et l'indication du mot par mot (l'ancienne est gardée un jour en cache).
+  recitations: ["recitations", "v3"] as const,
   lessons: ["lessons"] as const,
   lesson: (id: string) => ["lesson", id] as const,
   themes: ["themes"] as const,

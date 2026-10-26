@@ -247,6 +247,8 @@ export type Recitation = {
   reciterName: string;
   style: string | null;
   translatedName: string | null;
+  /** Minutage de chaque mot fourni pour toutes les sourates (surlignage mot par mot). */
+  wordByWord?: boolean;
 };
 
 export type VerbForms = {

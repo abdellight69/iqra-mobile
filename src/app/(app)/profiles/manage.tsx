@@ -13,6 +13,7 @@ import { useKidsSounds } from "@/lib/kid-sounds";
 import { useKidsVoice } from "@/lib/kid-voice";
 import { AVATAR_LABELS, AVATARS, avatarColor, useCreateProfile, useDeleteProfile, useProfiles, useSetPin, useUpdateProfile, type Avatar } from "@/lib/profiles";
 import { useRecitations } from "@/lib/queries";
+import { groupRecitations } from "@/lib/recitations";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { ArabicLevel, Profile, Recitation } from "@/lib/types";
 
@@ -378,13 +379,25 @@ function VoicePicker({ value, onChange }: { value: number | null; onChange: (id:
           Chargement des récitateurs…
         </AppText>
       ) : (
-        list.map((r) =>
-          option(
-            r.id,
-            r.translatedName ?? r.reciterName,
-            isTeachingRecitation(r) ? "Pour apprendre : lente, chaque mot bien détaché" : r.style === "Mujawwad" ? "Mujawwad : mélodieuse et lente" : r.style === "Murattal" ? "Murattal" : null,
-          ),
-        )
+        groupRecitations(list).map((group) => (
+          <View key={group.key} style={styles.voices}>
+            <View accessibilityRole="header" style={styles.voiceGroup}>
+              <AppText variant="label" color={colors.primary}>
+                {group.title}
+              </AppText>
+              <AppText variant="caption" muted>
+                {group.detail}
+              </AppText>
+            </View>
+            {group.recitations.map((r) =>
+              option(
+                r.id,
+                r.translatedName ?? r.reciterName,
+                isTeachingRecitation(r) ? "Pour apprendre : lente, chaque mot bien détaché" : r.style === "Mujawwad" ? "Mujawwad : mélodieuse et lente" : r.style === "Murattal" ? "Murattal" : null,
+              ),
+            )}
+          </View>
+        ))
       )}
     </View>
   );
@@ -392,6 +405,7 @@ function VoicePicker({ value, onChange }: { value: number | null; onChange: (id:
 
 const styles = StyleSheet.create({
   voices: { gap: spacing.sm },
+  voiceGroup: { gap: 2, marginTop: spacing.sm },
   voice: { borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 48, justifyContent: "center" },
   switchRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   flex: { flex: 1 },
