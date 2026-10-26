@@ -20,7 +20,7 @@ import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useCompleteMissionStep, useTodayMission } from "@/lib/missions";
 import { KID_STEPS, versesLabel } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
-import { useChapterAudio, useKidMeanings, useRecitationAvailable, useReviewVerse, useVerse } from "@/lib/queries";
+import { useChapterAudio, useRecitationAvailable, useReviewVerse, useVerse } from "@/lib/queries";
 import { useRecitationCheck } from "@/lib/recitation";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { KidMission, MissionStep, RecitationCheck, VerseNote } from "@/lib/types";
@@ -224,11 +224,10 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
   const kc = useKidsColors();
   const translationId = useAuth((s) => s.user?.translationId ?? null);
   const verse = useVerse(verseKey, translationId);
-  const kidMeanings = useKidMeanings();
   if (verse.isPending) return <ActivityIndicator color={colors.primary} />;
   if (!verse.data) return null;
   const words = verse.data.words.filter((w) => w.type === "word");
-  const meaning = kidMeanings.data?.[verseKey] ?? verse.data.translation?.text ?? null;
+  const meaning = verse.data.translation?.text ?? null;
   return (
     <View style={[styles.verseCard, { backgroundColor: colors.surface }]}>
       <View style={styles.words}>
@@ -255,7 +254,7 @@ function VerseWords({ verseKey, activeWord, onWord, note }: { verseKey: string; 
       {meaning ? (
         <View style={styles.meaning}>
           <AppText variant="label" color={colors.accent}>
-            Ce que ça veut dire
+            Traduction
           </AppText>
           <AppText variant="headline" center>
             {meaning}

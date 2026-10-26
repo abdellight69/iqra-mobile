@@ -123,16 +123,6 @@ function VerseCardBase({
       ) : null}
 
       {showTranslation && verse.translation ? <AppText style={styles.translation}>{verse.translation.text}</AppText> : null}
-      {showTranslation && verse.meaning ? (
-        <View style={[styles.meaning, { borderLeftColor: colors.accent }]}>
-          <AppText variant="caption" color={colors.accent}>
-            En bref
-          </AppText>
-          <AppText muted style={styles.meaningText}>
-            {verse.meaning}
-          </AppText>
-        </View>
-      ) : null}
 
       <View style={styles.footer}>
         <VerseBadge value={verse.verseNumber} size={30} />
@@ -175,8 +165,6 @@ const styles = StyleSheet.create({
   wbwText: { fontSize: 12, lineHeight: 15 },
   transliteration: { fontSize: 15, lineHeight: 23 },
   translation: { fontSize: 16, lineHeight: 26 },
-  meaning: { borderLeftWidth: 2, paddingLeft: spacing.md, gap: 2 },
-  meaningText: { fontSize: 15, lineHeight: 23 },
   footer: { flexDirection: "row", alignItems: "center", gap: 0, marginTop: spacing.xs },
   action: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
 });

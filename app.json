@@ -15,7 +15,7 @@
       },
       "appleTeamId": "8TSDHC2926",
       "associatedDomains": ["applinks:eqra.fr"],
-      "buildNumber": "6",
+      "buildNumber": "7",
       "config": { "usesNonExemptEncryption": false }
     },
     "android": {
@@ -41,7 +41,7 @@
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
-      "versionCode": 6,
+      "versionCode": 7,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

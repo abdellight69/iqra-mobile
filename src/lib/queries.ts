@@ -179,16 +179,6 @@ export function useVerses(chapterId: number, translationId: number | null) {
   });
 }
 
-/** Sens des versets en mots d'enfant (petites sourates), rarement mis à jour. */
-export function useKidMeanings(enabled = true) {
-  return useQuery({
-    queryKey: ["kid-meanings"],
-    queryFn: async () => (await api<{ meanings: Record<string, string> }>("/quran/kids-meanings")).meanings,
-    staleTime: 24 * 60 * 60 * 1000,
-    enabled,
-  });
-}
-
 export function useVerse(key: string, translationId: number | null) {
   return useQuery({
     queryKey: keys.verse(key, translationId),
