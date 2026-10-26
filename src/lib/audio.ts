@@ -2,9 +2,28 @@ import { useEventListener } from "expo";
 import { useAudioPlayer, useAudioPlayerStatus, type AudioMetadata } from "expo-audio";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { create } from "zustand";
-import type { WordTiming } from "./types";
+import type { VerseAudioFile, WordTiming } from "./types";
 
-export type Track = { key: string; url: string; words?: WordTiming[] };
+/**
+ * Piste d'un verset. Pour une voix publiée en piste par sourate, `url` est la sourate entière et
+ * le verset se joue de `startMs` à `endMs` (minutage des mots compté depuis le début de la piste).
+ */
+export type Track = { key: string; url: string; words?: WordTiming[]; startMs?: number; endMs?: number };
+
+/** Piste d'un verset telle que la renvoie l'API audio d'une sourate. */
+export function verseTrack(file: VerseAudioFile): Track {
+  return {
+    key: file.verseKey,
+    url: file.url,
+    words: file.words,
+    ...(file.endMs !== undefined ? { startMs: file.startMs ?? 0, endMs: file.endMs } : {}),
+  };
+}
+
+/** Le verset joué dans une piste par sourate est-il terminé ? */
+export function rangeEnded(track: Pick<Track, "endMs"> | undefined, timeMs: number): boolean {
+  return track?.endMs !== undefined && timeMs >= track.endMs;
+}
 
 // --- Un seul son à la fois --------------------------------------------------------------------
 //
@@ -119,6 +138,12 @@ export function useTrackQueue(
   });
   const lockScreen = useRef(false);
   const [owner] = useState(() => Symbol("track-queue"));
+  // Piste par sourate : fichier chargé (pour passer d'un verset à l'autre sans le recharger), début
+  // à atteindre dès le chargement, et fin du verset surveillée seulement après un état de lecture
+  // antérieur à cette fin (un état reçu juste avant le saut ne doit pas relancer « fin du verset »).
+  const loadedUrl = useRef<string | null>(null);
+  const pendingStart = useRef<number | null>(null);
+  const rangeArmed = useRef(false);
 
   const showOnLockScreen = useCallback(
     (track: Track) => {
@@ -155,20 +180,39 @@ export function useTrackQueue(
     setRound(1);
   }, [player, owner]);
 
+  /** Joue la piste depuis son début (début du verset dans la piste de la sourate, le cas échéant). */
+  const startTrack = useCallback(
+    (track: Track) => {
+      rangeArmed.current = false;
+      const start = (track.startMs ?? 0) / 1000;
+      if (loadedUrl.current === track.url && player.isLoaded) {
+        void player.seekTo(start).then(() => player.play());
+        return;
+      }
+      loadedUrl.current = track.url;
+      player.replace({ uri: track.url });
+      player.setPlaybackRate(rate, "high");
+      if (start > 0) pendingStart.current = start;
+      else {
+        pendingStart.current = null;
+        player.play();
+      }
+    },
+    [player, rate],
+  );
+
   const playAt = useCallback(
     (i: number, nextRound = 1) => {
       const track = tracks[i];
       if (!track) return;
       claimPlayback(owner, stop);
-      player.replace({ uri: track.url });
-      player.setPlaybackRate(rate, "high");
-      player.play();
+      startTrack(track);
       showOnLockScreen(track);
       setIndex(i);
       setPlays(1);
       setRound(nextRound);
     },
-    [player, tracks, rate, showOnLockScreen, owner, stop],
+    [tracks, startTrack, showOnLockScreen, owner, stop],
   );
 
   // Vitesse modifiée pendant la lecture.
@@ -180,12 +224,25 @@ export function useTrackQueue(
   // Écran démonté : le lecteur est libéré par expo-audio ; on ne doit plus être « le son en cours ».
   useEffect(() => () => releasePlayback(owner), [owner]);
 
-  // Fin d'une piste : on la rejoue, on passe à la suivante, on reprend le passage ou on s'arrête.
+  // Fin d'une piste (ou du verset dans la piste de la sourate) : on la rejoue, on passe à la
+  // suivante, on reprend le passage ou on s'arrête.
   useEventListener(player, "playbackStatusUpdate", (update) => {
-    if (!update.didJustFinish || index === null) return;
+    if (pendingStart.current !== null && update.isLoaded) {
+      const start = pendingStart.current;
+      pendingStart.current = null;
+      void player.seekTo(start).then(() => player.play());
+      return;
+    }
+    if (index === null) return;
+    const track = tracks[index];
+    const timeMs = update.currentTime * 1000;
+    if (track?.endMs !== undefined && update.playing && !rangeEnded(track, timeMs)) rangeArmed.current = true;
+    const verseEnded = rangeArmed.current && update.playing && rangeEnded(track, timeMs);
+    if (!update.didJustFinish && !verseEnded) return;
+    rangeArmed.current = false;
     if (plays < repeat) {
       setPlays(plays + 1);
-      void player.seekTo(0).then(() => player.play());
+      if (track) startTrack(track);
     } else if (loop && index >= loop.end) {
       if (round < loop.rounds) playAt(loop.start, round + 1);
       else stop();
@@ -240,14 +297,29 @@ export function useTrackQueue(
   };
 }
 
-/** Lecteur ponctuel (prononciation d'un mot) : interrompt le son en cours, et s'efface devant le suivant. */
+/**
+ * Lecteur ponctuel (prononciation d'un mot, verset seul) : interrompt le son en cours, et s'efface
+ * devant le suivant. Avec `range`, ne joue que ce passage de la piste (verset d'une piste par sourate).
+ */
 export function useOneShot() {
-  const player = useAudioPlayer(null);
+  const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const [owner] = useState(() => Symbol("one-shot"));
+  const pendingStart = useRef<number | null>(null);
+  const endMs = useRef<number | null>(null);
   useEffect(() => () => releasePlayback(owner), [owner]);
+  useEventListener(player, "playbackStatusUpdate", (update) => {
+    if (pendingStart.current !== null && update.isLoaded) {
+      const start = pendingStart.current;
+      pendingStart.current = null;
+      void player.seekTo(start).then(() => player.play());
+    } else if (endMs.current !== null && update.playing && update.currentTime * 1000 >= endMs.current) {
+      endMs.current = null;
+      player.pause();
+    }
+  });
   const play = useCallback(
-    (url: string) => {
+    (url: string, range?: { startMs?: number; endMs?: number }) => {
       claimPlayback(owner, () => {
         try {
           player.pause();
@@ -255,8 +327,11 @@ export function useOneShot() {
           // Lecteur déjà libéré.
         }
       });
+      endMs.current = range?.endMs ?? null;
+      const start = (range?.startMs ?? 0) / 1000;
+      pendingStart.current = start > 0 ? start : null;
       player.replace({ uri: url });
-      player.play();
+      if (start <= 0) player.play();
     },
     [player, owner],
   );

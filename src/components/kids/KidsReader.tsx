@@ -8,7 +8,7 @@ import { ParentNote } from "@/components/kids/ParentNote";
 import { PrayerHint } from "@/components/kids/PrayerHint";
 import { SafeArea } from "@/components/SafeArea";
 import { ErrorState, LoadingState } from "@/components/States";
-import { useOneShot, useTrackQueue } from "@/lib/audio";
+import { useOneShot, useTrackQueue, verseTrack } from "@/lib/audio";
 import { playKidSound } from "@/lib/kid-sounds";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { KID_SPEEDS, kidPhonetic, nextKidSpeed, useFinishedSurahs } from "@/lib/kids-quran";
@@ -45,7 +45,7 @@ export function KidsReader() {
   const [repeat, setRepeat] = useState(false);
 
   const loaded = useMemo(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
-  const tracks = useMemo(() => (audio.data?.files ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })), [audio.data]);
+  const tracks = useMemo(() => (audio.data?.files ?? []).map(verseTrack), [audio.data]);
   // Écran verrouillé et centre de contrôle : le verset en cours, comme dans le lecteur adulte.
   const surahName = chapter.data?.nameSimple;
   const nowPlaying = useCallback(

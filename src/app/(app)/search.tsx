@@ -62,7 +62,7 @@ export default function SearchScreen() {
       const file = audio.files.find((f) => f.verseKey === verse.key);
       if (!file) return;
       setPlayingKey(verse.key);
-      player.play(file.url);
+      player.play(file.url, file);
     } finally {
       setLoadingKey(null);
     }

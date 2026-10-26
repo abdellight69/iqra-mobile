@@ -153,10 +153,15 @@ export type ChapterInfo = {
 };
 /** Moment où un mot est récité dans l'audio du verset (position du mot à partir de 1). */
 export type WordTiming = { position: number; startMs: number; endMs: number };
+/**
+ * Audio d'un verset. Pour une voix publiée en piste par sourate, `url` est la sourate entière et le
+ * verset va de `startMs` à `endMs` (minutage des mots compté depuis le début de la piste).
+ */
+export type VerseAudioFile = { verseKey: string; url: string; words: WordTiming[]; startMs?: number; endMs?: number };
 export type ChapterAudio = {
   chapterId: number;
   recitationId: number;
-  files: { verseKey: string; url: string; words: WordTiming[] }[];
+  files: VerseAudioFile[];
 };
 
 export type Label = { code: string; ar: string; fr: string };

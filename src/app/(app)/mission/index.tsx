@@ -13,7 +13,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
-import { useOneShot, useTrackQueue } from "@/lib/audio";
+import { useOneShot, useTrackQueue, verseTrack } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
 import { playKidSound } from "@/lib/kid-sounds";
 import { speak } from "@/lib/kid-voice";
@@ -148,7 +148,7 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
     const byKey = new Map((audio.data?.files ?? []).map((f) => [f.verseKey, f]));
     return keys.flatMap((key) => {
       const f = byKey.get(key);
-      return f ? [{ key: f.verseKey, url: f.url, words: f.words }] : [];
+      return f ? [verseTrack(f)] : [];
     });
   }, [audio.data, keys]);
   // Vitesse : Normal, Lent (¾) ou Très lent (½), pour suivre mot à mot.
@@ -341,7 +341,7 @@ function MemorizeStep({ mission, onDone, saving }: { mission: KidMission; onDone
   const chapterId = Number(mission.verses[0]!.split(":")[0]);
   const audio = useChapterAudio(chapterId, recitationId);
   const tracks = useMemo(
-    () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+    () => (audio.data?.files ?? []).filter((f) => mission.verses.includes(f.verseKey)).map(verseTrack),
     [audio.data, mission.verses],
   );
   const queue = useTrackQueue(tracks, { autoAdvance: true, nowPlaying: missionNowPlaying });

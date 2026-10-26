@@ -17,7 +17,7 @@ import { RepeatSheet, type RepeatSettings } from "@/components/RepeatSheet";
 import { KidsReader } from "@/components/kids/KidsReader";
 import { useReducedMotion } from "@/lib/a11y";
 import { useKidsMode } from "@/lib/kids";
-import { useTrackQueue } from "@/lib/audio";
+import { useTrackQueue, verseTrack } from "@/lib/audio";
 import { nextChapterId, sleepRemaining } from "@/lib/listening";
 import { openWordSheet } from "@/lib/navigation";
 import { usePlayback } from "@/lib/playback-store";
@@ -81,7 +81,7 @@ function SurahReader() {
   );
   const audioFiles = offlineAudio?.files ?? audio.data?.files;
   const tracks = useMemo(
-    () => (audioFiles ?? []).map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+    () => (audioFiles ?? []).map(verseTrack),
     [audioFiles],
   );
   const canLoadMore = !offlineText && verses.hasNextPage;

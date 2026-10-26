@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMemo } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { useTrackQueue } from "@/lib/audio";
+import { useTrackQueue, verseTrack } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
 import { useChapterAudio, useChapterComprehension, useChapters, useKnownWords, useVerse } from "@/lib/queries";
 import { fonts, radius, spacing, useColors } from "@/lib/theme";
@@ -140,7 +140,7 @@ export function VerseReview({ session, result, onDone }: { session: LearningSess
       keys
         .map((key) => audio.data?.files.find((f) => f.verseKey === key))
         .filter((f): f is NonNullable<typeof f> => Boolean(f))
-        .map((f) => ({ key: f.verseKey, url: f.url, words: f.words })),
+        .map(verseTrack),
     [keys, audio.data],
   );
   const player = useTrackQueue(tracks, { autoAdvance: true });

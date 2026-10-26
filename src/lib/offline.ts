@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { create } from "zustand";
 import { api, ApiError } from "./api";
 import { chaptersToDownload } from "./listening";
-import type { Chapter, ChapterAudio, Verse, VersePage } from "./types";
+import type { Chapter, ChapterAudio, Verse, VerseAudioFile, VersePage } from "./types";
 
 /**
  * Sourates téléchargées pour une lecture sans réseau : texte, traduction, phonétique,
@@ -29,8 +29,10 @@ const PARALLEL_DOWNLOADS = 4;
 const root = () => new Directory(Paths.document, "offline");
 const chapterDir = (chapterId: number) => new Directory(root(), String(chapterId));
 const contentFile = (chapterId: number) => new File(chapterDir(chapterId), "content.json");
-const audioName = (verseKey: string) => `${verseKey.replace(":", "_")}.mp3`;
-const audioFile = (chapterId: number, verseKey: string) => new File(chapterDir(chapterId), audioName(verseKey));
+/** Un fichier par verset, ou un seul pour la sourate quand la voix est publiée en piste par sourate. */
+export const audioName = (file: Pick<VerseAudioFile, "verseKey" | "endMs">) =>
+  file.endMs !== undefined ? "sourate.mp3" : `${file.verseKey.replace(":", "_")}.mp3`;
+const audioFile = (chapterId: number, file: VerseAudioFile) => new File(chapterDir(chapterId), audioName(file));
 const indexFile = () => new File(root(), "index.json");
 const chaptersFile = () => new File(root(), "chapters.json");
 
@@ -109,17 +111,19 @@ export const useOffline = create<OfflineStore>((set, get) => ({
       const audio = await api<ChapterAudio>(`/quran/chapters/${chapterId}/audio${recitationId ? `?recitationId=${recitationId}` : ""}`);
       setProgress(0.05);
 
-      // 2. Audio : un fichier par verset, quelques téléchargements en parallèle.
+      // 2. Audio : un fichier par verset (ou la piste de la sourate, une seule fois), quelques
+      // téléchargements en parallèle.
       if (partial.exists) partial.delete();
       partial.create({ intermediates: true });
       let done = 0;
-      const queue = [...audio.files];
+      const queue = [...new Map(audio.files.map((f) => [audioName(f), f])).values()];
+      const total = queue.length;
       const worker = async () => {
         for (let file = queue.shift(); file; file = queue.shift()) {
           if (signal?.aborted) throw new DownloadAbortedError();
-          await File.downloadFileAsync(file.url, new File(partial, audioName(file.verseKey)), { idempotent: true });
+          await File.downloadFileAsync(file.url, new File(partial, audioName(file)), { idempotent: true });
           done++;
-          setProgress(0.05 + 0.95 * (done / audio.files.length));
+          setProgress(0.05 + 0.95 * (done / total));
         }
       };
       await Promise.all(Array.from({ length: PARALLEL_DOWNLOADS }, worker));
@@ -224,7 +228,7 @@ export async function readOfflineChapter(chapterId: number): Promise<OfflineChap
     audio: {
       ...content.audio,
       files: content.audio.files.map((f) => {
-        const local = audioFile(chapterId, f.verseKey);
+        const local = audioFile(chapterId, f);
         return local.exists ? { ...f, url: local.uri } : f;
       }),
     },
