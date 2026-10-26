@@ -9,7 +9,8 @@ import { parseJoinInput } from "./families-format";
 let pending: { t?: string; c?: string } | null = null;
 
 export function rememberInvite(url: string | null | undefined) {
-  if (!url || !url.includes("famille/rejoindre")) return;
+  // Lien eqra://famille/rejoindre?… ou lien universel https://eqra.fr/rejoindre/?… (même page du site).
+  if (!url || !/\/rejoindre\b/.test(url)) return;
   const parsed = parseJoinInput(url);
   if (!parsed) return;
   pending = "token" in parsed ? { t: parsed.token } : { c: parsed.code };

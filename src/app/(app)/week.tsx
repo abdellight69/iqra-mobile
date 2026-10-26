@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StatTile } from "@/components/StatTile";
+import { WeekShareButton } from "@/components/WeekShare";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { compareWeeks, DAY_LETTERS, useSetWeekGoal, useWeek, WEEK_GOAL_CHOICES, weekdayIndex, weekHeadline, weekLabel, weekMessage, weekSummary } from "@/lib/week";
 
@@ -63,6 +64,7 @@ export default function WeekScreen() {
           </AppText>
         ) : null}
       </Card>
+      <WeekShareButton week={data} />
 
       <Card style={styles.days}>
         <View style={styles.bars}>

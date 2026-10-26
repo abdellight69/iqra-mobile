@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, Share, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
 import { KidsProfile } from "@/components/kids/KidsProfile";
@@ -9,10 +9,12 @@ import { useKidsMode } from "@/lib/kids";
 import { ListGroup, ListRow } from "@/components/List";
 import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
+import { VerifyEmailBanner } from "@/components/VerifyEmailBanner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { useFamilies, useReceivedInvitations } from "@/lib/families";
 import { familiesSummary } from "@/lib/families-format";
+import { inviteFriendMessage } from "@/lib/invite";
 import { offlineSupported } from "@/lib/offline";
 import { purchasesEnabled } from "@/lib/purchases";
 import { useMe, useStats } from "@/lib/queries";
@@ -68,6 +70,7 @@ function Profile() {
       onRefresh={() => void stats.refetch()}
       refreshing={stats.isRefetching}
     >
+      <VerifyEmailBanner />
       <View style={styles.identity}>
         <View style={styles.avatar}>
           <ProfileAvatar
@@ -192,6 +195,12 @@ function Profile() {
             onPress={() => router.push("/soutien")}
           />
         ) : null}
+        <ListRow
+          icon="person-add-outline"
+          title="Inviter un ami"
+          subtitle="Faire découvrir Eqra à un proche"
+          onPress={() => void Share.share({ message: inviteFriendMessage() }).catch(() => undefined)}
+        />
         <ListRow
           icon="bookmark-outline"
           title="Signets"

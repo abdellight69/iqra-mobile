@@ -14,7 +14,8 @@
         "com.apple.security.application-groups": ["group.app.eqra.mobile"]
       },
       "appleTeamId": "8TSDHC2926",
-      "buildNumber": "5",
+      "associatedDomains": ["applinks:eqra.fr"],
+      "buildNumber": "6",
       "config": { "usesNonExemptEncryption": false }
     },
     "android": {
@@ -27,7 +28,20 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 5,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "eqra.fr", "pathPrefix": "/rejoindre/" },
+            { "scheme": "https", "host": "eqra.fr", "pathPrefix": "/verifier/" },
+            { "scheme": "https", "host": "eqra.fr", "pathPrefix": "/reinitialiser/" },
+            { "scheme": "https", "host": "eqra.fr", "pathPrefix": "/s/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "versionCode": 6,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

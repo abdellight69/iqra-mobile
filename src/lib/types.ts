@@ -4,6 +4,7 @@ export type User = {
   id: string;
   /** Null pour un profil de la famille (seul le titulaire du compte a un e-mail). */
   email: string | null;
+  emailVerified?: boolean; // adresse confirmée par le lien reçu (absent sur un serveur plus ancien : rien à demander)
   displayName: string;
   /** Couleur du profil (absente sur un serveur plus ancien). */
   avatar?: string | null;

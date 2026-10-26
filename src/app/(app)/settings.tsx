@@ -20,6 +20,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/States";
 import { TextField } from "@/components/TextField";
+import { VerifyEmailBanner } from "@/components/VerifyEmailBanner";
 import { api, errorMessage } from "@/lib/api";
 import { type AppearanceMode, useActiveTheme, useAppearance, useSupporterPerks } from "@/lib/appearance-store";
 import { useAuth } from "@/lib/auth-store";
@@ -209,6 +210,7 @@ export default function Settings() {
           }
         />
       </Card>
+      <VerifyEmailBanner />
 
       <SectionHeader title="Apparence" />
       <View style={styles.chips}>
