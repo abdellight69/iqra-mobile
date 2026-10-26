@@ -687,6 +687,8 @@ export type Profile = {
   isChild?: boolean;
   isOwner: boolean;
   current: boolean;
+  /** Voix de récitation du profil (null : récitateur par défaut ; absent sur un serveur plus ancien). */
+  recitationId?: number | null;
   /** Visible du titulaire seulement. */
   progress: ProfileProgress | null;
 };

@@ -4,6 +4,18 @@ import { Platform } from "react-native";
 import { transliterate } from "./transliterate";
 import type { Word } from "./types";
 
+/** Vitesses d'écoute d'un enfant : un bouton qui passe de l'une à l'autre. */
+export const KID_SPEEDS = [
+  { rate: 1, label: "Normal" },
+  { rate: 0.75, label: "Lent" },
+  { rate: 0.5, label: "Très lent" },
+] as const;
+
+/** Vitesse suivante (Normal → Lent → Très lent → Normal). */
+export function nextKidSpeed(index: number): number {
+  return (index + 1) % KID_SPEEDS.length;
+}
+
 /** Sourates proposées en premier à un enfant : Al-Fâtiha, puis le Juz' ʿAmma d'An-Nâs à Al-ʿAsr. */
 export const KIDS_SURAHS = [1, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103] as const;
 

@@ -72,6 +72,7 @@ export function useUpdateProfile() {
       displayName?: string;
       avatar?: Avatar;
       isChild?: boolean;
+      recitationId?: number | null;
     }) => api<void>(`/me/profiles/${id}`, { method: "PATCH", body: changes }),
     onSuccess: () => {
       void invalidate();

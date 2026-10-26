@@ -31,3 +31,12 @@ describe("Coran des enfants", () => {
     for (const id of KIDS_SURAHS) expect(prayerHint(id)).not.toBeNull();
   });
 });
+
+describe("vitesse d'écoute d'un enfant", () => {
+  it("passe de Normal à Lent puis Très lent, puis revient à Normal", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { KID_SPEEDS, nextKidSpeed } = require("../kids-quran") as typeof import("../kids-quran");
+    expect(KID_SPEEDS.map((s) => s.rate)).toEqual([1, 0.75, 0.5]);
+    expect([0, 1, 2].map(nextKidSpeed)).toEqual([1, 2, 0]);
+  });
+});

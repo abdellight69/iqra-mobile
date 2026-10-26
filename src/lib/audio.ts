@@ -65,7 +65,8 @@ export function wordAt(words: WordTiming[] | undefined, timeMs: number): number 
 /** Passage répété : pistes de `start` à `end` (indices inclus), `rounds` fois (Infinity : sans fin). */
 export type LoopRange = { start: number; end: number; rounds: number };
 
-export const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
+/** Vitesses de récitation proposées (la hauteur de la voix ne change pas). */
+export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25] as const;
 
 /**
  * Mode audio de l'app : lecture en mode silencieux et en arrière-plan. `doNotMix` (les autres apps

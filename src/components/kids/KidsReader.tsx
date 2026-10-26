@@ -11,15 +11,14 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
 import { playKidSound } from "@/lib/kid-sounds";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
-import { kidPhonetic, useFinishedSurahs } from "@/lib/kids-quran";
+import { KID_SPEEDS, kidPhonetic, nextKidSpeed, useFinishedSurahs } from "@/lib/kids-quran";
 import { useVerseNotes } from "@/lib/missions";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
 import { useChapter, useChapterAudio, useMe, useRecordReading, useSaveReadingPosition, useVerses } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { Verse } from "@/lib/types";
 
-/** Vitesse « Plus lent » ; « Répéter » rejoue chaque verset trois fois. */
-const SLOW_RATE = 0.75;
+/** « Répéter » rejoue chaque verset trois fois ; la vitesse passe de Normal à Lent puis Très lent. */
 const REPEATS = 3;
 
 /**
@@ -42,7 +41,7 @@ export function KidsReader() {
 
   const [index, setIndex] = useState(() => Math.max(0, (params.verse ? Number(params.verse) : 1) - 1));
   const [help, setHelp] = useState(true);
-  const [slow, setSlow] = useState(false);
+  const [speed, setSpeed] = useState(0);
   const [repeat, setRepeat] = useState(false);
 
   const loaded = useMemo(() => verses.data?.pages.flatMap((p) => p.verses) ?? [], [verses.data]);
@@ -53,7 +52,7 @@ export function KidsReader() {
     (track: { key: string }) => ({ title: `${surahName ?? `Sourate ${chapterId}`} · verset ${track.key.split(":")[1]}`, artist: "Récitation du Coran", albumTitle: "Eqra" }),
     [surahName, chapterId],
   );
-  const queue = useTrackQueue(tracks, { autoAdvance: false, rate: slow ? SLOW_RATE : 1, repeat: repeat ? REPEATS : 1, nowPlaying });
+  const queue = useTrackQueue(tracks, { autoAdvance: false, rate: KID_SPEEDS[speed]!.rate, repeat: repeat ? REPEATS : 1, nowPlaying });
 
   // Versets vus et dernier verset, enregistrés en quittant l'écran (comme le lecteur adulte).
   const seen = useRef(new Set<number>());
@@ -172,7 +171,12 @@ export function KidsReader() {
           {playing ? "J’écoute…" : isLast ? "Dernier verset : touche ✓ quand tu as fini" : "Écoute, puis passe au verset suivant"}
         </AppText>
         <View style={styles.pills}>
-          <Pill label="Plus lent" on={slow} onPress={() => setSlow(!slow)} />
+          <Pill
+            label={speed === 0 ? "Plus lent" : KID_SPEEDS[speed]!.label}
+            on={speed > 0}
+            accessibilityLabel={`Vitesse : ${KID_SPEEDS[speed]!.label}. Toucher pour ${KID_SPEEDS[nextKidSpeed(speed)]!.label.toLowerCase()}`}
+            onPress={() => setSpeed(nextKidSpeed(speed))}
+          />
           <Pill label={`Répéter ${REPEATS} fois`} on={repeat} onPress={() => setRepeat(!repeat)} />
         </View>
       </View>

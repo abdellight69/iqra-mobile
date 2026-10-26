@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { KID_SPEEDS, nextKidSpeed } from "@/lib/kids-quran";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -150,9 +151,9 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
       return f ? [{ key: f.verseKey, url: f.url, words: f.words }] : [];
     });
   }, [audio.data, keys]);
-  // « Lent » : la récitation à trois quarts de sa vitesse, pour suivre mot à mot.
-  const [slow, setSlow] = useState(false);
-  const queue = useTrackQueue(tracks, { autoAdvance: true, rate: slow ? 0.75 : 1, nowPlaying: missionNowPlaying });
+  // Vitesse : Normal, Lent (¾) ou Très lent (½), pour suivre mot à mot.
+  const [speed, setSpeed] = useState(0);
+  const queue = useTrackQueue(tracks, { autoAdvance: true, rate: KID_SPEEDS[speed]!.rate, nowPlaying: missionNowPlaying });
   const word = useOneShot();
   // Écouté jusqu'au bout : la file s'arrête après le dernier verset.
   const [heard, setHeard] = useState(false);
@@ -187,7 +188,13 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
         <VerseWords key={key} verseKey={key} activeWord={queue.currentKey === key ? queue.currentWord : null} onWord={(url) => word.play(url)} note={mission.notes[key]} />
       ))}
       <View style={styles.playRow}>
-        <BigButton title="Lent" size="md" tone={slow ? "green" : "white"} accessibilityLabel={slow ? "Vitesse normale" : "Écouter lentement"} onPress={() => setSlow((s) => !s)} />
+        <BigButton
+          title={speed === 0 ? "Lent" : KID_SPEEDS[speed]!.label}
+          size="md"
+          tone={speed > 0 ? "green" : "white"}
+          accessibilityLabel={`Vitesse : ${KID_SPEEDS[speed]!.label}. Toucher pour ${KID_SPEEDS[nextKidSpeed(speed)]!.label.toLowerCase()}`}
+          onPress={() => setSpeed(nextKidSpeed(speed))}
+        />
         <View style={styles.playCenter}>
           {audio.isPending ? (
             <View style={[styles.playBig, { backgroundColor: colors.surfaceMuted }]}>

@@ -12,8 +12,9 @@ import { errorMessage } from "@/lib/api";
 import { useKidsSounds } from "@/lib/kid-sounds";
 import { useKidsVoice } from "@/lib/kid-voice";
 import { AVATAR_LABELS, AVATARS, avatarColor, useCreateProfile, useDeleteProfile, useProfiles, useSetPin, useUpdateProfile, type Avatar } from "@/lib/profiles";
+import { useRecitations } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
-import type { ArabicLevel, Profile } from "@/lib/types";
+import type { ArabicLevel, Profile, Recitation } from "@/lib/types";
 
 const LEVELS: { id: ArabicLevel; label: string }[] = [
   { id: "none", label: "Ne lit pas encore" },
@@ -150,12 +151,23 @@ function ProfileForm({ profile, pinSet, onDone }: { profile?: Profile; pinSet: b
   const [avatar, setAvatar] = useState<Avatar>((profile?.avatar as Avatar | null) ?? "blue");
   const [level, setLevel] = useState<ArabicLevel | null>(profile ? (profile.arabicLevel ?? null) : "none");
   const [isChild, setIsChild] = useState(profile ? profile.isChild === true : true);
+  const [recitationId, setRecitationId] = useState<number | null>(profile?.recitationId ?? null);
   const mutation = profile ? update : create;
   const childWithoutPin = isChild && !pinSet && !profile?.isOwner;
 
   function save() {
     const displayName = name.trim();
-    if (profile) update.mutate({ id: profile.id, displayName, avatar, ...(profile.isOwner ? {} : { isChild }) }, { onSuccess: onDone });
+    if (profile)
+      update.mutate(
+        {
+          id: profile.id,
+          displayName,
+          avatar,
+          ...(profile.isOwner ? {} : { isChild }),
+          ...(recitationId !== (profile.recitationId ?? null) ? { recitationId } : {}),
+        },
+        { onSuccess: onDone },
+      );
     else create.mutate({ displayName, avatar, arabicLevel: level, isChild }, { onSuccess: onDone });
   }
 
@@ -210,6 +222,7 @@ function ProfileForm({ profile, pinSet, onDone }: { profile?: Profile; pinSet: b
           <Switch value={isChild} onValueChange={setIsChild} trackColor={{ true: colors.primary }} accessibilityLabel="Profil enfant" />
         </View>
       )}
+      {profile && !profile.isOwner ? <VoicePicker value={recitationId} onChange={setRecitationId} /> : null}
       {childWithoutPin ? (
         <AppText variant="caption" color={colors.danger}>
           Définissez d’abord un code parent (ci-dessous) : sans lui, un enfant pourrait ouvrir votre profil et gérer le compte.
@@ -320,7 +333,66 @@ function KidsSection() {
   );
 }
 
+/** Récitation d'enseignement (Al-Husary « Muallim ») : lente, chaque mot détaché, proposée en premier. */
+const isTeachingRecitation = (r: Recitation) => (r.style ?? "").toLowerCase() === "muallim";
+
+/**
+ * Voix de récitation d'un profil, choisie par le titulaire (un profil enfant n'a pas de réglages) :
+ * elle sert au lecteur, aux missions et aux révisions de ce profil.
+ */
+function VoicePicker({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
+  const colors = useColors();
+  const recitations = useRecitations();
+  const list = [...(recitations.data ?? [])].sort((a, b) => Number(isTeachingRecitation(b)) - Number(isTeachingRecitation(a)));
+  const option = (id: number | null, title: string, detail: string | null) => {
+    const selected = value === id;
+    return (
+      <Pressable
+        key={id ?? "default"}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={detail ? `${title}, ${detail}` : title}
+        onPress={() => onChange(id)}
+        style={[styles.voice, { borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primarySoft : colors.surface }]}>
+        <View style={styles.flex}>
+          <AppText variant="bodyStrong" color={selected ? colors.primary : colors.text}>
+            {title}
+          </AppText>
+          {detail ? (
+            <AppText variant="caption" muted>
+              {detail}
+            </AppText>
+          ) : null}
+        </View>
+      </Pressable>
+    );
+  };
+  return (
+    <View style={styles.voices}>
+      <AppText variant="caption" muted>
+        Voix de récitation
+      </AppText>
+      {option(null, "Récitateur par défaut", null)}
+      {recitations.isPending ? (
+        <AppText variant="caption" muted>
+          Chargement des récitateurs…
+        </AppText>
+      ) : (
+        list.map((r) =>
+          option(
+            r.id,
+            r.translatedName ?? r.reciterName,
+            isTeachingRecitation(r) ? "Pour apprendre : lente, chaque mot bien détaché" : r.style === "Mujawwad" ? "Mujawwad : mélodieuse et lente" : r.style === "Murattal" ? "Murattal" : null,
+          ),
+        )
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  voices: { gap: spacing.sm },
+  voice: { borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 48, justifyContent: "center" },
   switchRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   flex: { flex: 1 },
   card: { gap: spacing.md, overflow: "hidden" },
