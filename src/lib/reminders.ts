@@ -1,4 +1,4 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import { router, type Href } from "expo-router";
@@ -6,11 +6,11 @@ import * as SecureStore from "expo-secure-store";
 import { useEffect, useMemo, useState } from "react";
 import { AppState, Platform } from "react-native";
 import { create } from "zustand";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import { useKidsMode } from "./kids";
 import { useTodayMission } from "./missions";
 import { keys, useDueVerses, usePlans, useStats } from "./queries";
-import { planReminders, reminderPath, type PlannedReminder } from "./reminder-plan";
+import { planReminders, type ReminderContext, reminderPath, type PlannedReminder } from "./reminder-plan";
 import type { MemorizationPlanDetail } from "./types";
 
 /**
@@ -146,6 +146,23 @@ export function useDueAts(): string[] | undefined {
   }, [plans.data, detailsKey, dueKey]);
 }
 
+/** Contenu du moment pour les rappels (`GET /me/reminders/context`) ; `null` sur un serveur plus ancien. */
+export function useReminderContext(enabled = true) {
+  return useQuery({
+    queryKey: ["reminders", "context"],
+    queryFn: async (): Promise<ReminderContext | null> => {
+      try {
+        return await api<ReminderContext>("/me/reminders/context");
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
 /** Se déclenche à chaque retour de l'app au premier plan. */
 function useForegroundTick(): number {
   const [tick, setTick] = useState(0);
@@ -169,6 +186,8 @@ export function useReminderSync() {
   // Enfant : le rappel parle de sa mission du jour, et se tait si elle est déjà faite.
   const todayMission = useTodayMission(kids);
   const missionDone = kids ? !todayMission.data?.mission || todayMission.data.mission.completed : false;
+  const context = useReminderContext(!kids);
+  const contextKey = context.data ? JSON.stringify(context.data) : "";
   const tick = useForegroundTick();
   const xp = stats.data?.today.xp;
   const goalXp = stats.data?.today.goalXp;
@@ -192,10 +211,11 @@ export function useReminderSync() {
       today: { xp: xp ?? 0, goalXp: goalXp ?? 0 },
       dueAts: (dueAts ?? []).map((iso) => new Date(iso)).filter((d) => !Number.isNaN(d.getTime())),
       kid: kids ? { missionDone } : undefined,
+      context: context.data ?? undefined,
     });
     schedule(reminders).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `dueAts` est représenté par `dueAtsKey`
-  }, [enabled, hour, minute, kids, kidsAllowed, loaded, xp, goalXp, dueAtsKey, tick, missionDone, todayMission.data === undefined]);
+  }, [enabled, hour, minute, kids, kidsAllowed, loaded, xp, goalXp, dueAtsKey, tick, missionDone, todayMission.data === undefined, contextKey]);
 }
 
 /** Toucher une notification ouvre l'écran concerné, à froid comme en arrière-plan. */

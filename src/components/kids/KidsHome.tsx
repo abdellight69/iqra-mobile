@@ -5,8 +5,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
+import { KidAvatarFrame } from "@/components/kids/KidAvatarFrame";
 import { BigButton, RoundButton } from "@/components/kids/KidButton";
-import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
 import { Screen } from "@/components/Screen";
 import { localDay } from "@/lib/families-format";
 import { KID_TONES, KIDS, useKidsColors, type KidTone } from "@/lib/kids";
@@ -24,7 +25,6 @@ type IconName = ComponentProps<typeof Ionicons>["name"];
  * message de la famille), les étoiles, puis deux portes : « Mes mots » et le Coran.
  */
 export function KidsHome() {
-  const colors = useColors();
   const kc = useKidsColors();
   const me = useMe();
   const today = useTodayMission();
@@ -47,9 +47,7 @@ export function KidsHome() {
         void words.refetch();
       }}>
       <View style={styles.header}>
-        <View style={[styles.avatarRing, { backgroundColor: colors.surface }]}>
-          <ProfileAvatar name={name || "?"} avatar={me.data?.avatar} size={48} />
-        </View>
+        <KidAvatarFrame name={name || "?"} avatar={me.data?.avatar} stars={today.data?.totalStars ?? 0} size={44} compact />
         <View style={styles.flex}>
           <AppText variant="title" numberOfLines={2}>
             Salam, {name} !
@@ -89,16 +87,25 @@ function MissionCard({ mission }: { mission: KidMission }) {
   const chapters = useChapters();
   const started = mission.stars > 0;
   const currentIndex = mission.steps.findIndex((s) => !s.done);
+  const title = kidMissionTitle(mission.title, mission.verses, chapters.data);
+  const next = currentIndex >= 0 ? KID_STEPS[mission.steps[currentIndex]!.kind].label : null;
+  // La consigne lue à voix haute : la mission, où on en est, et le bouton à toucher.
+  const voice = mission.completed
+    ? `Ta mission du jour est réussie, bravo ! Touche le bouton pour revoir tes étoiles.`
+    : `Ta mission du jour : ${title}. ${versesLabel(mission.verses)}. ${started ? `On continue avec l’étape ${next ?? ""}` : `D’abord, ${next ?? "on écoute"}`}. Touche le bouton vert pour ${started ? "continuer" : "commencer"}.`;
   return (
     <Card style={styles.mission}>
-      <View>
-        <AppText variant="label" color={colors.accent}>
-          Ta mission du jour
-        </AppText>
-        <AppText variant="title">{kidMissionTitle(mission.title, mission.verses, chapters.data)}</AppText>
-        <AppText variant="caption" muted>
-          {versesLabel(mission.verses)} · jour {mission.dayIndex} sur {mission.totalDays}
-        </AppText>
+      <View style={styles.missionHead}>
+        <View style={styles.flex}>
+          <AppText variant="label" color={colors.accent}>
+            Ta mission du jour
+          </AppText>
+          <AppText variant="title">{title}</AppText>
+          <AppText variant="caption" muted>
+            {versesLabel(mission.verses)} · jour {mission.dayIndex} sur {mission.totalDays}
+          </AppText>
+        </View>
+        <KidVoiceButton text={voice} />
       </View>
 
       <View style={styles.steps}>
@@ -203,6 +210,7 @@ function NoMission({ today, loading }: { today: KidToday | undefined; loading: b
       <AppText muted center>
         {c.text}
       </AppText>
+      <KidVoiceButton text={`${c.title}. ${c.text}`} />
     </Card>
   );
 }
@@ -240,7 +248,7 @@ function Tile({ tone, icon, title, subtitle, arabic, onPress }: { tone: KidTone;
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  avatarRing: { padding: 4, borderRadius: 28 },
+  missionHead: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   starPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: spacing.sm + 2, paddingRight: spacing.md + 2, paddingVertical: spacing.sm, borderRadius: radius.pill },
   mission: { gap: spacing.lg, borderRadius: radius.xl },
   steps: { flexDirection: "row", gap: spacing.sm },

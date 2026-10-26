@@ -1,4 +1,4 @@
-import { KIDS_SURAHS, kidPhonetic, parseFinished } from "../kids-quran";
+import { KIDS_SURAHS, kidPhonetic, parseFinished, PRAYER_SURAHS, prayerHint } from "../kids-quran";
 
 describe("Coran des enfants", () => {
   it("propose Al-Fâtiha puis le Juz' ʿAmma, d'An-Nâs à Al-ʿAsr", () => {
@@ -17,5 +17,17 @@ describe("Coran des enfants", () => {
   it("donne la phonétique de l'app, sinon celle de Quran.com", () => {
     expect(kidPhonetic({ textUthmani: "قُلْ", transliteration: "qul" })).not.toBe("قُلْ");
     expect(kidPhonetic({ textUthmani: "", transliteration: "qul" })).toBe("qul");
+  });
+
+  it("dit à l'enfant quelles sourates se récitent dans la prière", () => {
+    expect(PRAYER_SURAHS).toContain(1);
+    expect(PRAYER_SURAHS).toContain(112);
+    expect(prayerHint(1)).toMatch(/chaque prière/);
+    expect(prayerHint(112)).toMatch(/dans ta prière/);
+    expect(prayerHint(114)).toMatch(/après Al-Fâtiha/);
+    expect(prayerHint(2)).toBeNull();
+    expect(prayerHint(36)).toBeNull();
+    // Toutes les petites sourates proposées à l'enfant ont leur mot.
+    for (const id of KIDS_SURAHS) expect(prayerHint(id)).not.toBeNull();
   });
 });

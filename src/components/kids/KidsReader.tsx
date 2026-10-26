@@ -5,9 +5,11 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { RoundButton } from "@/components/kids/KidButton";
 import { ParentNote } from "@/components/kids/ParentNote";
+import { PrayerHint } from "@/components/kids/PrayerHint";
 import { SafeArea } from "@/components/SafeArea";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
+import { playKidSound } from "@/lib/kid-sounds";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { kidPhonetic, useFinishedSurahs } from "@/lib/kids-quran";
 import { useVerseNotes } from "@/lib/missions";
@@ -89,6 +91,7 @@ export function KidsReader() {
   const playing = queue.playing && queue.currentKey === verse.key;
   const go = (next: number) => {
     queue.stop();
+    playKidSound("tap");
     setIndex(next);
   };
 
@@ -109,6 +112,7 @@ export function KidsReader() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <PrayerHint chapterId={chapterId} />
         <View style={styles.progress}>
           {total <= 30 ? (
             <View style={styles.dots}>

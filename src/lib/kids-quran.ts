@@ -7,6 +7,19 @@ import type { Word } from "./types";
 /** Sourates proposées en premier à un enfant : Al-Fâtiha, puis le Juz' ʿAmma d'An-Nâs à Al-ʿAsr. */
 export const KIDS_SURAHS = [1, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103] as const;
 
+/**
+ * Sourates qu'un enfant peut réciter dans sa prière : Al-Fâtiha (dite à chaque unité) et les
+ * sourates courtes du Juz' ʿAmma, d'Al-ʿAsr à An-Nâs, lues après elle.
+ */
+export const PRAYER_SURAHS: readonly number[] = [1, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114];
+
+/** Petit mot pour l'enfant quand la sourate se dit dans la prière ; null sinon. */
+export function prayerHint(chapterId: number): string | null {
+  if (chapterId === 1) return "Cette sourate, tu la dis à chaque prière !";
+  if (PRAYER_SURAHS.includes(chapterId)) return "Cette sourate, tu peux la dire dans ta prière, après Al-Fâtiha.";
+  return null;
+}
+
 /** Phonétique d'un mot pour un enfant : celle de l'app (graphie française), sinon celle de Quran.com. */
 export function kidPhonetic(word: Pick<Word, "textUthmani" | "transliteration">): string | null {
   const french = transliterate(word.textUthmani).trim();

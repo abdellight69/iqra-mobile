@@ -6,6 +6,8 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { BigButton, RoundButton } from "@/components/kids/KidButton";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
+import { PrayerHint } from "@/components/kids/PrayerHint";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { ErrorState, LoadingState } from "@/components/States";
@@ -39,6 +41,12 @@ export function KidsRecite() {
   const dueCount = due.data?.length ?? 0;
   const dueNames = [...new Set((due.data ?? []).map((v) => v.chapterId))].slice(0, 3).map(name).join(" · ");
   const latest = plans.data[0];
+  const voice =
+    dueCount > 0
+      ? `Réciter. Aujourd’hui, ${dueCount} verset${dueCount > 1 ? "s t’attendent" : " t’attend"} : touche le bouton Réviser.`
+      : plans.data.length > 0
+        ? "Réciter. Tout est révisé, bravo ! Touche une sourate pour t’entraîner."
+        : "Réciter. Apprends tes sourates par cœur : touche le bouton Choisir pour ta première sourate.";
 
   return (
     <Screen
@@ -54,6 +62,7 @@ export function KidsRecite() {
             Apprends tes sourates par cœur.
           </AppText>
         </View>
+        <KidVoiceButton text={voice} />
         <RoundButton icon="add" label="Apprendre une nouvelle sourate" tone="green" size={54} onPress={() => router.push("/memorize/new")} />
       </View>
 
@@ -151,6 +160,7 @@ function PlanRow({ plan, name, arabic }: { plan: MemorizationPlan; name: string;
         <AppText variant="caption" muted>
           {known ? "Je la connais par cœur" : `${solid} verset${solid > 1 ? "s" : ""} sur ${total} · on continue`}
         </AppText>
+        <PrayerHint chapterId={plan.chapterId} compact />
       </View>
       {arabic ? <ArabicText size="md">{arabic}</ArabicText> : null}
     </Card>

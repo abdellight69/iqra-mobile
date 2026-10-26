@@ -138,6 +138,7 @@ export default function AppLayout() {
       />
       <Stack.Protected guard={!kids}>
         <Stack.Screen name="settings" options={{ title: "Réglages" }} />
+        <Stack.Screen name="week" options={{ title: "Ma semaine" }} />
       </Stack.Protected>
       <Stack.Screen
         name="profiles/index"

@@ -9,6 +9,8 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { ErrorState, LoadingState } from "@/components/States";
 import { TextField } from "@/components/TextField";
 import { errorMessage } from "@/lib/api";
+import { useKidsSounds } from "@/lib/kid-sounds";
+import { useKidsVoice } from "@/lib/kid-voice";
 import { AVATAR_LABELS, AVATARS, avatarColor, useCreateProfile, useDeleteProfile, useProfiles, useSetPin, useUpdateProfile, type Avatar } from "@/lib/profiles";
 import { radius, spacing, useColors } from "@/lib/theme";
 import type { ArabicLevel, Profile } from "@/lib/types";
@@ -63,6 +65,7 @@ export default function ManageProfiles() {
       )}
 
       <PinSection pinSet={data.pinSet} />
+      <KidsSection />
     </Screen>
   );
 }
@@ -279,6 +282,39 @@ function PinSection({ pinSet }: { pinSet: boolean }) {
           onPress={() => submit(pin)}
         />
         {pinSet ? <Button title="Retirer le code" size="md" variant="ghost" disabled={!password} onPress={() => submit(null)} /> : null}
+      </Card>
+    </>
+  );
+}
+
+/** Réglages des profils enfant, gardés sur cet appareil : la voix qui lit les consignes et les petits sons. */
+function KidsSection() {
+  const colors = useColors();
+  const voice = useKidsVoice();
+  const sounds = useKidsSounds();
+  return (
+    <>
+      <SectionHeader title="Pour les enfants" />
+      <Card style={styles.card}>
+        <AppText muted>Sur ce téléphone, pour les profils enfant.</AppText>
+        <View style={styles.switchRow}>
+          <View style={styles.flex}>
+            <AppText>Voix des consignes</AppText>
+            <AppText variant="caption" muted>
+              Chaque écran lit sa consigne à voix haute, pour un enfant qui ne lit pas encore.
+            </AppText>
+          </View>
+          <Switch value={voice.enabled} onValueChange={voice.setEnabled} trackColor={{ true: colors.primary }} accessibilityLabel="Voix des consignes" />
+        </View>
+        <View style={styles.switchRow}>
+          <View style={styles.flex}>
+            <AppText>Petits sons</AppText>
+            <AppText variant="caption" muted>
+              Un son à chaque réussite et à chaque étoile gagnée.
+            </AppText>
+          </View>
+          <Switch value={sounds.enabled} onValueChange={sounds.setEnabled} trackColor={{ true: colors.primary }} accessibilityLabel="Petits sons" />
+        </View>
       </Card>
     </>
   );

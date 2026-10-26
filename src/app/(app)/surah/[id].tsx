@@ -12,13 +12,15 @@ import { TajweedLegend } from "@/components/TajweedLegend";
 import { ErrorState, LoadingState } from "@/components/States";
 import { IconButton } from "@/components/IconButton";
 import { VerseCard } from "@/components/VerseCard";
+import { PlayerSheet } from "@/components/PlayerSheet";
 import { RepeatSheet, type RepeatSettings } from "@/components/RepeatSheet";
 import { KidsReader } from "@/components/kids/KidsReader";
 import { useReducedMotion } from "@/lib/a11y";
 import { useKidsMode } from "@/lib/kids";
 import { useTrackQueue } from "@/lib/audio";
+import { nextChapterId, sleepRemaining } from "@/lib/listening";
 import { openWordSheet } from "@/lib/navigation";
-import { formatRate, usePlayback } from "@/lib/playback-store";
+import { usePlayback } from "@/lib/playback-store";
 import { BASMALA, showsBasmala } from "@/lib/quran-text";
 import {
   useBookmarks,
@@ -47,20 +49,22 @@ export default function SurahScreen() {
 function SurahReader() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string; verse?: string }>();
+  const params = useLocalSearchParams<{ id: string; verse?: string; autoplay?: string }>();
   const chapterId = Number(params.id);
   const targetVerse = params.verse ? Number(params.verse) : null;
 
   const me = useMe();
   const chapter = useChapter(chapterId);
   const verses = useVerses(chapterId, me.data?.translationId ?? null);
-  const audio = useChapterAudio(chapterId, me.data?.recitationId ?? null);
+  const settings = useReaderSettings();
+  // Récitateur effectif : celui choisi pour cette sourate, sinon celui des réglages du compte.
+  const effectiveRecitationId = settings.recitationBySurah[chapterId] ?? me.data?.recitationId ?? null;
+  const audio = useChapterAudio(chapterId, effectiveRecitationId);
   const bookmarks = useBookmarks();
   const toggleBookmark = useToggleBookmark();
   const createPlan = useCreatePlan();
   const savePosition = useSaveReadingPosition();
   const recordReading = useRecordReading();
-  const settings = useReaderSettings();
   const knownWords = useKnownWords(chapterId, settings.showKnownWords);
   const offline = useOfflineChapter(chapterId);
 
@@ -68,7 +72,7 @@ function SurahReader() {
   const offlineText =
     offline.data && (offline.data.translationId === (me.data?.translationId ?? null) || verses.isError) ? offline.data : null;
   const offlineAudio =
-    offline.data && (me.data?.recitationId == null || me.data.recitationId === offline.data.recitationId || audio.isError)
+    offline.data && (effectiveRecitationId === null || effectiveRecitationId === offline.data.recitationId || audio.isError)
       ? offline.data.audio
       : null;
   const list = useMemo<Verse[]>(
@@ -84,8 +88,8 @@ function SurahReader() {
 
   // Répétition d'un passage et vitesse de récitation.
   const rate = usePlayback((p) => p.rate);
-  const cycleRate = usePlayback((p) => p.cycleRate);
   const [repeatOpen, setRepeatOpen] = useState(false);
+  const [playerOpen, setPlayerOpen] = useState(false);
   const [repeatSettings, setRepeatSettings] = useState<RepeatSettings | null>(null);
   const trackIndex = (verse: number) => tracks.findIndex((t) => t.key === `${chapterId}:${verse}`);
   const loop =
@@ -104,7 +108,17 @@ function SurahReader() {
     }),
     [surahName, reciter],
   );
-  const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1, nowPlaying });
+  // Lecture continue : à la fin de la sourate, on ouvre la suivante en lançant sa récitation
+  // (l'écran est remplacé ; la nouvelle sourate démarre dès que ses pistes sont prêtes).
+  const continuous = settings.continuousPlayback;
+  const sleepEndsAt = settings.sleepEndsAt;
+  const onEnded = useCallback(() => {
+    if (!continuous) return;
+    if (sleepEndsAt !== null && sleepEndsAt <= Date.now()) return;
+    const next = nextChapterId(chapterId);
+    if (next !== null) router.replace({ pathname: "/surah/[id]", params: { id: String(next), autoplay: "1" } });
+  }, [continuous, sleepEndsAt, chapterId]);
+  const queue = useTrackQueue(tracks, { rate, loop, repeat: repeatSettings?.verseRepeat ?? 1, nowPlaying, onEnded });
   const reduceMotion = useReducedMotion();
   const bookmarkByKey = useMemo(
     () => new Map((bookmarks.data ?? []).filter((b) => b.chapterId === chapterId).map((b) => [b.verseNumber, b.id])),
@@ -195,6 +209,33 @@ function SurahReader() {
   useEffect(() => {
     queueRef.current = queue;
   });
+
+  // Ouverture avec « autoplay » (lecture continue) : la récitation part une seule fois, dès que les pistes sont là.
+  const autoplayedFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (params.autoplay !== "1" || autoplayedFor.current === chapterId || tracks.length === 0) return;
+    autoplayedFor.current = chapterId;
+    queueRef.current.playAt(0);
+  }, [params.autoplay, chapterId, tracks]);
+
+  // Minuteur de sommeil : vérification toutes les 30 s (et à l'arrivée sur l'écran) ; à l'échéance,
+  // la récitation s'arrête et le minuteur revient à « aucun ».
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (sleepEndsAt === null) return;
+    const check = () => {
+      const time = Date.now();
+      setNow(time);
+      if (time >= sleepEndsAt) {
+        queueRef.current.stop();
+        useReaderSettings.getState().setSleepTimerMinutes(0);
+      }
+    };
+    check();
+    const timer = setInterval(check, 30_000);
+    return () => clearInterval(timer);
+  }, [sleepEndsAt]);
+  const sleepLabel = sleepRemaining(sleepEndsAt, now);
   const onPlay = useCallback((verse: Verse) => {
     const q = queueRef.current;
     if (q.currentKey === verse.key) q.toggle();
@@ -332,6 +373,7 @@ function SurahReader() {
                   : queue.currentKey
                     ? "Récitation"
                     : "Écouter"}
+              {sleepLabel ? ` · ⏾ ${sleepLabel}` : ""}
             </AppText>
             <AppText variant="headline" color={colors.background} numberOfLines={2} maxFontSizeMultiplier={1.3}>
               {queue.currentKey ? `Verset ${queue.currentKey.split(":")[1]}` : "Toute la sourate"}
@@ -346,15 +388,14 @@ function SurahReader() {
             <Ionicons name={queue.playing ? "pause" : "play"} size={20} color={colors.text} />
           </Pressable>
           <IconButton icon="play-skip-forward" label="Verset suivant" onPress={queue.next} color={colors.background} size={18} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Vitesse ${formatRate(rate)}, toucher pour changer`}
-            onPress={cycleRate}
-            style={styles.rateButton}>
-            <AppText variant="caption" color={rate === 1 ? `${colors.background}99` : colors.accent} maxFontSizeMultiplier={1.3}>
-              {formatRate(rate)}
-            </AppText>
-          </Pressable>
+          {/* Vitesse, lecture continue, minuteur et récitateur : dans la feuille d'options (la pastille n'a pas la place). */}
+          <IconButton
+            icon="options-outline"
+            label="Options du lecteur"
+            onPress={() => setPlayerOpen(true)}
+            color={continuous || sleepLabel ? colors.accent : colors.background}
+            size={18}
+          />
           <IconButton
             icon={repeatSettings ? "close-circle" : "repeat"}
             label={repeatSettings ? "Arrêter la répétition" : "Répéter un passage"}
@@ -368,6 +409,8 @@ function SurahReader() {
           />
         </View>
       ) : null}
+
+      {playerOpen ? <PlayerSheet visible chapterId={chapterId} onClose={() => setPlayerOpen(false)} /> : null}
 
       {repeatOpen ? (
         <RepeatSheet
@@ -473,7 +516,6 @@ const styles = StyleSheet.create({
   about: { gap: spacing.sm },
   basmala: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.md },
   separator: { height: StyleSheet.hairlineWidth, marginHorizontal: spacing.md },
-  rateButton: { minWidth: 40, minHeight: 44, alignItems: "center", justifyContent: "center" },
   player: {
     position: "absolute",
     left: spacing.lg,

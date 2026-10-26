@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } fro
 import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { BigButton, RoundButton } from "@/components/kids/KidButton";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
 import { ParentNote } from "@/components/kids/ParentNote";
 import { RecitationRecorder } from "@/components/RecitationCheck";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -13,6 +14,8 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { errorMessage } from "@/lib/api";
 import { useOneShot, useTrackQueue } from "@/lib/audio";
 import { useAuth } from "@/lib/auth-store";
+import { playKidSound } from "@/lib/kid-sounds";
+import { speak } from "@/lib/kid-voice";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
 import { useCompleteMissionStep, useTodayMission } from "@/lib/missions";
 import { KID_STEPS, versesLabel } from "@/lib/missions-format";
@@ -55,10 +58,17 @@ export default function MissionScreen() {
   if (mission.completed) return <LoadingState />;
 
   const current = mission.steps.find((s) => !s.done) ?? mission.steps[0]!;
+  const remaining = mission.steps.filter((s) => !s.done).length;
   const done = (step: MissionStep) =>
     complete.mutate(
       { planId: mission.planId, dayIndex: mission.dayIndex, step },
-      { onError: (e) => Alert.alert("Étape non enregistrée", errorMessage(e), [{ text: "Réessayer", onPress: () => done(step) }, { text: "Plus tard", style: "cancel" }]) },
+      {
+        // Étape réussie : un petit son ; la dernière ouvre l'écran « Bravo », qui a le sien.
+        onSuccess: () => {
+          if (remaining > 1) playKidSound("success");
+        },
+        onError: (e) => Alert.alert("Étape non enregistrée", errorMessage(e), [{ text: "Réessayer", onPress: () => done(step) }, { text: "Plus tard", style: "cancel" }]),
+      },
     );
 
   return <Runner key={current.kind} mission={mission} step={current.kind} onDone={() => done(current.kind)} saving={complete.isPending} />;
@@ -102,6 +112,24 @@ function Runner({ mission, step, onDone, saving }: { mission: KidMission; step: 
   );
 }
 
+/**
+ * Titre et consigne d'une étape, avec le bouton « Écouter la consigne » : la consigne est lue à voix
+ * haute à l'ouverture de l'étape et à chaque changement de `voice` (pour un enfant qui ne lit pas).
+ */
+function StepHead({ title, text, voice }: { title: string; text: string; voice?: string }) {
+  return (
+    <View style={styles.head}>
+      <View style={styles.flex}>
+        <AppText variant="display">{title}</AppText>
+        <AppText variant="bodyStrong" muted>
+          {text}
+        </AppText>
+      </View>
+      <KidVoiceButton text={voice ?? `${title}. ${text}`} />
+    </View>
+  );
+}
+
 /** Écran verrouillé pendant la mission : le verset en cours, pour que l'enfant puisse remettre la lecture. */
 const missionNowPlaying = (track: { key: string }) => ({ title: `Ma mission · verset ${track.key}`, artist: "Récitation du Coran", albumTitle: "Eqra" });
 
@@ -133,13 +161,15 @@ function ListenStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
     if (previous === tracks.length - 1 && queue.index === null) setHeard(true);
     setPrevious(queue.index);
   }
+  // Tout écouté : on le dit, et on montre le bouton à toucher.
+  useEffect(() => {
+    if (heard) speak("Bravo, tu as bien écouté ! Touche le bouton jaune pour continuer.");
+  }, [heard]);
+  const voice = `Écoute bien. ${mission.review.length > 0 ? "D’abord le verset d’hier, puis le nouveau. " : ""}Touche le gros bouton vert pour écouter le verset, et touche un mot pour l’entendre. Quand tu as tout écouté, touche le bouton jaune.`;
 
   return (
     <View style={styles.step}>
-      <AppText variant="display">Écoute bien</AppText>
-      <AppText variant="bodyStrong" muted>
-        Touche un mot pour l’entendre.
-      </AppText>
+      <StepHead title="Écoute bien" text="Touche un mot pour l’entendre." voice={voice} />
       {mission.review.length > 0 ? (
         <View style={styles.review}>
           <AppText variant="label" color={kc.tint("blue").ink}>
@@ -250,22 +280,24 @@ function RepeatStep({ mission, onDone, saving }: { mission: KidMission; onDone: 
   });
   const passed = (result?.suggestedQuality ?? 0) >= PASSING_QUALITY;
   const canGoOn = passed || tries >= MAX_TRIES || available.data === false;
+  const verdict = result ? (passed ? "Bravo, c’est très bien récité !" : tries >= MAX_TRIES ? "Tu as bien travaillé, on continue !" : "Presque ! Essaie encore une fois.") : null;
+  // Le verdict est dit à voix haute à chaque essai.
+  useEffect(() => {
+    if (verdict) speak(verdict);
+  }, [verdict, tries]);
 
   return (
     <View style={styles.step}>
-      <AppText variant="display">Répète à voix haute</AppText>
-      <AppText variant="bodyStrong" muted>
-        {available.data === false ? "Récite le verset à voix haute, puis touche le bouton." : "Appuie sur le micro, récite le verset, puis arrête."}
-      </AppText>
+      <StepHead title="Répète à voix haute" text={available.data === false ? "Récite le verset à voix haute, puis touche le bouton." : "Appuie sur le micro, récite le verset, puis arrête."} />
       {mission.verses.map((key) => (
         <VerseText key={key} verseKey={key} />
       ))}
       {available.data !== false ? (
         <RecitationRecorder state={recorder.state} seconds={recorder.seconds} onStart={() => void recorder.start()} onStop={() => void recorder.stopAndCheck()} onCancel={() => void recorder.cancel()} title="Réciter" />
       ) : null}
-      {result ? (
+      {verdict ? (
         <AppText variant="headline" center>
-          {passed ? "Bravo, c’est très bien récité !" : tries >= MAX_TRIES ? "Tu as bien travaillé, on continue !" : "Presque ! Essaie encore une fois."}
+          {verdict}
         </AppText>
       ) : null}
       <BigButton title={available.data === false ? "J’ai récité !" : "Continuer"} icon="checkmark" tone="sun" disabled={!canGoOn || saving} onPress={onDone} />
@@ -326,12 +358,11 @@ function MemorizeStep({ mission, onDone, saving }: { mission: KidMission; onDone
     onDone();
   }
 
+  const hint = round === 0 ? "Écoute, puis récite en lisant." : allHidden ? "Récite tout le verset de mémoire !" : "Récite : les mots cachés, dis-les de mémoire. Touche un mot caché si tu bloques.";
+
   return (
     <View style={styles.step}>
-      <AppText variant="display">Retiens le verset</AppText>
-      <AppText variant="bodyStrong" muted>
-        {round === 0 ? "Écoute, puis récite en lisant." : allHidden ? "Récite tout le verset de mémoire !" : "Récite : les mots cachés, dis-les de mémoire. Touche un mot caché si tu bloques."}
-      </AppText>
+      <StepHead title="Retiens le verset" text={hint} voice={`Retiens le verset. ${hint}${round === 0 ? " Puis touche le bouton bleu pour cacher un mot." : ""}`} />
       {mission.verses.map((key) => (
         <HideVerse
           key={key}
@@ -367,7 +398,16 @@ function MemorizeStep({ mission, onDone, saving }: { mission: KidMission; onDone
       {allHidden ? (
         <BigButton title="Je l’ai récité de mémoire !" icon="checkmark" tone="sun" disabled={saving} onPress={finish} />
       ) : (
-        <BigButton title={round === 0 ? "Je cache un mot" : "Je cache un mot de plus"} icon="eye-off" tone="blue" disabled={maxWords === 0} onPress={() => setRound((r) => r + 1)} />
+        <BigButton
+          title={round === 0 ? "Je cache un mot" : "Je cache un mot de plus"}
+          icon="eye-off"
+          tone="blue"
+          disabled={maxWords === 0}
+          onPress={() => {
+            playKidSound("tap");
+            setRound((r) => r + 1);
+          }}
+        />
       )}
     </View>
   );
@@ -455,6 +495,7 @@ function OpenSessionStep({ title, text, icon, tone, onPress }: { title: string; 
       <AppText variant="bodyStrong" muted center>
         {text}
       </AppText>
+      <KidVoiceButton text={`${title}. ${text} Touche le bouton vert pour commencer.`} />
       <View style={styles.stretch}>
         <BigButton title="C’est parti !" icon="play" onPress={onPress} />
       </View>
@@ -469,6 +510,7 @@ const styles = StyleSheet.create({
   segment: { flex: 1, height: 12, borderRadius: 6 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxxl },
   step: { gap: spacing.lg },
+  head: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   review: { gap: spacing.md },
   center: { alignItems: "center", paddingTop: spacing.xl },
   stretch: { alignSelf: "stretch" },

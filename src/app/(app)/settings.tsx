@@ -23,7 +23,7 @@ import { TextField } from "@/components/TextField";
 import { api, errorMessage } from "@/lib/api";
 import { type AppearanceMode, useActiveTheme, useAppearance, useSupporterPerks } from "@/lib/appearance-store";
 import { useAuth } from "@/lib/auth-store";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { isFrench, languageLabel } from "@/lib/language";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/legal";
 import { palette, THEMES, type ThemeDefinition } from "@/lib/palettes";
@@ -241,6 +241,14 @@ export default function Settings() {
           />
         ))}
       </View>
+
+      <SectionHeader title="Objectif de la semaine" />
+      <Card style={styles.group}>
+        <AppText muted>
+          {user.weeklyGoalDays ? `${user.weeklyGoalDays} jours de pratique par semaine.` : "Choisissez combien de jours pratiquer chaque semaine."} Le bilan du dimanche vous dit où vous en êtes.
+        </AppText>
+        <Button title="Voir ma semaine et régler l’objectif" variant="secondary" size="md" icon="calendar-outline" onPress={() => router.push("/week" as Href)} />
+      </Card>
 
       <SectionHeader title="Objectif quotidien" />
       <View style={styles.chips}>

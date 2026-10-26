@@ -6,6 +6,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { BigButton } from "@/components/kids/KidButton";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
 import { Screen } from "@/components/Screen";
 import { KID_TONES, KIDS, useKidsColors, type KidTone } from "@/lib/kids";
 import { useLearnedWords } from "@/lib/missions";
@@ -53,11 +54,14 @@ export function KidsWords() {
         void themes.refetch();
         void words.refetch();
       }}>
-      <View>
-        <AppText variant="display">Mots</AppText>
-        <AppText variant="bodyStrong" muted>
-          Joue et découvre les mots du Coran.
-        </AppText>
+      <View style={styles.row}>
+        <View style={styles.flex}>
+          <AppText variant="display">Mots</AppText>
+          <AppText variant="bodyStrong" muted>
+            Joue et découvre les mots du Coran.
+          </AppText>
+        </View>
+        <KidVoiceButton text={`Mots. Joue et découvre les mots du Coran. Touche le bouton Jouer pour le jeu du jour${due > 0 ? `, avec ${due} mot${due > 1 ? "s" : ""} à revoir` : ""}.`} />
       </View>
 
       <Card style={[styles.game, { backgroundColor: KID_TONES.violet.main }]}>

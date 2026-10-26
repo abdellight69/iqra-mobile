@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
@@ -19,6 +19,7 @@ import { familiesSummary } from "@/lib/families-format";
 import { track } from "@/lib/events";
 import { nextStep } from "@/lib/next-step";
 import { nextMilestone, nextPlanStep, type Plan, planSteps, progressLabel, progressRatio, remainingMinutes, usePlan } from "@/lib/plan";
+import { DAY_LETTERS, useWeek, weekdayIndex, weekHeadline } from "@/lib/week";
 import { useChapters, useComprehension, useLessons, useMe, usePrograms, useReadingPosition, useStats, useCourse } from "@/lib/queries";
 import { spacing, useColors } from "@/lib/theme";
 import { buildSnapshot, publishWidgetSnapshot } from "@/lib/widget";
@@ -59,6 +60,7 @@ function Home() {
   const course = useCourse(me.data?.goal === "understand");
   // Le plan personnel (serveur) ; à défaut (hors ligne sans copie, serveur plus ancien), la prochaine action calculée ici.
   const plan = usePlan();
+  const week = useWeek(0);
   const fallbackStep = plan.data ? null : nextStep(me.data?.goal, { programs: programs.data, lessons: lessons.data, stats: stats.data, course: course.data, chapters: chapters.data });
   useEffect(() => {
     if (plan.data) track("plan_viewed", { goal: plan.data.goal ?? "", percent: Math.round(progressRatio(plan.data.target) * 100) });
@@ -117,6 +119,8 @@ function Home() {
           <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
         </Card>
       ) : null}
+
+      {week.data ? <WeekCard week={week.data} /> : null}
 
       <Card style={styles.goalCard}>
         <ProgressRing value={goal} size={72} stroke={6} color={colors.accent}>
@@ -369,9 +373,49 @@ function PlanCard({ plan }: { plan: Plan }) {
   );
 }
 
+/** Cette semaine : sept pastilles (lundi → dimanche), l'objectif de jours, et le bilan au toucher. */
+function WeekCard({ week }: { week: NonNullable<ReturnType<typeof useWeek>["data"]> }) {
+  const colors = useColors();
+  const todayIndex = weekdayIndex(new Date());
+  return (
+    <Card onPress={() => router.push("/week" as Href)} style={styles.weekCard} accessibilityLabel={`Cette semaine : ${weekHeadline(week)}. Ouvrir le bilan.`}>
+      <View style={styles.flex}>
+        <AppText variant="label" muted>
+          Cette semaine
+        </AppText>
+        <AppText variant="bodyStrong">{weekHeadline(week)}</AppText>
+        <View style={styles.weekDots}>
+          {week.days.map((day, i) => (
+            <View key={day.day} style={styles.weekDot}>
+              <View
+                style={[
+                  styles.weekDotDisc,
+                  {
+                    backgroundColor: day.practiced ? colors.primary : day.frozen ? colors.primarySoft : colors.surfaceMuted,
+                    borderColor: i === todayIndex ? colors.accent : "transparent",
+                  },
+                ]}>
+                {day.practiced ? <Ionicons name="checkmark" size={12} color={colors.onPrimary} /> : null}
+              </View>
+              <AppText variant="caption" color={i === todayIndex ? colors.text : colors.textFaint}>
+                {DAY_LETTERS[i]}
+              </AppText>
+            </View>
+          ))}
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { gap: spacing.sm, marginTop: spacing.sm },
+  weekCard: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  weekDots: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  weekDot: { alignItems: "center", gap: 2 },
+  weekDotDisc: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   plan: { gap: spacing.md, paddingVertical: spacing.xl },
   planHeader: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
   planSteps: { gap: spacing.xs, marginTop: spacing.xs },

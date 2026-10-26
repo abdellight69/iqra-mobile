@@ -7,7 +7,7 @@
 export type ReminderTime = { hour: number; minute: number };
 
 export type PlannedReminder = {
-  kind: "daily" | "due";
+  kind: "daily" | "due" | "weekly";
   date: Date;
   title: string;
   body: string;
@@ -16,7 +16,20 @@ export type PlannedReminder = {
 };
 
 /** Liens profonds de l'app (schéma `eqra` dans app.json). */
-export const REMINDER_URLS = { home: "eqra://", memorize: "eqra://memorize" } as const;
+export const REMINDER_URLS = { home: "eqra://", memorize: "eqra://memorize", week: "eqra://week" } as const;
+
+/**
+ * Ce que le serveur sait du moment (`GET /me/reminders/context`) pour que le rappel parle du
+ * contenu : la sourate presque finie, la lecture à reprendre, la semaine en cours.
+ */
+export type ReminderContext = {
+  nearlyDone?: { surahName: string; versesLeft: number } | null;
+  resume?: { surahName: string; verseNumber: number } | null;
+  week?: { activeDays: number; goalActiveDays: number } | null;
+};
+
+/** Heure du bilan de la semaine, le dimanche. */
+export const WEEKLY_RECAP_TIME: ReminderTime = { hour: 18, minute: 30 };
 
 /** Jours couverts par les rappels programmés à l'avance. */
 export const DAYS_AHEAD = 7;
@@ -38,12 +51,26 @@ export function versesLabel(count: number): string {
   return `${count} verset${count > 1 ? "s" : ""} à réviser`;
 }
 
-/** « 1 verset à réviser · 12 XP restants », selon ce qui reste à faire. */
-export function dailyBody(input: { dueVerses: number; xpRemaining: number }): string {
+/**
+ * « Plus que 1 verset pour finir Al-Ikhlâs · 12 XP restants » : le contenu d'abord (sourate presque
+ * sue, sinon versets à réviser, sinon lecture à reprendre), puis ce qui reste de l'objectif.
+ */
+export function dailyBody(input: { dueVerses: number; xpRemaining: number }, context?: ReminderContext): string {
   const parts: string[] = [];
-  if (input.dueVerses > 0) parts.push(versesLabel(input.dueVerses));
+  const nearly = context?.nearlyDone;
+  if (nearly && nearly.versesLeft > 0) parts.push(`Plus que ${nearly.versesLeft} verset${nearly.versesLeft > 1 ? "s" : ""} pour finir ${nearly.surahName}`);
+  else if (input.dueVerses > 0) parts.push(versesLabel(input.dueVerses));
+  else if (context?.resume) parts.push(`Reprendre ${context.resume.surahName} au verset ${context.resume.verseNumber}`);
   if (input.xpRemaining > 0) parts.push(`${input.xpRemaining} XP restants`);
   return parts.length > 0 ? parts.join(" · ") : "Quelques minutes avec le Coran aujourd’hui ? Votre série vous attend.";
+}
+
+/** Texte du bilan du dimanche : « 5 jours sur 7, objectif atteint » / « 3 jours sur 7 : encore 2 pour l'objectif ». */
+export function weeklyBody(week: { activeDays: number; goalActiveDays: number } | null | undefined): string {
+  if (!week) return "Votre bilan de la semaine est prêt.";
+  const missing = week.goalActiveDays - week.activeDays;
+  if (missing <= 0) return `${week.activeDays} jour${week.activeDays > 1 ? "s" : ""} sur 7, objectif atteint. Voir le bilan`;
+  return `${week.activeDays} jour${week.activeDays > 1 ? "s" : ""} sur 7 : encore ${missing} pour l’objectif. Voir le bilan`;
 }
 
 /** Rappels d'un enfant : « Ta mission t'attend ! » à l'heure choisie, sauf aujourd'hui si c'est fait. */
@@ -85,8 +112,10 @@ export function planReminders(input: {
   daysAhead?: number;
   /** Profil enfant : un seul rappel par jour, celui de sa mission ; rien aujourd'hui si elle est faite. */
   kid?: { missionDone: boolean };
+  /** Contenu du moment, pour des rappels qui disent de quoi il s'agit. */
+  context?: ReminderContext;
 }): PlannedReminder[] {
-  const { now, time, today } = input;
+  const { now, time, today, context } = input;
   const daysAhead = input.daysAhead ?? DAYS_AHEAD;
   if (input.kid) return kidReminders(now, time, input.kid.missionDone, daysAhead);
   const dueAts = [...input.dueAts].sort((a, b) => a.getTime() - b.getTime());
@@ -106,9 +135,20 @@ export function planReminders(input: {
       kind: "daily",
       date,
       title: "Objectif du jour",
-      body: dailyBody({ dueVerses, xpRemaining }),
+      body: dailyBody({ dueVerses, xpRemaining }, context),
       url: dueVerses > 0 ? REMINDER_URLS.memorize : REMINDER_URLS.home,
     });
+  }
+
+  // Le dimanche en fin d'après-midi : le bilan de la semaine (une seule fois dans l'horizon).
+  const weekly: PlannedReminder[] = [];
+  for (let offset = 0; offset < daysAhead; offset++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    if (day.getDay() !== 0) continue;
+    const date = at(day, WEEKLY_RECAP_TIME);
+    if (date.getTime() <= now.getTime()) continue;
+    weekly.push({ kind: "weekly", date, title: "Votre semaine", body: weeklyBody(offset === 0 ? context?.week : null), url: REMINDER_URLS.week });
+    break;
   }
 
   const due: PlannedReminder[] = [];
@@ -131,5 +171,5 @@ export function planReminders(input: {
     due.push({ kind: "due", date, title: "Révisions prêtes", body: versesLabel(count), url: REMINDER_URLS.memorize });
   }
 
-  return [...daily, ...due].sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, MAX_REMINDERS);
+  return [...daily, ...due, ...weekly].sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, MAX_REMINDERS);
 }

@@ -1,7 +1,7 @@
 /**
  * Planification des rappels : dates, textes et liens, calculés à partir des données en cache.
  */
-import { dailyBody, planReminders, reminderPath, REMINDER_URLS } from "../reminder-plan";
+import { dailyBody, planReminders, reminderPath, REMINDER_URLS, weeklyBody } from "../reminder-plan";
 
 // Lundi 19 octobre 2026, 10h00 (heure locale).
 const now = new Date(2026, 9, 19, 10, 0);
@@ -17,6 +17,20 @@ describe("dailyBody", () => {
 
   it("garde un message d'encouragement quand il n'y a rien à compter", () => {
     expect(dailyBody({ dueVerses: 0, xpRemaining: 0 })).toMatch(/Coran/);
+  });
+
+  it("parle du contenu quand le serveur le connaît", () => {
+    expect(dailyBody({ dueVerses: 2, xpRemaining: 12 }, { nearlyDone: { surahName: "Al-Ikhlâs", versesLeft: 1 } })).toBe("Plus que 1 verset pour finir Al-Ikhlâs · 12 XP restants");
+    expect(dailyBody({ dueVerses: 0, xpRemaining: 0 }, { resume: { surahName: "Al-Baqara", verseNumber: 142 } })).toBe("Reprendre Al-Baqara au verset 142");
+    expect(dailyBody({ dueVerses: 3, xpRemaining: 0 }, { nearlyDone: null, resume: { surahName: "An-Nâs", verseNumber: 2 } })).toBe("3 versets à réviser");
+  });
+});
+
+describe("weeklyBody", () => {
+  it("dit où en est la semaine", () => {
+    expect(weeklyBody({ activeDays: 5, goalActiveDays: 5 })).toBe("5 jours sur 7, objectif atteint. Voir le bilan");
+    expect(weeklyBody({ activeDays: 3, goalActiveDays: 5 })).toBe("3 jours sur 7 : encore 2 pour l’objectif. Voir le bilan");
+    expect(weeklyBody(null)).toMatch(/bilan/);
   });
 });
 
@@ -77,6 +91,21 @@ describe("planReminders", () => {
   it("ignore les échéances passées ou au-delà de l'horizon", () => {
     const plans = planReminders({ now, time, today: { xp: 0, goalXp: 30 }, dueAts: [local(19, 9), local(30, 10)] });
     expect(plans.filter((p) => p.kind === "due")).toHaveLength(0);
+  });
+
+  it("programme le bilan du dimanche une seule fois, à 18h30, vers l'écran de la semaine", () => {
+    const plans = planReminders({ now, time, today: { xp: 0, goalXp: 30 }, dueAts: [], context: { week: { activeDays: 1, goalActiveDays: 5 } } });
+    const weekly = plans.filter((p) => p.kind === "weekly");
+    expect(weekly).toHaveLength(1);
+    expect(weekly[0].date).toEqual(local(25, 18, 30));
+    expect(weekly[0].url).toBe(REMINDER_URLS.week);
+    expect(reminderPath(weekly[0].url)).toBe("/week");
+    // Un dimanche, le texte porte sur la semaine en cours ; les autres jours, un texte neutre.
+    const sunday = planReminders({ now: local(25, 10), time, today: { xp: 0, goalXp: 30 }, dueAts: [], context: { week: { activeDays: 4, goalActiveDays: 5 } } });
+    expect(sunday.find((p) => p.kind === "weekly")?.body).toBe("4 jours sur 7 : encore 1 pour l’objectif. Voir le bilan");
+    expect(weekly[0].body).toBe("Votre bilan de la semaine est prêt.");
+    // Pas de bilan pour un enfant.
+    expect(planReminders({ now, time, today: { xp: 0, goalXp: 30 }, dueAts: [], kid: { missionDone: false } }).some((p) => p.kind === "weekly")).toBe(false);
   });
 
   it("rend les rappels triés par date", () => {

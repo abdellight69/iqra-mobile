@@ -18,6 +18,8 @@ export type User = {
   /** Tafsir choisi (absent sur un serveur plus ancien ; null : français par défaut s'il existe). */
   tafsirId?: number | null;
   dailyGoalXp: number;
+  /** Jours de pratique visés par semaine (absent sur un serveur plus ancien ; 5 par défaut). */
+  weeklyGoalDays?: number;
   /** Réponses du premier lancement (absentes sur un serveur plus ancien). */
   goal?: Goal | null;
   arabicLevel?: ArabicLevel | null;

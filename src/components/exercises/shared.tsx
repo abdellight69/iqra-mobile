@@ -3,6 +3,8 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useOneShot } from "@/lib/audio";
 import type { SessionExercise } from "@/lib/exercises";
+import { playKidSound } from "@/lib/kid-sounds";
+import { useKidsMode } from "@/lib/kids";
 import { useWordExample } from "@/lib/queries";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { transliterate } from "@/lib/transliterate";
@@ -113,8 +115,13 @@ export function ArabicChoice({ text }: { text: string }) {
  */
 export function Feedback({ correct, hint, word, note, onNext, loading }: { correct: boolean; hint?: boolean; word?: VocabWord; note?: string; onNext: () => void; loading: boolean }) {
   const colors = useColors();
+  const kids = useKidsMode();
   const tone = hint ? colors.accent : correct ? colors.success : colors.danger;
   const background = hint ? colors.accentSoft : correct ? colors.successSoft : colors.dangerSoft;
+  // Mode enfant : une bonne réponse sonne ; une mauvaise (ou trouvée avec l'indice), rien.
+  useEffect(() => {
+    if (kids && correct && !hint) playKidSound("success");
+  }, [kids, correct, hint]);
   return (
     <View style={[styles.feedback, { backgroundColor: background }]}>
       <View style={styles.feedbackRow}>

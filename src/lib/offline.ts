@@ -2,6 +2,7 @@ import { Directory, File, Paths } from "expo-file-system";
 import { Platform } from "react-native";
 import { create } from "zustand";
 import { api, ApiError } from "./api";
+import { chaptersToDownload } from "./listening";
 import type { Chapter, ChapterAudio, Verse, VersePage } from "./types";
 
 /**
@@ -39,9 +40,20 @@ type OfflineStore = {
   progress: Record<number, number>;
   loaded: boolean;
   load: () => void;
-  download: (chapterId: number, translationId: number | null, recitationId: number | null) => Promise<void>;
+  /** `signal` : annulation entre deux fichiers (la copie partielle est effacée, l'ancienne reste). */
+  download: (chapterId: number, translationId: number | null, recitationId: number | null, signal?: AbortSignal) => Promise<void>;
   remove: (chapterId: number) => void;
+  removeAll: () => void;
 };
+
+/** Erreur levée quand un téléchargement est annulé par l'utilisateur. */
+export class DownloadAbortedError extends Error {
+  constructor() {
+    super("Téléchargement annulé");
+    this.name = "DownloadAbortedError";
+  }
+}
+export const isDownloadAborted = (error: unknown) => error instanceof DownloadAbortedError;
 
 function ensureRoot() {
   const dir = root();
@@ -77,8 +89,9 @@ export const useOffline = create<OfflineStore>((set, get) => ({
     set({ entries, loaded: true });
   },
 
-  download: async (chapterId, translationId, recitationId) => {
+  download: async (chapterId, translationId, recitationId, signal) => {
     if (!offlineSupported || get().progress[chapterId] !== undefined) return;
+    if (signal?.aborted) throw new DownloadAbortedError();
     const setProgress = (value: number) => set((s) => ({ progress: { ...s.progress, [chapterId]: value } }));
     setProgress(0);
     // Téléchargement dans un dossier temporaire : la copie précédente reste intacte en cas d'échec.
@@ -103,12 +116,14 @@ export const useOffline = create<OfflineStore>((set, get) => ({
       const queue = [...audio.files];
       const worker = async () => {
         for (let file = queue.shift(); file; file = queue.shift()) {
+          if (signal?.aborted) throw new DownloadAbortedError();
           await File.downloadFileAsync(file.url, new File(partial, audioName(file.verseKey)), { idempotent: true });
           done++;
           setProgress(0.05 + 0.95 * (done / audio.files.length));
         }
       };
       await Promise.all(Array.from({ length: PARALLEL_DOWNLOADS }, worker));
+      if (signal?.aborted) throw new DownloadAbortedError();
 
       const content: OfflineChapter = {
         version: 1,
@@ -153,7 +168,50 @@ export const useOffline = create<OfflineStore>((set, get) => ({
     saveIndex(entries);
     set({ entries });
   },
+
+  removeAll: () => {
+    for (const entry of Object.values(get().entries)) {
+      const dir = chapterDir(entry.chapterId);
+      if (dir.exists) dir.delete();
+    }
+    saveIndex({});
+    set({ entries: {} });
+  },
 }));
+
+export type DownloadAllProgress = { done: number; total: number; chapterId: number };
+
+/**
+ * Télécharge tout le Coran, une sourate après l'autre, en sautant celles déjà présentes avec la
+ * même traduction et le même récitateur (reprise possible après un arrêt). `onProgress` est appelé
+ * avant chaque sourate (`done` compte aussi les sourates sautées) ; `signal` arrête la série entre
+ * deux fichiers. Lève `DownloadAbortedError` en cas d'arrêt.
+ */
+export async function downloadAll({
+  chapterIds,
+  translationId,
+  recitationFor,
+  signal,
+  onProgress,
+}: {
+  chapterIds: number[];
+  translationId: number | null;
+  recitationFor: (chapterId: number) => number | null;
+  signal: AbortSignal;
+  onProgress: (progress: DownloadAllProgress) => void;
+}): Promise<void> {
+  const store = useOffline.getState();
+  const todo = new Set(chaptersToDownload(chapterIds, Object.values(store.entries), translationId, recitationFor));
+  const total = chapterIds.length;
+  let done = 0;
+  for (const chapterId of chapterIds) {
+    if (signal.aborted) throw new DownloadAbortedError();
+    onProgress({ done, total, chapterId });
+    if (todo.has(chapterId)) await store.download(chapterId, translationId, recitationFor(chapterId), signal);
+    done++;
+  }
+  onProgress({ done, total, chapterId: chapterIds[chapterIds.length - 1] ?? 0 });
+}
 
 /** Contenu d'une sourate téléchargée, avec l'audio pointant vers les fichiers locaux. */
 export async function readOfflineChapter(chapterId: number): Promise<OfflineChapter | null> {

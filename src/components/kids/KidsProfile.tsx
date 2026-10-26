@@ -4,13 +4,15 @@ import { router } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
-import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { KidAvatarFrame } from "@/components/kids/KidAvatarFrame";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
 import { Screen } from "@/components/Screen";
+import { avatarLevel } from "@/lib/kid-avatar";
 import { KID_TONES, KIDS, useKidsColors, type KidTone } from "@/lib/kids";
 import { useTodayMission } from "@/lib/missions";
 import { STARS_PER_STICKER, STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { useChapters, useMe, usePlans, useThemes } from "@/lib/queries";
-import { elevation, radius, spacing, useColors } from "@/lib/theme";
+import { radius, spacing, useColors } from "@/lib/theme";
 
 /**
  * Onglet « Moi » d'un profil enfant : ses étoiles, son album d'autocollants, et deux chemins
@@ -31,21 +33,28 @@ export function KidsProfile() {
   const chapterName = (id: number) => chapters.data?.find((c) => c.id === id)?.nameSimple ?? `Sourate ${id}`;
   const unlocked = stickersUnlocked(stars);
   const toNext = STARS_PER_STICKER - (stars % STARS_PER_STICKER);
+  const name = me.data?.displayName ?? "";
+  const voice = today.data
+    ? `${name}, tu as ${stars} étoile${stars > 1 ? "s" : ""} et ${unlocked} autocollant${unlocked > 1 ? "s" : ""} sur ${STICKERS.length}. Tu es au niveau ${avatarLevel(unlocked).level}. ${
+        unlocked === STICKERS.length ? "Tu as tous les autocollants, bravo !" : `Encore ${toNext} étoile${toNext > 1 ? "s" : ""} pour le prochain autocollant.`
+      }`
+    : "";
 
   return (
     <Screen refreshing={today.isRefetching} onRefresh={() => void today.refetch()}>
       <View style={styles.identity}>
-        <View style={[styles.ring, { backgroundColor: colors.surface }, elevation(colors, 2)]}>
-          <ProfileAvatar name={me.data?.displayName ?? "?"} avatar={me.data?.avatar} size={92} />
-        </View>
+        <KidAvatarFrame name={name || "?"} avatar={me.data?.avatar} stars={stars} size={92} />
         <AppText variant="display" center>
-          {me.data?.displayName ?? ""}
+          {name}
         </AppText>
-        <View style={[styles.stars, { backgroundColor: kc.sunSoft }]}>
-          <Ionicons name="star" size={26} color={KIDS.sun} />
-          <AppText variant="headline" color={kc.onSunSoft}>
-            {stars} étoile{stars > 1 ? "s" : ""}
-          </AppText>
+        <View style={styles.starsRow}>
+          <View style={[styles.stars, { backgroundColor: kc.sunSoft }]}>
+            <Ionicons name="star" size={26} color={KIDS.sun} />
+            <AppText variant="headline" color={kc.onSunSoft}>
+              {stars} étoile{stars > 1 ? "s" : ""}
+            </AppText>
+          </View>
+          <KidVoiceButton text={voice} />
         </View>
       </View>
 
@@ -151,7 +160,7 @@ const ALBUM_TONES: KidTone[] = ["violet", "green", "blue", "orange", "pink"];
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   identity: { alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
-  ring: { padding: 6, borderRadius: 52 },
+  starsRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   stars: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
   album: { gap: spacing.sm + 2 },
   albumTitle: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },

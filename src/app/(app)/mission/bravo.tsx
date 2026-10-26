@@ -6,10 +6,14 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/AppText";
 import { Card } from "@/components/Card";
 import { BigButton } from "@/components/kids/KidButton";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
+import { PrayerHint } from "@/components/kids/PrayerHint";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SafeArea } from "@/components/SafeArea";
 import { LoadingState } from "@/components/States";
+import { playKidSound } from "@/lib/kid-sounds";
 import { KID_TONES, KIDS, useKidsColors } from "@/lib/kids";
+import { prayerHint } from "@/lib/kids-quran";
 import { useShareMission, useTodayMission } from "@/lib/missions";
 import { STICKERS, stickersUnlocked } from "@/lib/missions-format";
 import { closeScreen } from "@/lib/navigation";
@@ -38,6 +42,7 @@ export default function MissionBravo() {
   const share = useShareMission();
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playKidSound("star");
   }, []);
 
   if (today.isPending) return <LoadingState />;
@@ -49,6 +54,17 @@ export default function MissionBravo() {
   const last = mission ? mission.dayIndex >= mission.totalDays : false;
   const green = kc.tint("green");
   const violet = kc.tint("violet");
+  // Sourate de la mission : si elle se dit dans la prière, on le souffle à l'enfant.
+  const chapterId = mission ? Number(mission.verses[0]?.split(":")[0]) : 0;
+  const prayer = prayerHint(chapterId) ? "Ce verset, tu peux le dire dans ta prière !" : null;
+  const voice = [
+    `Bravo ${me.data?.displayName ?? ""} ! ${last ? "Tu as fini toute ta mission !" : "Ta mission du jour est réussie."}`,
+    `Tu gagnes ${stars} étoile${stars > 1 ? "s" : ""}.`,
+    sticker ? `Ton autocollant : ${sticker.label}.` : "Encore quelques étoiles pour ton premier autocollant.",
+    prayer,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <SafeArea style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -71,11 +87,14 @@ export default function MissionBravo() {
         <AppText muted center>
           {last ? "Tu as fini toute ta mission !" : "Ta mission du jour est réussie"}
         </AppText>
-        <View style={[styles.pill, { backgroundColor: kc.sunSoft }]}>
-          <Ionicons name="star" size={26} color={KIDS.sun} />
-          <AppText variant="headline" color={kc.onSunSoft}>
-            +{stars} étoile{stars > 1 ? "s" : ""}
-          </AppText>
+        <View style={styles.pillRow}>
+          <View style={[styles.pill, { backgroundColor: kc.sunSoft }]}>
+            <Ionicons name="star" size={26} color={KIDS.sun} />
+            <AppText variant="headline" color={kc.onSunSoft}>
+              +{stars} étoile{stars > 1 ? "s" : ""}
+            </AppText>
+          </View>
+          <KidVoiceButton text={voice} />
         </View>
 
         <Card style={styles.sticker}>
@@ -97,6 +116,8 @@ export default function MissionBravo() {
             </AppText>
           </View>
         </Card>
+
+        {prayer ? <PrayerHint chapterId={chapterId} text={prayer} /> : null}
 
         {!last && mission ? (
           <View style={[styles.tomorrow, { backgroundColor: green.bg }]}>
@@ -137,6 +158,7 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
   confettiLayer: { position: "absolute", left: 0, top: 0, right: 0, height: 200 },
   stars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", minHeight: 130 },
+  pillRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.md },
   pill: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.lg + 4, paddingVertical: spacing.sm + 2, borderRadius: radius.pill },
   sticker: { flexDirection: "row", alignItems: "center", gap: spacing.lg, marginTop: spacing.sm },
   stickerIcon: { width: 104, height: 104, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },

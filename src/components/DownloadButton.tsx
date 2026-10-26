@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { errorMessage } from "@/lib/api";
 import { formatBytes, offlineSupported, useOffline } from "@/lib/offline";
 import { useMe } from "@/lib/queries";
+import { useReaderSettings } from "@/lib/reader-store";
 import { radius, spacing, useColors } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -10,6 +11,8 @@ import { AppText } from "./AppText";
 export function DownloadButton({ chapterId }: { chapterId: number }) {
   const colors = useColors();
   const me = useMe();
+  // Même récitateur que le lecteur : celui choisi pour cette sourate, sinon celui des réglages.
+  const surahRecitationId = useReaderSettings((r) => r.recitationBySurah[chapterId]);
   const entry = useOffline((s) => s.entries[chapterId]);
   const progress = useOffline((s) => s.progress[chapterId]);
   const download = useOffline((s) => s.download);
@@ -17,7 +20,7 @@ export function DownloadButton({ chapterId }: { chapterId: number }) {
   if (!offlineSupported) return null;
 
   const start = () =>
-    download(chapterId, me.data?.translationId ?? null, me.data?.recitationId ?? null).catch((error: unknown) =>
+    download(chapterId, me.data?.translationId ?? null, surahRecitationId ?? me.data?.recitationId ?? null).catch((error: unknown) =>
       Alert.alert("Téléchargement interrompu", errorMessage(error)),
     );
 

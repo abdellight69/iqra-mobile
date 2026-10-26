@@ -6,6 +6,7 @@ import { AppText } from "@/components/AppText";
 import { ArabicText } from "@/components/ArabicText";
 import { Card } from "@/components/Card";
 import { BigButton } from "@/components/kids/KidButton";
+import { KidVoiceButton } from "@/components/kids/KidVoiceButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { ErrorState, LoadingState } from "@/components/States";
@@ -39,11 +40,14 @@ export function KidsQuran() {
 
   return (
     <Screen refreshing={position.isRefetching} onRefresh={() => void position.refetch()}>
-      <View>
-        <AppText variant="display">Le Coran</AppText>
-        <AppText variant="bodyStrong" muted>
-          Choisis une sourate et écoute-la.
-        </AppText>
+      <View style={styles.header}>
+        <View style={styles.flex}>
+          <AppText variant="display">Le Coran</AppText>
+          <AppText variant="bodyStrong" muted>
+            Choisis une sourate et écoute-la.
+          </AppText>
+        </View>
+        <KidVoiceButton text={`Le Coran. Choisis une sourate et écoute-la.${current ? ` Touche la carte bleue pour continuer ${current.nameSimple}.` : ""}`} />
       </View>
 
       {current && position.data ? (
@@ -139,6 +143,7 @@ function SurahTile({ chapter, done, tone }: { chapter: Chapter; done: boolean; t
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   resume: { flexDirection: "row", alignItems: "center", gap: spacing.lg, borderRadius: radius.xl },
   // Toute la carte est le bouton : le disque jaune n'est qu'un dessin (pas de bouton dans un bouton).
   play: { width: 72, height: 77, borderRadius: 36, borderBottomWidth: 5, alignItems: "center", justifyContent: "center" },

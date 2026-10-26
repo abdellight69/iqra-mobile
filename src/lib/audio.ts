@@ -92,6 +92,8 @@ export function useTrackQueue(
     rate?: number;
     loop?: LoopRange | null;
     nowPlaying?: (track: Track) => AudioMetadata;
+    /** Fin naturelle de la dernière piste (enchaînement sans passage répété) : lecture continue, etc. */
+    onEnded?: () => void;
   } = {},
 ) {
   // Mises à jour rapprochées (100 ms) seulement quand une piste a le minutage mot à mot ; sinon 250 ms
@@ -109,6 +111,11 @@ export function useTrackQueue(
   const rate = options.rate ?? 1;
   const loop = options.loop ?? null;
   const nowPlaying = options.nowPlaying;
+  // Lu via une référence : l'écouteur de fin de piste voit toujours le dernier rappel fourni.
+  const onEnded = useRef(options.onEnded);
+  useEffect(() => {
+    onEnded.current = options.onEnded;
+  });
   const lockScreen = useRef(false);
   const [owner] = useState(() => Symbol("track-queue"));
 
@@ -185,6 +192,7 @@ export function useTrackQueue(
       playAt(index + 1, round);
     } else {
       stop();
+      if (autoAdvance && !loop && index + 1 >= tracks.length) onEnded.current?.();
     }
   });
 
